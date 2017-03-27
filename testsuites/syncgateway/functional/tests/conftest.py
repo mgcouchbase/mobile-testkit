@@ -1,4 +1,5 @@
 import pytest
+import json
 
 from keywords.constants import CLUSTER_CONFIGS_DIR
 from keywords.utils import log_info
@@ -36,6 +37,9 @@ def pytest_addoption(parser):
                      action="store_true",
                      help="If set, will target larger cluster (3 backing servers instead of 1, 2 accels if in di mode)")
 
+    parser.addoption("--server-ssl",
+                     action="store_true",
+                     help="If set, will enable SSL communication between server and Sync Gateway")
 
 # This will be called once for the at the beggining of the execution in the 'tests/' directory
 # and will be torn down, (code after the yeild) when all the test session has completed.
@@ -51,6 +55,7 @@ def params_from_base_suite_setup(request):
     mode = request.config.getoption("--mode")
     skip_provisioning = request.config.getoption("--skip-provisioning")
     ci = request.config.getoption("--ci")
+    ssl = request.config.getoption("--server-ssl")
 
     log_info("server_version: {}".format(server_version))
     log_info("sync_gateway_version: {}".format(sync_gateway_version))
@@ -60,6 +65,10 @@ def params_from_base_suite_setup(request):
     # Make sure mode for sync_gateway is supported ('cc' or 'di')
     validate_sync_gateway_mode(mode)
 
+    if ssl:
+        log_info("Running tests with ssl enabled")
+        #json.loads()
+
     # use base_cc cluster config if mode is "cc" or base_di cluster config if more is "di"
     if ci:
         log_info("Using 'ci_{}' config!".format(mode))
@@ -67,6 +76,8 @@ def params_from_base_suite_setup(request):
     else:
         log_info("Using 'base_{}' config!".format(mode))
         cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, mode)
+
+
 
     sg_config = sync_gateway_config_path_for_mode("sync_gateway_default_functional_tests", mode)
 
@@ -77,7 +88,8 @@ def params_from_base_suite_setup(request):
             cluster_config=cluster_config,
             server_version=server_version,
             sync_gateway_version=sync_gateway_version,
-            sync_gateway_config=sg_config
+            sync_gateway_config=sg_config,
+            ssl=ssl
         )
 
     # Load topology as a dictionary
@@ -87,7 +99,8 @@ def params_from_base_suite_setup(request):
     yield {
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
-        "mode": mode
+        "mode": mode,
+        "ssl": ssl
     }
 
     log_info("Tearing down 'params_from_base_suite_setup' ...")
@@ -102,6 +115,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     cluster_config = params_from_base_suite_setup["cluster_config"]
     cluster_topology = params_from_base_suite_setup["cluster_topology"]
     mode = params_from_base_suite_setup["mode"]
+    ssl = params_from_base_suite_setup["ssl"]
 
     test_name = request.node.name
     log_info("Running test '{}'".format(test_name))
@@ -112,7 +126,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     yield {
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
-        "mode": mode
+        "mode": mode,
+        "ssl": ssl
     }
 
     # Code after the yield will execute when each test finishes

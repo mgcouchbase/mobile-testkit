@@ -22,6 +22,7 @@ def test_roles_sanity(params_from_base_test_setup, sg_conf_name):
 
     cluster_conf = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
+    ssl = params_from_base_test_setup["ssl"]
 
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
@@ -29,7 +30,7 @@ def test_roles_sanity(params_from_base_test_setup, sg_conf_name):
     log_info("cluster_conf: {}".format(cluster_conf))
     log_info("sg_conf: {}".format(sg_conf))
 
-    cluster = Cluster(config=cluster_conf)
+    cluster = Cluster(config=cluster_conf, ssl=ssl)
     cluster.reset(sg_config_path=sg_conf)
 
     radio_stations = ["KMOW", "HWOD", "KDWB"]

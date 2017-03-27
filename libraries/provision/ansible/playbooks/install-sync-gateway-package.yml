@@ -82,11 +82,14 @@
   become: yes
   vars:
     sync_gateway_config_filepath:
+    server_port:
+    scheme:
     couchbase_server_primary_node: "{{ hostvars[groups.couchbase_servers[0]].ansible_host }}"
     # hack until mobile-testkit/issues/406 allows any sync gateway to be referenced
     sync_gateway_node: "{{ hostvars[groups.sync_gateways[0]].ansible_host }}"
     is_index_writer: "false"
   tasks:
+  - debug: msg="SYNC GATEWAY | deploy sync gateway config with {{ scheme }} and {{ server_port }}"
   - include: tasks/deploy-sync-gateway-config.yml
 
 # Deploy sg_accel index writer configs
@@ -94,6 +97,8 @@
   become: yes
   vars:
     sync_gateway_config_filepath:
+    server_port:
+    scheme:
     couchbase_server_primary_node: "{{ hostvars[groups.couchbase_servers[0]].ansible_host }}"
     # hack until mobile-testkit/issues/406 allows any sync gateway to be referenced
     sync_gateway_node: "{{ hostvars[groups.sync_gateways[0]].ansible_host }}"

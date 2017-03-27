@@ -58,7 +58,7 @@ class Cluster:
         # for integrating keywords
         self.cb_server = couchbaseserver.CouchbaseServer(self.servers[0].url)
 
-    def reset(self, sg_config_path):
+    def reset(self, sg_config_path, ssl=False):
 
         ansible_runner = AnsibleRunner(self._cluster_config)
 
@@ -110,11 +110,20 @@ class Cluster:
         log_info(">>> Starting sync_gateway with configuration: {}".format(config_path_full))
         utils.dump_file_contents_to_logs(config_path_full)
 
+        server_port = 8091
+        scheme = "http"
+
+        if ssl:
+            server_port = 18091
+            scheme = "https"
+
         # Start sync-gateway
         status = ansible_runner.run_ansible_playbook(
             "start-sync-gateway.yml",
             extra_vars={
-                "sync_gateway_config_filepath": config_path_full
+                "sync_gateway_config_filepath": config_path_full,
+                "scheme": scheme,
+                "server_port": server_port
             }
         )
         assert status == 0, "Failed to start to Sync Gateway"
@@ -126,7 +135,9 @@ class Cluster:
             status = ansible_runner.run_ansible_playbook(
                 "start-sg-accel.yml",
                 extra_vars={
-                    "sync_gateway_config_filepath": config_path_full
+                    "sync_gateway_config_filepath": config_path_full,
+                    "scheme": scheme,
+                    "server_port": server_port
                 }
             )
             assert status == 0, "Failed to start sg_accel"

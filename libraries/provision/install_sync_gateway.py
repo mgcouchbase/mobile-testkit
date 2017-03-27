@@ -92,7 +92,7 @@ class SyncGatewayConfig:
         return True
 
 
-def install_sync_gateway(cluster_config, sync_gateway_config):
+def install_sync_gateway(cluster_config, sync_gateway_config, ssl=False):
     log_info(sync_gateway_config)
 
     if not sync_gateway_config.is_valid():
@@ -100,6 +100,13 @@ def install_sync_gateway(cluster_config, sync_gateway_config):
 
     if sync_gateway_config.build_flags != "":
         log_warn("\n\n!!! WARNING: You are building with flags: {} !!!\n\n".format(sync_gateway_config.build_flags))
+
+    server_port = 8091
+    scheme="http"
+
+    if ssl:
+        server_port = 18091
+        scheme = "https"
 
     ansible_runner = AnsibleRunner(cluster_config)
     config_path = os.path.abspath(sync_gateway_config.config_path)
@@ -131,7 +138,9 @@ def install_sync_gateway(cluster_config, sync_gateway_config):
                 "couchbase_sync_gateway_package_base_url": sync_gateway_base_url,
                 "couchbase_sync_gateway_package": sync_gateway_package_name,
                 "couchbase_sg_accel_package": sg_accel_package_name,
-                "sync_gateway_config_filepath": config_path
+                "sync_gateway_config_filepath": config_path,
+                "server_port": server_port,
+                "scheme": scheme
             }
         )
         if status != 0:
