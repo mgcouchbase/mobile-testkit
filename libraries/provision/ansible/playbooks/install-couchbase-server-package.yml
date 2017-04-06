@@ -13,7 +13,7 @@
 
     # 512 reserved for query service
     couchbase_server_index_ram: 512
-    couchbase_server_cluster_ram: "{{((ansible_memtotal_mb|int)*0.8)|int - 512 }}"
+    couchbase_server_cluster_ram: 512
     couchbase_server_admin_port: 8091
     couchbase_server_home_path: /opt/couchbase
 
@@ -72,17 +72,19 @@
       wait_for: port=8091 delay=5 timeout=30
 
     - name: COUCHBASE SERVER | Configure cluster settings (4.0.X and 4.1.X)
-      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query  --cluster-index-ramsize={{ couchbase_server_index_ram }}"
+      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query,fts  --cluster-index-ramsize={{ couchbase_server_index_ram }}"
       when:  "'4.0' in couchbase_server_package_name or '4.1' in couchbase_server_package_name"
 
+    - debug: msg="{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query,fts  --cluster-index-ramsize={{ couchbase_server_index_ram }}  --index-storage-setting=default"
     - name: COUCHBASE SERVER | Configure cluster settings (4.5.X and 4.6.X)
-      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query  --cluster-index-ramsize={{ couchbase_server_index_ram }}  --index-storage-setting=default"
+      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query,fts  --cluster-index-ramsize={{ couchbase_server_index_ram }}  --index-storage-setting=default"
       when:  "'4.5' in couchbase_server_package_name or '4.6' in couchbase_server_package_name"
 
     - name: COUCHBASE SERVER | Configure cluster settings (4.7.X and up)
-      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --cluster-username={{ couchbase_server_admin }} --cluster-password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query  --cluster-index-ramsize={{ couchbase_server_index_ram }}  --index-storage-setting=default"
+      shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli cluster-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --cluster-username={{ couchbase_server_admin }} --cluster-password={{ couchbase_server_password }} --cluster-port={{couchbase_server_admin_port}} --cluster-ramsize={{ couchbase_server_cluster_ram }}  --services=data,index,query,fts  --cluster-index-ramsize={{ couchbase_server_index_ram }}  --index-storage-setting=default"
       when:  "not '4.0' in couchbase_server_package_name and not '4.1' in couchbase_server_package_name and not '4.5' in couchbase_server_package_name and not '4.6' in couchbase_server_package_name"
 
+    - debug: msg="{{ couchbase_server_home_path }}/bin/couchbase-cli node-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --node-init-hostname={{ couchbase_server_node }}"
     - name: COUCHBASE SERVER | Initialize primary node
       shell: "{{ couchbase_server_home_path }}/bin/couchbase-cli node-init -c {{ couchbase_server_node }}:{{ couchbase_server_admin_port }} --user={{ couchbase_server_admin }} --password={{ couchbase_server_password }} --node-init-hostname={{ couchbase_server_node }}"
       when: "{{ cb_major_version['stdout'] }} != 2"

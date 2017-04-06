@@ -95,8 +95,12 @@ def resolve_cb_nas_url(version, build_number):
     """
 
     cbnas_base_url = "http://cbnas01.sc.couchbase.com/builds/latestbuilds/couchbase-server"
+    cbnas_base_releases_url = "http://cbnas01.sc.couchbase.com/builds/releases"
 
-    if version.startswith("3.1"):
+    if version.endswith("CE") or build_number.endswith("CE"):
+        # CE can be specified as 4.5.1-CE
+        base_url = "{}/{}/ce".format(cbnas_base_releases_url, version)
+    elif version.startswith("3.1"):
         base_url = "http://latestbuilds.hq.couchbase.com/"
     elif version.startswith("4.0") or version.startswith("4.1"):
         base_url = "{}/sherlock/{}".format(cbnas_base_url, build_number)
@@ -124,6 +128,9 @@ def get_package_name(version, build_number):
 
     if version.startswith("3.1"):
         return "couchbase-server-enterprise_centos6_x86_64_{}-{}-rel.rpm".format(version, build_number)
+    elif build_number.endswith("CE") or version.endswith("CE"):
+        # CE can be specified as 4.5.1-CE
+        return "couchbase-server-community-{}-centos7.x86_64.rpm".format(version)
     else:
         return "couchbase-server-enterprise-{}-{}-centos7.x86_64.rpm".format(version, build_number)
 
