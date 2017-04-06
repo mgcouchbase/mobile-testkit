@@ -279,10 +279,12 @@ class CouchbaseServer:
         }
 
         start = time.time()
+        ram_100_checked = False
         while True:
             resp = ""
             if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
                 raise Exception("Bucket creation: TIMEOUT")
+
             try:
                 resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
                 log_r(resp)
@@ -293,6 +295,14 @@ class CouchbaseServer:
                 log_info("Trying with a lesser ram: {}".format(h))
                 data["ramQuotaMB"] = int(data["ramQuotaMB"]) / 2
                 log_info(data)
+
+                if ram_100_checked:
+                    raise Exception("Bucket creation: failure")
+
+                if data["ramQuotaMB"] < 100:
+                    data["ramQuotaMB"] == 100
+                    ram_100_checked = True
+
                 continue
 
         # Create client an retry until KeyNotFound error is thrown
