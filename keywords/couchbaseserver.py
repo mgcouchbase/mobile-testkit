@@ -294,14 +294,15 @@ class CouchbaseServer:
                 log_info(resp.json())
                 log_info("Trying with a lesser ram: {}".format(h))
                 data["ramQuotaMB"] = int(data["ramQuotaMB"]) / 2
-                log_info(data)
 
                 if ram_100_checked:
                     raise Exception("Bucket creation: failure")
 
-                if data["ramQuotaMB"] < 100:
+                if int(data["ramQuotaMB"]) < 100:
                     data["ramQuotaMB"] = 100
                     ram_100_checked = True
+
+                log_info(data)
 
                 continue
 

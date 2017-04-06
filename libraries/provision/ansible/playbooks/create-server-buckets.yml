@@ -29,7 +29,7 @@
 
     # 512 is dedicated to query
     couchbase_server_cluster_ram: 2048
-    couchbase_server_bucket_ram: 512
+    couchbase_server_bucket_ram: 256
 
   tasks:
 
