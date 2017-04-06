@@ -290,7 +290,7 @@ class CouchbaseServer:
                 break
             except HTTPError as h:
                 log_info("Trying with a lesser ram")
-                data["ram_quota_mb"] = int(data["ram_quota_mb"])/2
+                data["ramQuotaMB"] = int(data["ramQuotaMB"])/2
                 continue
 
         # Create client an retry until KeyNotFound error is thrown
