@@ -37,6 +37,9 @@ def get_server_version(host):
 
 
 def verify_server_version(host, expected_server_version):
+    if str(expected_server_version).endswith("CE"):
+        return
+
     running_server_version = get_server_version(host)
     expected_server_version_parts = expected_server_version.split("-")
 
