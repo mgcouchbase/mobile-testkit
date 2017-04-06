@@ -280,7 +280,7 @@ class CouchbaseServer:
 
         start = time.time()
         while True:
-            resp=""
+            resp = ""
             if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
                 raise Exception("Bucket creation: TIMEOUT")
             try:
@@ -290,8 +290,8 @@ class CouchbaseServer:
                 break
             except HTTPError as h:
                 log_info(resp.json())
-                log_info("Trying with a lesser ram")
-                data["ramQuotaMB"] = int(data["ramQuotaMB"])/2
+                log_info("Trying with a lesser ram: {}".format(h))
+                data["ramQuotaMB"] = int(data["ramQuotaMB"]) / 2
                 log_info(data)
                 continue
 
