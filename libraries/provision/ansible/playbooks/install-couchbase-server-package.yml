@@ -13,7 +13,7 @@
 
     # 512 reserved for query service
     couchbase_server_index_ram: 256
-    couchbase_server_cluster_ram: 2588
+    couchbase_server_cluster_ram: 2048
     couchbase_server_admin_port: 8091
     couchbase_server_home_path: /opt/couchbase
 
