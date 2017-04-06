@@ -279,9 +279,19 @@ class CouchbaseServer:
         }
 
         log_info(data)
-        resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
-        log_r(resp)
-        resp.raise_for_status()
+        start = time.time()
+        while True:
+            if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
+                raise Exception("Verify Docs Present: TIMEOUT")
+            try:
+                resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
+                log_r(resp)
+                resp.raise_for_status()
+                break
+            except HTTPError as h:
+                log_info("Trying with a lesser ram")
+                data["ram_quota_mb"] = int(data["ram_quota_mb"])/2
+                continue
 
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()
