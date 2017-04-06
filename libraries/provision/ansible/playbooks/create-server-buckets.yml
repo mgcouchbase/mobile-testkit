@@ -28,7 +28,7 @@
     bucket_num: "{{ (bucket_names|count) }}"
 
     # 512 is dedicated to query
-    couchbase_server_cluster_ram: 2048
+    couchbase_server_cluster_ram: 2588
     couchbase_server_bucket_ram: 256
 
   tasks:
