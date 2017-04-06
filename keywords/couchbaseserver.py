@@ -248,6 +248,7 @@ class CouchbaseServer:
 
         # Get the amount of RAM to allocate for each server bucket
         per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
+        per_bucket_ram_mb = 512
 
         for bucket_name in bucket_names:
             self.create_bucket(bucket_name, per_bucket_ram_mb)
@@ -274,6 +275,7 @@ class CouchbaseServer:
             "flushEnabled": "1"
         }
 
+        log_info(data)
         resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
         log_r(resp)
         resp.raise_for_status()
