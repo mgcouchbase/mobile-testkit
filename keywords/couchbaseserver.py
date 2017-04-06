@@ -298,6 +298,9 @@ class CouchbaseServer:
                 if ram_100_checked:
                     raise Exception("Bucket creation: failure")
 
+                if int(data["ramQuotaMB"]) == 0:
+                    break
+
                 if int(data["ramQuotaMB"]) < 100:
                     data["ramQuotaMB"] = 100
                     ram_100_checked = True
