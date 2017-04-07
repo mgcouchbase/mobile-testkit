@@ -286,7 +286,6 @@ class CouchbaseServer:
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()
         while True:
-
             if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
                 raise Exception("TIMEOUT while trying to create server buckets.")
             try:
