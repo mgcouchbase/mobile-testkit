@@ -278,9 +278,13 @@ class CouchbaseServer:
             "flushEnabled": "1"
         }
 
-        resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
-        log_r(resp)
-        resp.raise_for_status()
+        resp = ""
+        try:
+            resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
+            log_r(resp)
+            resp.raise_for_status()
+        except HTTPError as h:
+            log_info("resp: {}, error: {}, response: {}".format(resp, resp.json(), h))
 
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()
