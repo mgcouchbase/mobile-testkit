@@ -280,7 +280,6 @@ class CouchbaseServer:
 
         resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
         log_r(resp)
-        
         resp.raise_for_status()
 
         # Create client an retry until KeyNotFound error is thrown
