@@ -250,8 +250,8 @@ class CouchbaseServer:
         log_info("Creating buckets: {}".format(bucket_names))
 
         # Get the amount of RAM to allocate for each server bucket
-        per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
-        per_bucket_ram_mb = 512
+        # per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
+        per_bucket_ram_mb = 128
 
         for bucket_name in bucket_names:
             self.create_bucket(bucket_name, per_bucket_ram_mb)
@@ -278,36 +278,10 @@ class CouchbaseServer:
             "flushEnabled": "1"
         }
 
-        start = time.time()
-        ram_100_checked = False
-        while True:
-            resp = ""
-            if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
-                raise Exception("Bucket creation: TIMEOUT")
-
-            try:
-                resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
-                log_r(resp)
-                resp.raise_for_status()
-                break
-            except HTTPError as h:
-                log_info(resp.json())
-                log_info("Trying with a lesser ram: {}".format(h))
-                data["ramQuotaMB"] = int(data["ramQuotaMB"]) / 2
-
-                if ram_100_checked:
-                    raise Exception("Bucket creation: failure")
-
-                if int(data["ramQuotaMB"]) == 0:
-                    break
-
-                if int(data["ramQuotaMB"]) < 100:
-                    data["ramQuotaMB"] = 100
-                    ram_100_checked = True
-
-                log_info(data)
-
-                continue
+        resp = self._session.post("{}/pools/default/buckets".format(self.url), data=data)
+        log_r(resp)
+        
+        resp.raise_for_status()
 
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()
