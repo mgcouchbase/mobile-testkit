@@ -7,6 +7,4 @@
   file:
     path: /tmp/sg_logs
     state: directory
-
-- name: SYNC GATEWAY | chmod 777 /tmp/sg_logs
-  shell: chmod 777 /tmp/sg_logs
+    mode: 0777
