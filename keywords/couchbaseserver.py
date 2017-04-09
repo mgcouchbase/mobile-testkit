@@ -251,7 +251,7 @@ class CouchbaseServer:
 
         # Get the amount of RAM to allocate for each server bucket
         # per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
-        per_bucket_ram_mb = 64
+        per_bucket_ram_mb = 100
 
         for bucket_name in bucket_names:
             self.create_bucket(bucket_name, per_bucket_ram_mb)
