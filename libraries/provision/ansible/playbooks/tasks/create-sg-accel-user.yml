@@ -7,4 +7,6 @@
   file:
     path: /tmp/sg_logs
     state: directory
+    owner: sg_accel
+    group: sg_accel
     mode: 0777

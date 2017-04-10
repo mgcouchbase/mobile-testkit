@@ -7,4 +7,6 @@
   file:
     path: /tmp/sg_logs
     state: directory
+    owner: sync_gateway
+    group: sync_gateway
     mode: 0777
