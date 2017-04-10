@@ -389,6 +389,11 @@ def test_log_200mb(params_from_base_test_setup, sg_conf_name):
     # Create and Set the right permissions for /tmp/sg_logs
     create_log_directory(cluster.sync_gateways[0].ip)
 
+    remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=204850000 count=100")
+
+    # Set the right permissions for /tmp/sg_logs
+    set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
+
     # read sample sg_conf
     data = load_sync_gateway_config(sg_conf, mode, server_url)
 
