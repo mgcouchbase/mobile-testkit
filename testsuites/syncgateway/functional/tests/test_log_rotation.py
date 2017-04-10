@@ -32,6 +32,21 @@ def load_sync_gateway_config(sync_gateway_config, mode, server_url):
     return data
 
 
+def create_log_directory(sg_ip):
+    """Creates /tmp/sg_logs and calls set_permissions to set the right permissions"""
+    remote_executor = RemoteExecutor(sg_ip)
+    remote_executor.execute("sudo rm -rf /tmp/sg_logs")
+    remote_executor.execute("sudo mkdir -p /tmp/sg_logs")
+    set_permissions(sg_ip, "/tmp/sg_logs")
+
+
+def set_permissions(sg_ip, folder):
+    """Set the right permissions for the folder on SG node"""
+    remote_executor = RemoteExecutor(sg_ip)
+    remote_executor.execute("sudo chmod 777 -R {}".format(folder))
+    remote_executor.execute("sudo chown -R sync_gateway:sync_gateway {}".format(folder))
+
+
 @pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.logging
@@ -77,14 +92,15 @@ def test_log_rotation_default_values(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
     # generate log file  with size  ~94MB to check that backup file not created while 100MB not reached
     remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=94850000 count=1")
 
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Set the right permissions for /tmp/sg_logs
+    set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
+
     # iterate 5th times to verify that every time we get new backup file with ~100MB
     for i in xrange(5):
         sg_helper.start_sync_gateway(cluster_config=cluster_conf, url=sg_one_url, config=temp_conf)
@@ -99,6 +115,9 @@ def test_log_rotation_default_values(params_from_base_test_setup, sg_conf_name):
         sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
         # generate log file  with size  ~99MB
         remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=104850000 count=1")
+
+        # Set the right permissions for /tmp/sg_logs
+        set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
 
     sg_helper.start_sync_gateway(cluster_config=cluster_conf, url=sg_one_url, config=sg_conf)
 
@@ -141,11 +160,8 @@ def test_log_logKeys_string(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor = RemoteExecutor(cluster.sync_gateways[0].ip)
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
@@ -199,11 +215,8 @@ def test_log_nondefault_logKeys_set(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor = RemoteExecutor(cluster.sync_gateways[0].ip)
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
@@ -248,12 +261,14 @@ def test_log_maxage_10_timestamp_ignored(params_from_base_test_setup, sg_conf_na
 
     sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
 
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
+
     # generate log file with almost 1MB
     remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=1030000 count=1")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+
+    # Set the right permissions for /tmp/sg_logs
+    set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
 
     # read sample sg_conf
     data = load_sync_gateway_config(sg_conf, mode, server_url)
@@ -320,11 +335,8 @@ def test_log_rotation_invalid_path(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor = RemoteExecutor(cluster.sync_gateways[0].ip)
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
@@ -374,11 +386,8 @@ def test_log_200mb(params_from_base_test_setup, sg_conf_name):
 
     sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
 
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=204850000 count=100")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # read sample sg_conf
     data = load_sync_gateway_config(sg_conf, mode, server_url)
@@ -435,12 +444,14 @@ def test_log_number_backups(params_from_base_test_setup, sg_conf_name):
     sg_one_url = cluster_hosts["sync_gateways"][0]["public"]
     sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
 
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
+
     # generate log file with almost 1MB
     remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=1030000 count=1")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+
+    # Set the right permissions for /tmp/sg_logs
+    set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
 
     # iterate 5 times
     for i in xrange(5):
@@ -456,6 +467,9 @@ def test_log_number_backups(params_from_base_test_setup, sg_conf_name):
         sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
         # generate log file with almost 1MB
         remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=1030000 count=1")
+
+        # Set the right permissions for /tmp/sg_logs
+        set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
 
     sg_helper.start_sync_gateway(cluster_config=cluster_conf, url=sg_one_url, config=sg_conf)
 
@@ -504,11 +518,8 @@ def test_log_rotation_negative(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor = RemoteExecutor(cluster.sync_gateways[0].ip)
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
@@ -558,12 +569,14 @@ def test_log_maxbackups_0(params_from_base_test_setup, sg_conf_name):
     sg_helper = SyncGateway()
     sg_helper.stop_sync_gateway(cluster_config=cluster_conf, url=sg_one_url)
 
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
+    # Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
+
     # generate log file with almost 1MB
     remote_executor.execute("sudo dd if=/dev/zero of=/tmp/sg_logs/sg_log_rotation.log bs=1030000 count=1")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+
+    # Set the right permissions for /tmp/sg_logs
+    set_permissions(cluster.sync_gateways[0].ip, "/tmp/sg_logs")
 
     # read sample sg_conf
     data = load_sync_gateway_config(sg_conf, mode, server_url)
@@ -622,11 +635,8 @@ def test_log_logLevel_invalid(params_from_base_test_setup, sg_conf_name):
     with open(temp_conf, 'w') as fp:
         json.dump(data, fp)
 
-    remote_executor = RemoteExecutor(cluster.sync_gateways[0].ip)
-    remote_executor.execute("mkdir -p /tmp/sg_logs")
-    remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
-    remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
-    remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
+    # Create and Set the right permissions for /tmp/sg_logs
+    create_log_directory(cluster.sync_gateways[0].ip)
 
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
