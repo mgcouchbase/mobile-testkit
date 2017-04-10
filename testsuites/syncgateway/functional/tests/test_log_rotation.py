@@ -627,7 +627,7 @@ def test_log_logLevel_invalid(params_from_base_test_setup, sg_conf_name):
     remote_executor.execute("sudo rm -rf /tmp/sg_logs/sg_log_rotation*")
     remote_executor.execute("sudo chmod 777 -R /tmp/sg_logs")
     remote_executor.execute("chown -R sync_gateway:sync_gateway /tmp/sg_logs")
-    
+
     # Stop sync_gateways
     log_info(">>> Stopping sync_gateway")
     sg_helper = SyncGateway()
