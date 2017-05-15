@@ -7,7 +7,9 @@
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket",
             "username":"data-bucket",
-            "password": "password"
+            "password": "password",
+            "unsupported": {"replicator_2": true},
+            "users": {"GUEST": {"disabled": false, "admin_channels": ["*"] }}
         }
     }
 }

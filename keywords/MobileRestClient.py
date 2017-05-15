@@ -122,6 +122,9 @@ class MobileRestClient:
             elif resp_obj["vendor"]["name"] == "Couchbase Lite (C#)":
                 logging.info("ServerType={}".format(ServerType.listener))
                 return ServerType.listener
+            elif resp_obj["vendor"]["name"] == "LiteCoreServ":
+                logging.info("ServerType={}".format(ServerType.listener))
+                return ServerType.listener
         except KeyError:
             # Android LiteServ
             if resp_obj["CBLite"] == "Welcome":
@@ -1301,7 +1304,10 @@ class MobileRestClient:
             data["doc_ids"] = doc_ids
 
         resp = self._session.post("{}/_replicate".format(url), data=json.dumps(data))
+        log_info(json.dumps(data))
+        log_info(resp.text)
         log_r(resp)
+        log_info(resp.json())
         resp.raise_for_status()
         resp_obj = resp.json()
 
@@ -1415,6 +1421,7 @@ class MobileRestClient:
                 raise keywords.exceptions.TimeoutException("Wait for Replication Status Idle: TIMEOUT")
 
             resp = self._session.get("{}/_active_tasks".format(url))
+            log_info("active_tasks: {}".format(resp.json()))
             log_r(resp)
             resp.raise_for_status()
             resp_obj = resp.json()
@@ -1423,9 +1430,9 @@ class MobileRestClient:
             replication_found = False
 
             for replication in resp_obj:
-                if replication["task"] == replication_id:
+                if replication["pid"] == replication_id:
                     replication_found = True
-                    if replication["status"] == "Idle":
+                    if replication["status"] == "Idle" or replication["status"] == "Stopped":
                         replication_busy = False
                     else:
                         replication_busy = True
