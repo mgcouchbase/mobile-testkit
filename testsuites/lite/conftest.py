@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from keywords.exceptions import ProvisioningError
 from keywords.ClusterKeywords import ClusterKeywords
@@ -7,6 +8,7 @@ from keywords.constants import CLUSTER_CONFIGS_DIR
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from keywords.LiteServFactory import LiteServFactory
 from keywords.MobileRestClient import MobileRestClient
+from libraries.testkit import cluster
 
 
 def pytest_addoption(parser):
@@ -109,7 +111,8 @@ def setup_client_suite(request):
         "server_platform": server_platform,
         "cluster_config": cluster_config,
         "sg_mode": sync_gateway_mode,
-        "client": client
+        "client": client,
+        "sg_config": sg_config
     }
 
     log_info("Tearing down suite ...")
@@ -125,28 +128,40 @@ def setup_client_test(request, setup_client_suite):
     server_platform = setup_client_suite["server_platform"]
     client = setup_client_suite["client"]
     cluster_config = setup_client_suite["cluster_config"]
+    sg_config = setup_client_suite["sg_config"]
     test_name = request.node.name
 
     client = MobileRestClient()
 
     # Start LiteCoreServ and delete any databases
     #ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
-    ls_url_two = "http://10.17.0.22:52000"
-    client.delete_databases(ls_url_two)
+    client_url = "http://localhost:52000"
+    client.delete_databases(client_url)
 
-    cluster_helper = ClusterKeywords()
-    cluster_hosts = cluster_helper.get_cluster_topology(cluster_config=cluster_config)
+    server_url = None
+    server_admin_url = None
 
-    sg_url = cluster_hosts["sync_gateways"][0]["public"]
-    sg_admin_url = cluster_hosts["sync_gateways"][0]["admin"]
+    if server_platform == "sync_gateway":
+        cluster_helper = ClusterKeywords()
+        cluster_hosts = cluster_helper.get_cluster_topology(cluster_config=cluster_config)
+
+        server_url = cluster_hosts["sync_gateways"][0]["public"]
+        server_admin_url = cluster_hosts["sync_gateways"][0]["admin"]
+
+        clstr = cluster.Cluster(config=cluster_config)
+        clstr.reset(sg_config_path=sg_config)
+    else:
+        pass
+        # server_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
 
     # Yield values to test case via fixture argument
     yield {
         "cluster_config": cluster_config,
-        "ls_url_two": ls_url_two,
-        "ls_url_one": sg_url,
-        "ls_url_one_admin": sg_admin_url,
+        "client_url": client_url,
+        "server_url": server_url,
+        "server_url_admin": server_admin_url,
         "server_platform": server_platform
     }
 
     log_info("Tearing down test")
+    client.delete_databases(client_url)

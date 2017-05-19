@@ -1405,10 +1405,15 @@ class MobileRestClient:
         log_r(resp)
         resp.raise_for_status()
 
-        resp_obj = resp.json()
+        try:
+            resp_obj = resp.json()
 
-        if "ok" not in resp_obj:
-            raise AssertionError("Unexpected response for cancelling a replication")
+            if "ok" not in resp_obj:
+                raise AssertionError("Unexpected response for cancelling a replication")
+        except ValueError:
+            # Sometimes, no JSON is returned,
+            # as long as there is no HTTP error, we are good
+            pass
 
     def wait_for_replication_status_idle(self, url, replication_id):
         """
@@ -1511,7 +1516,7 @@ class MobileRestClient:
             if server_type == ServerType.listener:
 
                 data = {"keys": expected_doc_map.keys()}
-                resp = self._session.post("{}/{}/_all_docs".format(url, db), data=json.dumps(data))
+                resp = self._session.get("{}/{}/_all_docs".format(url, db), data=json.dumps(data))
                 log_r(resp)
                 resp.raise_for_status()
                 resp_obj = resp.json()

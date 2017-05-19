@@ -140,6 +140,15 @@ class CouchbaseServer:
         if server_major_version >= 5:
             self._delete_internal_rbac_bucket_user(name)
 
+    def flush_bucket(self, name):
+        """ Flush a Couchbase Server bucket with the given 'name' """
+        server_version = get_server_version(self.host, self.cbs_ssl)
+
+        resp = self._session.post("{0}/pools/default/buckets/{1}/controller/doFlush".format(self.url, name))
+        log_r(resp)
+        resp.raise_for_status()
+        self.wait_for_ready_state()
+    
     def delete_buckets(self):
         """ Deletes all of the buckets on a Couchbase Server.
         If the buckets cannot be deleted after 3 tries, an exception will be raised.
