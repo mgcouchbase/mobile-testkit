@@ -82,11 +82,13 @@ def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, repli
         expected_docs_sg = ls_db1_docs
         expected_docs_ls = client.merge(ls_db1_docs, ls_db2_docs)
     elif replication_type == "push":
-        expected_docs_sg = client.merge(ls_db1_docs, ls_db1_docs, ls_db2_docs_seed)
+        expected_docs_sg = client.merge(ls_db1_docs, ls_db1_docs)
         expected_docs_ls = ls_db2_docs
 
     if seeded_client_db:
         expected_docs_ls.extend(ls_db2_docs_seed)
+        if replication_type == "push":
+            expected_docs_sg.extend(ls_db2_docs_seed)
 
     client.verify_docs_present(url=server_url, db=ls_db1, expected_docs=expected_docs_sg)
     client.verify_docs_present(url=client_url, db=ls_db2, expected_docs=expected_docs_ls)
