@@ -3,6 +3,7 @@ import pytest
 from keywords.utils import log_info
 from keywords.MobileRestClient import MobileRestClient
 from keywords.document import create_docs
+from keywords import attachment
 
 
 @pytest.mark.sanity
@@ -10,17 +11,20 @@ from keywords.document import create_docs
 @pytest.mark.syncgateway
 @pytest.mark.replication
 @pytest.mark.session
-@pytest.mark.parametrize("num_docs_per_db, seeded_client_db, replication_type, continuous", [
-    # (100, False, "push", True),  # Continuous push - no seed
-    (100, True, "push", True),  # Continuous push - with seed
-    # (100, False, "pull", True),  # Continuous pull - no seed
-    # (100, True, "pull", True),  # Continuous pull - with seed
-    # (100, False, "pull", False),  # One shot pull - no seed
-    # (100, True, "pull", False),  # One shot pull - with seed
-    (100, False, "push", False),  # One shot push - no seed
-    # (100, True, "push", False),  # One shot push - with seed
+@pytest.mark.parametrize("num_docs_per_db, seeded_client_db, replication_type, continuous, attachments_generator", [
+    # (100, False, "push", True, None),  # Continuous push - no seed without attachments
+    # (100, True, "push", True, None),  # Continuous push - with seed without attachments
+    # (100, False, "pull", True, None),  # Continuous pull - no seed without attachments
+    # (100, True, "pull", True, None),  # Continuous pull - with seed without attachments
+    # (100, False, "pull", False, None),  # One shot pull - no seed without attachments
+    # (100, True, "pull", False, None),  # One shot pull - with seed without attachments
+    (100, False, "push", False, attachment.generate_png_100_100),  # One shot push - no seed with attachments
+    (100, False, "pull", False, attachment.generate_png_100_100),  # One shot pull - no seed with attachments
+    (100, False, "push", True, attachment.generate_png_100_100),  # Continuous push - no seed with attachments
+    (100, False, "pull", True, attachment.generate_png_100_100),  # Continuous pull - no seed with attachments
+    # (100, True, "push", False, None),  # One shot push - with seed
 ])
-def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, replication_type, continuous):
+def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, replication_type, continuous, attachments_generator):
     server_url = setup_client_test["server_url"]
     client_url = setup_client_test["client_url"]
     server_platform = setup_client_test["server_platform"]
@@ -38,6 +42,12 @@ def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, repli
 
     log_info("server_url: {}".format(server_url))
     log_info("client_url: {}".format(client_url))
+
+    attachments = False
+
+    if attachments_generator:
+        log_info("Running test_peer_2_peer_sanity_pull with attachment {}".format(attachments_generator))
+        attachments = True
 
     ls_db2_docs_seed = None
     if seeded_client_db:
@@ -59,10 +69,10 @@ def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, repli
         from_url = blip_url_one
         to_db = ls_db2
 
-    ls_db1_docs = client.add_docs(url=server_url, db=ls_db1, number=num_docs_per_db, id_prefix="test_ls_db1")
+    ls_db1_docs = client.add_docs(url=server_url, db=ls_db1, number=num_docs_per_db, id_prefix="test_ls_db1", attachments_generator=attachments_generator)
     assert len(ls_db1_docs) == num_docs_per_db
 
-    ls_db2_docs = client.add_docs(url=client_url, db=ls_db2, number=num_docs_per_db, id_prefix="test_ls_db2")
+    ls_db2_docs = client.add_docs(url=client_url, db=ls_db2, number=num_docs_per_db, id_prefix="test_ls_db2", attachments_generator=attachments_generator)
     assert len(ls_db2_docs) == num_docs_per_db
 
     # Setup replication from from_db to to_db
@@ -90,8 +100,8 @@ def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, repli
         if replication_type == "push":
             expected_docs_sg.extend(ls_db2_docs_seed)
 
-    client.verify_docs_present(url=server_url, db=ls_db1, expected_docs=expected_docs_sg)
-    client.verify_docs_present(url=client_url, db=ls_db2, expected_docs=expected_docs_ls)
+    client.verify_docs_present(url=server_url, db=ls_db1, expected_docs=expected_docs_sg, attachments=attachments)
+    client.verify_docs_present(url=client_url, db=ls_db2, expected_docs=expected_docs_ls, attachments=attachments)
 
     client.verify_docs_in_changes(url=server_url, db=ls_db1, expected_docs=expected_docs_sg)
     # LiteCoreServ does not have a Changes feed REST end point
