@@ -9,6 +9,7 @@ from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from keywords.LiteServFactory import LiteServFactory
 from keywords.MobileRestClient import MobileRestClient
 from libraries.testkit import cluster
+from libraries.provision.install_sync_gateway import get_buckets_from_sync_gateway_config
 
 
 def pytest_addoption(parser):
@@ -65,9 +66,11 @@ def setup_client_suite(request):
         sync_gateway_version = server_version
         sync_gateway_mode = request.config.getoption("--server-mode")
         cbs_server_version = request.config.getoption("--cbs-server-version")
+        sg_bucket_list = None
 
         cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, sync_gateway_mode)
         sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", sync_gateway_mode)
+        sg_bucket_list = get_buckets_from_sync_gateway_config(sg_config)
 
         if not skip_provisioning:
             log_info("Installing Sync Gateway + Couchbase Server + Accels ('di' only)")
@@ -116,7 +119,8 @@ def setup_client_suite(request):
         "cluster_config": cluster_config,
         "sg_mode": sync_gateway_mode,
         "client": client,
-        "sg_config": sg_config
+        "sg_config": sg_config,
+        "sg_bucket_list": sg_bucket_list
     }
 
     log_info("Tearing down suite ...")
@@ -134,6 +138,7 @@ def setup_client_test(request, setup_client_suite):
     cluster_config = setup_client_suite["cluster_config"]
     sg_config = setup_client_suite["sg_config"]
     test_name = request.node.name
+    sg_bucket_list = setup_client_suite["sg_bucket_list"]
 
     client = MobileRestClient()
 
@@ -164,7 +169,8 @@ def setup_client_test(request, setup_client_suite):
         "client_url": client_url,
         "server_url": server_url,
         "server_url_admin": server_admin_url,
-        "server_platform": server_platform
+        "server_platform": server_platform,
+        "sg_bucket_list": sg_bucket_list
     }
 
     log_info("Tearing down test")

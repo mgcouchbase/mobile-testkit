@@ -41,12 +41,13 @@ def test_replication(setup_client_test, num_docs_per_db, seeded_client_db, clien
     server_url = setup_client_test["server_url"]
     client_url = setup_client_test["client_url"]
     server_platform = setup_client_test["server_platform"]
+    sg_bucket_list = setup_client_test["sg_bucket_list"]
     client = MobileRestClient()
 
     log_info("Creating databases")
 
     if server_platform == "sync_gateway":
-        ls_db1 = "db"
+        ls_db1 = sg_bucket_list[0]
     else:
         ls_db1 = client.create_database(url=server_url, name="ls_db1")
 
