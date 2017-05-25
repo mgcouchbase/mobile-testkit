@@ -67,7 +67,7 @@ def setup_client_suite(request):
         cbs_server_version = request.config.getoption("--cbs-server-version")
 
         cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, sync_gateway_mode)
-        sg_config = sync_gateway_config_path_for_mode("listener_tests/listener_tests", sync_gateway_mode)
+        sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", sync_gateway_mode)
 
         if not skip_provisioning:
             log_info("Installing Sync Gateway + Couchbase Server + Accels ('di' only)")
