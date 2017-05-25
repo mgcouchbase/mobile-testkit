@@ -54,6 +54,10 @@ def setup_client_suite(request):
     if client_platform == "sync_gateway":
         raise ProvisioningError("sync_gateway has to be server-platform")
 
+    cluster_config = None
+    sync_gateway_mode = None
+    sg_config = None
+
     if server_platform == "sync_gateway":
         # SG <-> CBL replication
         server = "sync_gateway"
@@ -85,10 +89,10 @@ def setup_client_suite(request):
 
         log_info("Downloading LiteCoreServ ...")
         # Download LiteServ
-        server.download()
+        # server.download()
 
         # Install LiteServ
-        server.install()
+        # server.install()
 
     # Client 2 setup is common
     client = LiteServFactory.create(platform=client_platform,
@@ -151,8 +155,8 @@ def setup_client_test(request, setup_client_suite):
         clstr = cluster.Cluster(config=cluster_config)
         clstr.reset(sg_config_path=sg_config)
     else:
-        pass
         # server_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+        server_url = "http://localhost:51000"
 
     # Yield values to test case via fixture argument
     yield {
@@ -165,3 +169,6 @@ def setup_client_test(request, setup_client_suite):
 
     log_info("Tearing down test")
     client.delete_databases(client_url)
+
+    if server_platform != "sync_gateway":
+        client.delete_databases(server_url)

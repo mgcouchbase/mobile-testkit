@@ -1221,6 +1221,7 @@ class MobileRestClient:
     def start_replication(self,
                           url,
                           continuous,
+                          bidi=None,
                           from_url=None, from_db=None, from_auth=None,
                           to_url=None, to_db=None, to_auth=None,
                           repl_filter=None,
@@ -1291,6 +1292,9 @@ class MobileRestClient:
 
         if repl_filter is not None:
             data["filter"] = repl_filter
+
+        if bidi is not None:
+            data["bidi"] = bidi
 
         if channels_filter is not None:
             data["filter"] = "sync_gateway/bychannel"
@@ -1549,6 +1553,7 @@ class MobileRestClient:
             all_attachments_returned = True
             missing_docs = []
             missing_attachment_docs = []
+
             for resp_doc in resp_obj["rows"]:
                 if "error" in resp_doc or ("value" in resp_doc and len(resp_doc["value"]) == 0):
                     # Doc not found
