@@ -7,9 +7,12 @@
         "**/*.pyc": true
     },
     "python.pythonPath": "${workspaceRoot}/venv/bin/python2.7",
-    "python.unitTest.pyTestEnabled": true,
+    "python.unitTest.pyTestEnabled": false,
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Path": "${workspaceRoot}/venv/bin/flake8",
     "explorer.openEditors.visible": 0,
-    "files.autoSave": "on"
+    "files.autoSave": "on",
+    "python.unitTest.promptToConfigure": false,
+    "python.unitTest.unittestEnabled": false,
+    "python.unitTest.nosetestsEnabled": false
 }
