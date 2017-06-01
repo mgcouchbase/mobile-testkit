@@ -16,7 +16,7 @@ REMOTE_EXECUTOR_TIMEOUT = 180
 
 # Required to make sure that these are created with encryption
 # Use to build the command line flags for encryption
-REGISTERED_CLIENT_DBS = ["ls_db", "ls_db1", "ls_db2"]
+REGISTERED_CLIENT_DBS = ["ls_db", "ls_db1", "ls_db2", "server_db1", "server_db2", "client_db1", "client_db2"]
 
 
 class ServerType(Enum):

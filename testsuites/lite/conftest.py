@@ -9,7 +9,6 @@ from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from keywords.LiteServFactory import LiteServFactory
 from keywords.MobileRestClient import MobileRestClient
 from libraries.testkit import cluster
-from libraries.provision.install_sync_gateway import get_buckets_from_sync_gateway_config
 
 
 def pytest_addoption(parser):
@@ -65,12 +64,10 @@ def setup_client_suite(request):
         skip_provisioning = request.config.getoption("--skip-provisioning")
         sync_gateway_version = server_version
         sync_gateway_mode = request.config.getoption("--server-mode")
-        cbs_server_version = request.config.getoption("--cbs-server-version")
-        sg_bucket_list = None
+        cbs_server_version = request.config.getoption("--cbs-server-version")    
 
         cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, sync_gateway_mode)
         sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", sync_gateway_mode)
-        sg_bucket_list = get_buckets_from_sync_gateway_config(sg_config)
 
         if not skip_provisioning:
             log_info("Installing Sync Gateway + Couchbase Server + Accels ('di' only)")
@@ -119,8 +116,7 @@ def setup_client_suite(request):
         "cluster_config": cluster_config,
         "sg_mode": sync_gateway_mode,
         "client": client,
-        "sg_config": sg_config,
-        "sg_bucket_list": sg_bucket_list
+        "sg_config": sg_config
     }
 
     log_info("Tearing down suite ...")
@@ -138,7 +134,6 @@ def setup_client_test(request, setup_client_suite):
     cluster_config = setup_client_suite["cluster_config"]
     sg_config = setup_client_suite["sg_config"]
     test_name = request.node.name
-    sg_bucket_list = setup_client_suite["sg_bucket_list"]
 
     client = MobileRestClient()
 
@@ -146,6 +141,12 @@ def setup_client_test(request, setup_client_suite):
     #ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
     client_url = "http://localhost:52000"
     client.delete_databases(client_url)
+
+    # Create client dbs
+    client_db_list = ["client_db1", "client_db2"]
+    for c_db in client_db_list:
+        log_info("Creating database {} on {}".format(c_db, client_url))
+        client.create_database(url=client_url, name=c_db)
 
     server_url = None
     server_admin_url = None
@@ -163,14 +164,23 @@ def setup_client_test(request, setup_client_suite):
         # server_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
         server_url = "http://localhost:51000"
 
+    if server_platform == "sync_gateway":
+        server_db_list = client.get_databases(server_admin_url)
+    else:
+        server_db_list = ["server_db1", "server_db2"]
+        for s_db in server_db_list:
+            log_info("Creating database {} on {}".format(s_db, server_url))
+            client.create_database(url=server_url, name=s_db)
+
     # Yield values to test case via fixture argument
     yield {
         "cluster_config": cluster_config,
         "client_url": client_url,
+        "client_db_list": client_db_list,
+        "server_db_list": server_db_list,
         "server_url": server_url,
         "server_url_admin": server_admin_url,
-        "server_platform": server_platform,
-        "sg_bucket_list": sg_bucket_list
+        "server_platform": server_platform
     }
 
     log_info("Tearing down test")

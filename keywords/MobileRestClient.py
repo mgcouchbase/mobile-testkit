@@ -1347,12 +1347,12 @@ class MobileRestClient:
     def start_replication(self,
                           url,
                           continuous,
-                          bidi=None,
                           from_url=None, from_db=None, from_auth=None,
                           to_url=None, to_db=None, to_auth=None,
                           repl_filter=None,
                           doc_ids=None,
-                          channels_filter=None):
+                          channels_filter=None,
+                          bidi=None):
         """
         Starts a replication (one-shot or continous) between Lite instances (P2P),
         Sync Gateways, or Lite <-> Sync Gateways
@@ -1431,7 +1431,6 @@ class MobileRestClient:
 
         resp = self._session.post("{}/_replicate".format(url), data=json.dumps(data))
         log_info(json.dumps(data))
-        log_info(resp.text)
         log_r(resp)
         log_info(resp.json())
         resp.raise_for_status()
