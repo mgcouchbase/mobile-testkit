@@ -9,9 +9,9 @@
     "log":["HTTP"],
     "databases":{
         "db":{
-            {{ autoimport }}
+            "import_docs": "continuous",
             "unsupported": {
-                {{ xattrs }}
+                "enable_extended_attributes": true
             },
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket",
