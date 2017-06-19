@@ -74,7 +74,8 @@ def resolve_cb_mobile_url(version):
         "4.1.1": "5914",
         "4.1.0": "5005",
         "4.0.0": "4051",
-        "3.1.5": "1859"
+        "3.1.5": "1859",
+        "5.0.0": "3008"
     }
     build_number = released_versions[version]
     base_url = "http://cbmobile-packages.s3.amazonaws.com"
