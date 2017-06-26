@@ -15,7 +15,8 @@ from keywords.utils import log_info
 from keywords.exceptions import ProvisioningError
 
 from libraries.provision.ansible_runner import AnsibleRunner
-from utilities.enable_disable_ssl_cluster import is_cbs_ssl_enabled
+from utilities.cluster_config_utils import is_cbs_ssl_enabled
+from utilities.cluster_config_utils import is_xattrs_enabled
 
 
 def validate_sync_gateway_mode(mode):
@@ -65,6 +66,28 @@ def get_sync_gateway_version(host):
     return running_version_formatted, running_vendor_version
 
 
+def verify_sync_gateway_product_info(host):
+    """ Get the product information from host and verify for Sync Gateway:
+    - vendor name in GET / request
+    - Server header in response
+    """
+
+    resp = requests.get("http://{}:4984".format(host))
+    log_r(resp)
+    resp.raise_for_status()
+    resp_obj = resp.json()
+
+    server_header = resp.headers["server"]
+    log_info("'server' header: {}".format(server_header))
+    if not server_header.startswith("Couchbase Sync Gateway"):
+        raise ProvisioningError("Wrong product info. Expected 'Couchbase Sync Gateway'")
+
+    vendor_name = resp_obj["vendor"]["name"]
+    log_info("vendor name: {}".format(vendor_name))
+    if vendor_name != "Couchbase Sync Gateway":
+        raise ProvisioningError("Wrong vendor name. Expected 'Couchbase Sync Gateway'")
+
+
 def verify_sync_gateway_version(host, expected_sync_gateway_version):
     running_sg_version, running_sg_vendor_version = get_sync_gateway_version(host)
 
@@ -101,6 +124,28 @@ def get_sg_accel_version(host):
 
     # Returns the version as 338493 commit format or 1.2.1-4 version format
     return running_version_formatted
+
+
+def verify_sg_accel_product_info(host):
+    """ Get the product information from host and verify for SG Accel:
+    - vendor name in GET / request
+    - Server header in response
+    """
+
+    resp = requests.get("http://{}:4985".format(host))
+    log_r(resp)
+    resp.raise_for_status()
+    resp_obj = resp.json()
+
+    server_header = resp.headers["server"]
+    log_info("'server' header: {}".format(server_header))
+    if not server_header.startswith("Couchbase SG Accel"):
+        raise ProvisioningError("Wrong product info. Expected 'Couchbase SG Accel'")
+
+    vendor_name = resp_obj["vendor"]["name"]
+    log_info("vendor name: {}".format(vendor_name))
+    if vendor_name != "Couchbase SG Accel":
+        raise ProvisioningError("Wrong vendor name. Expected 'Couchbase SG Accel'")
 
 
 def verify_sg_accel_version(host, expected_sg_accel_version):
@@ -164,13 +209,21 @@ class SyncGateway:
             self.server_port = 18091
             self.server_scheme = "https"
 
+        playbook_vars = {
+            "sync_gateway_config_filepath": config_path,
+            "server_port": self.server_port,
+            "server_scheme": self.server_scheme,
+            "autoimport": "",
+            "xattrs": ""
+        }
+
+        if is_xattrs_enabled(cluster_config):
+            playbook_vars["autoimport"] = '"import_docs": "continuous",'
+            playbook_vars["xattrs"] = '"enable_extended_attributes": true'
+
         status = ansible_runner.run_ansible_playbook(
             "start-sync-gateway.yml",
-            extra_vars={
-                "sync_gateway_config_filepath": config_path,
-                "server_port": self.server_port,
-                "server_scheme": self.server_scheme
-            },
+            extra_vars=playbook_vars,
             subset=target
         )
         if status != 0:

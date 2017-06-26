@@ -1,20 +1,17 @@
-from BaseHTTPServer import BaseHTTPRequestHandler
-import time
 import json
-from BaseHTTPServer import HTTPServer
 import threading
-from libraries.testkit import settings
-import logging
-log = logging.getLogger(settings.LOGGER)
+import time
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
-
-server_received_data = []
+from keywords.utils import log_info
 
 
 class HttpHandler(BaseHTTPRequestHandler):
 
+    server_recieved_data = []
+
     def do_GET(self):
-        log.info('Received GET request')
+        log_info('Received GET request')
         self.send_response(200)
         self.send_header('Last-Modified', self.date_time_string(time.time()))
         self.end_headers()
@@ -22,13 +19,14 @@ class HttpHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        log.info('Received POST request')
         content_len = int(self.headers.getheader('content-length', 0))
         post_body = self.rfile.read(content_len)
         data = json.loads(post_body)
-        log.info("Received {} data in Post request".format(data))
-        server_received_data.append(data)
-        log.info("Appended POST data payload to server_received_data")
+        if "_id" in data:
+            log_info("Webhook doc received: {}".format(data["_id"]))
+        else:
+            log_info("Webhook data received: {}".format(data))
+        HttpHandler.server_recieved_data.append(data)
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
@@ -41,6 +39,7 @@ class WebServer(object):
         self.server = HTTPServer(('', port), HttpHandler)
 
     def start(self):
+        log_info('Starting webserver on port :8080 ...')
         thread = threading.Thread(target=self.server.serve_forever)
         thread.daemon = True
         try:
@@ -49,7 +48,11 @@ class WebServer(object):
             raise ValueError("Caught exception could not launch webserver thread", e)
 
     def stop(self):
+        self.clear_data()
         self.server.shutdown()
 
+    def clear_data(self):
+        HttpHandler.server_recieved_data = []
+
     def get_data(self):
-        return server_received_data
+        return HttpHandler.server_recieved_data

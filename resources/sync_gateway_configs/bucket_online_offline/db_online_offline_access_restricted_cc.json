@@ -10,6 +10,10 @@
     "verbose":"true",
     "databases":{
         "db":{
+            {{ autoimport }}
+            "unsupported": {
+                {{ xattrs }}
+            },
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket",
             "username":"data-bucket",
@@ -18,8 +22,7 @@
                     if (doc.channels[0] == "channel-0") {
                         channel([doc.channels,"channel_x"]);
                     } }`,
-            "offline":true,
-            "users": {"GUEST": {"disabled": false, "admin_channels": ["*"] }}
+            "offline":true
         }
     }
 }

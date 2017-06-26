@@ -1,16 +1,40 @@
+""" Setup for Sync Gateway functional tests """
+
 import pytest
 
-from keywords.constants import CLUSTER_CONFIGS_DIR
-from keywords.utils import log_info
 from keywords.ClusterKeywords import ClusterKeywords
+from keywords.constants import CLUSTER_CONFIGS_DIR
+from keywords.exceptions import ProvisioningError
+from keywords.SyncGateway import (sync_gateway_config_path_for_mode,
+                                  validate_sync_gateway_mode)
 from keywords.tklogging import Logging
-from keywords.SyncGateway import validate_sync_gateway_mode
-from keywords.SyncGateway import sync_gateway_config_path_for_mode
-from libraries.testkit import cluster
+from keywords.utils import check_xattr_support, log_info, version_is_binary, compare_versions
 from libraries.NetworkUtils import NetworkUtils
+from libraries.testkit import cluster
+from utilities.cluster_config_utils import persist_cluster_config_environment_prop
 
-from utilities.enable_disable_ssl_cluster import enable_cbs_ssl_in_cluster_config
-from utilities.enable_disable_ssl_cluster import disable_cbs_ssl_in_cluster_config
+UNSUPPORTED_1_5_0_CC = {
+    "test_db_offline_tap_loss_sanity[bucket_online_offline/bucket_online_offline_default_dcp-100]": {
+        "reason": "Loss of DCP not longer puts the bucket in the offline state"
+    },
+    "test_db_offline_tap_loss_sanity[bucket_online_offline/bucket_online_offline_default-100]": {
+        "reason": "Loss of DCP not longer puts the bucket in the offline state"
+    },
+    "test_multiple_dbs_unique_buckets_lose_tap[bucket_online_offline/bucket_online_offline_multiple_dbs_unique_buckets-100]": {
+        "reason": "Loss of DCP not longer puts the bucket in the offline state"
+    },
+    "test_db_online_offline_webhooks_offline_two[webhooks/webhook_offline-5-1-1-2]": {
+        "reason": "Loss of DCP not longer puts the bucket in the offline state"
+    }
+}
+
+
+def skip_if_unsupported(sync_gateway_version, mode, test_name):
+
+    # sync_gateway_version >= 1.5.0 and channel cache
+    if compare_versions(sync_gateway_version, "1.5.0") >= 0 and mode == 'cc':
+        if test_name in UNSUPPORTED_1_5_0_CC:
+            pytest.skip(UNSUPPORTED_1_5_0_CC[test_name]["reason"])
 
 
 # Add custom arguments for executing tests in this directory
@@ -41,6 +65,10 @@ def pytest_addoption(parser):
                      action="store_true",
                      help="Enable -races for Sync Gateway build. IMPORTANT - This will only work with source builds at the moment")
 
+    parser.addoption("--xattrs",
+                     action="store_true",
+                     help="Use xattrs for sync meta storage. Only works with Sync Gateway 2.0+ and Couchbase Server 5.0+")
+
     parser.addoption("--collect-logs",
                      action="store_true",
                      help="Collect logs for every test. If this flag is not set, collection will only happen for test failures.")
@@ -67,12 +95,17 @@ def params_from_base_suite_setup(request):
     ci = request.config.getoption("--ci")
     race_enabled = request.config.getoption("--race")
     cbs_ssl = request.config.getoption("--server-ssl")
+    xattrs_enabled = request.config.getoption("--xattrs")
+
+    if xattrs_enabled and version_is_binary(sync_gateway_version):
+        check_xattr_support(server_version, sync_gateway_version)
 
     log_info("server_version: {}".format(server_version))
     log_info("sync_gateway_version: {}".format(sync_gateway_version))
     log_info("mode: {}".format(mode))
     log_info("skip_provisioning: {}".format(skip_provisioning))
     log_info("race_enabled: {}".format(race_enabled))
+    log_info("xattrs_enabled: {}".format(xattrs_enabled))
 
     # Make sure mode for sync_gateway is supported ('cc' or 'di')
     validate_sync_gateway_mode(mode)
@@ -88,33 +121,47 @@ def params_from_base_suite_setup(request):
     if cbs_ssl:
         log_info("Running tests with cbs <-> sg ssl enabled")
         # Enable ssl in cluster configs
-        enable_cbs_ssl_in_cluster_config(cluster_config)
+        persist_cluster_config_environment_prop(cluster_config, 'cbs_ssl_enabled', True)
     else:
         log_info("Running tests with cbs <-> sg ssl disabled")
         # Disable ssl in cluster configs
-        disable_cbs_ssl_in_cluster_config(cluster_config)
+        persist_cluster_config_environment_prop(cluster_config, 'cbs_ssl_enabled', False)
+
+    if xattrs_enabled:
+        log_info("Running test with xattrs for sync meta storage")
+        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', True)
+    else:
+        log_info("Using document storage for sync meta data")
+        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', False)
 
     sg_config = sync_gateway_config_path_for_mode("sync_gateway_default_functional_tests", mode)
 
     # Skip provisioning if user specifies '--skip-provisoning'
     if not skip_provisioning:
         cluster_helper = ClusterKeywords()
-        cluster_helper.provision_cluster(
-            cluster_config=cluster_config,
-            server_version=server_version,
-            sync_gateway_version=sync_gateway_version,
-            sync_gateway_config=sg_config,
-            race_enabled=race_enabled
-        )
+        try:
+            cluster_helper.provision_cluster(
+                cluster_config=cluster_config,
+                server_version=server_version,
+                sync_gateway_version=sync_gateway_version,
+                sync_gateway_config=sg_config,
+                race_enabled=race_enabled
+            )
+        except ProvisioningError:
+            logging_helper = Logging()
+            logging_helper.fetch_and_analyze_logs(cluster_config=cluster_config, test_name=request.node.name)
+            raise
 
     # Load topology as a dictionary
     cluster_utils = ClusterKeywords()
     cluster_topology = cluster_utils.get_cluster_topology(cluster_config)
 
     yield {
+        "sync_gateway_version": sync_gateway_version,
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
-        "mode": mode
+        "mode": mode,
+        "xattrs_enabled": xattrs_enabled
     }
 
     log_info("Tearing down 'params_from_base_suite_setup' ...")
@@ -132,17 +179,30 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     cluster_config = params_from_base_suite_setup["cluster_config"]
     cluster_topology = params_from_base_suite_setup["cluster_topology"]
     mode = params_from_base_suite_setup["mode"]
+    xattrs_enabled = params_from_base_suite_setup["xattrs_enabled"]
 
     test_name = request.node.name
+
+    # Certain test are diabled for certain modes
+    # Given the run conditions, check if the test needs to be skipped
+    skip_if_unsupported(
+        sync_gateway_version=params_from_base_suite_setup["sync_gateway_version"],
+        mode=mode,
+        test_name=test_name
+    )
+
     log_info("Running test '{}'".format(test_name))
     log_info("cluster_config: {}".format(cluster_config))
     log_info("cluster_topology: {}".format(cluster_topology))
+    log_info("mode: {}".format(mode))
+    log_info("xattrs_enabled: {}".format(xattrs_enabled))
 
     # This dictionary is passed to each test
     yield {
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
-        "mode": mode
+        "mode": mode,
+        "xattrs_enabled": xattrs_enabled
     }
 
     # Code after the yield will execute when each test finishes

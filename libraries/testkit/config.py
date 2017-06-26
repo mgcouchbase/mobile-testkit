@@ -43,7 +43,9 @@ class Config:
             #
             # TODO: find a better way to handle this
             data = template.render(
-                is_index_writer="false"
+                is_index_writer="false",
+                autoimport="",
+                xattrs=""
             )
 
             # strip out sync functions `function ... }`
@@ -73,31 +75,31 @@ class Config:
 
     def discover_bucket_name_set(self, conf_obj):
 
-            bucket_names_from_config = []
-            # Add CBGT buckets
-            if "cluster_config" in conf_obj.keys():
-                bucket_names_from_config.append(conf_obj["cluster_config"]["bucket"])
+        bucket_names_from_config = []
+        # Add CBGT buckets
+        if "cluster_config" in conf_obj.keys():
+            bucket_names_from_config.append(conf_obj["cluster_config"]["bucket"])
 
-            dbs = conf_obj["databases"]
-            for key, val in dbs.iteritems():
+        dbs = conf_obj["databases"]
+        for _, val in dbs.iteritems():
 
-                if "bucket" in val:
+            if "bucket" in val:
 
-                    # Add data buckets
-                    bucket_names_from_config.append(val["bucket"])
-                    if "channel_index" in val:
-                        # index buckets
-                        bucket_names_from_config.append(val["channel_index"]["bucket"])
+                # Add data buckets
+                bucket_names_from_config.append(val["bucket"])
+                if "channel_index" in val:
+                    # index buckets
+                    bucket_names_from_config.append(val["channel_index"]["bucket"])
 
-                if "shadow" not in val:
-                    continue
+            if "shadow" not in val:
+                continue
 
-                shadow = val["shadow"]
-                if len(shadow["bucket"]) > 0:
-                    bucket_names_from_config.append(shadow["bucket"])
+            shadow = val["shadow"]
+            if len(shadow["bucket"]) > 0:
+                bucket_names_from_config.append(shadow["bucket"])
 
-            # Buckets may be shared for different functionality
-            self.bucket_name_set = list(set(bucket_names_from_config))
+        # Buckets may be shared for different functionality
+        self.bucket_name_set = list(set(bucket_names_from_config))
 
 
 def convert_to_valid_json(invalid_json):

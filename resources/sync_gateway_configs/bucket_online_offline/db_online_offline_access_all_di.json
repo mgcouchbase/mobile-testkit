@@ -16,7 +16,9 @@
     },
     "databases":{
         "db":{
-            "feed_type":"DCPSHARD",
+            "unsupported": {
+                {{ xattrs }}
+            },
             "channel_index":{
                 "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
                 "bucket":"index-bucket",
@@ -31,8 +33,7 @@
             "sync": `function(doc){
                   channel(doc.channels);
                 }`,
-            "offline":false,
-            "users": {"GUEST": {"disabled": false, "admin_channels": ["*"] }}
+            "offline":false
         }
     }
 }

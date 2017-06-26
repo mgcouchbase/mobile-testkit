@@ -57,7 +57,11 @@
                }
             }
          },
+         {{ autoimport }}
          "unsupported":{
+            {% if xattrs %}
+                {{ "%s,"|format(xattrs) }}
+            {% endif %}
             "oidc_test_provider":{
                "enabled":true
             }
@@ -65,15 +69,7 @@
          "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
          "bucket":"data-bucket",
          "username":"data-bucket",
-         "password": "password",
-         "users":{
-            "GUEST":{
-               "disabled":true,
-               "admin_channels":[
-                  "*"
-               ]
-            }
-         }
+         "password": "password"
       }
    }
 }
