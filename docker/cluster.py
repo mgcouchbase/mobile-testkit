@@ -47,12 +47,9 @@ def create_cluster(network_name, number_of_nodes, public_key_path, dev, pull):
     docker_client = docker.from_env()
 
     if pull:
-        log_info('Pulling sethrosetter/centos7-systemd image ...')
-        docker_client.images.pull('sethrosetter/centos7-systemd')
-
-        log_info('Pulling couchbase/mobile-testkit image ...')
-        docker_client.images.pull('couchbase/mobile-testkit')
-
+        subprocess.check_call(['docker', 'pull', 'sethrosetter/centos7-systemd'])
+        subprocess.check_call(['docker', 'pull', 'couchbase/mobile-testkit'])
+    
     # Create docker network with name
     log_info('Creating bridged network: {} ...'.format(network_name))
     network = docker_client.networks.create(network_name)
