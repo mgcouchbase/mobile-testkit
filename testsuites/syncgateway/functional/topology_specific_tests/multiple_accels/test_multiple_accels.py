@@ -1,5 +1,5 @@
 import time
-
+import os
 import pytest
 
 import concurrent.futures
@@ -7,6 +7,7 @@ import concurrent.futures
 from libraries.testkit.admin import Admin
 from libraries.testkit.verify import verify_changes
 from libraries.testkit.cluster import Cluster
+from libraries.testkit.config import Config
 
 from keywords.utils import log_info
 from keywords.ClusterKeywords import ClusterKeywords
@@ -42,7 +43,17 @@ def test_dcp_reshard_sync_gateway_goes_down(params_from_base_test_setup, sg_conf
     log_info("sg_conf: {}".format(sg_conf))
 
     cluster = Cluster(config=cluster_conf)
-    mode = cluster.reset(sg_config_path=sg_conf)
+    # Parse config and grab bucket names
+    config_path_full = os.path.abspath(sg_conf)
+    config = Config(config_path_full)
+    mode = config.get_mode()
+    bucket_name_set = config.get_bucket_name_set()
+
+    # flush buckets
+    for bucket in bucket_name_set:
+        cluster.flush_bucket(cluster.servers[0].url, bucket)
+
+    # mode = cluster.reset(sg_config_path=sg_conf)
 
     admin = Admin(cluster.sync_gateways[0])
 

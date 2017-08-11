@@ -3,6 +3,7 @@ import os
 import time
 
 from requests.exceptions import ConnectionError
+from requests import Session
 
 import keywords.exceptions
 from keywords.couchbaseserver import CouchbaseServer
@@ -28,6 +29,9 @@ class Cluster:
     def __init__(self, config):
 
         self._cluster_config = config
+        headers = {"Content-Type": "application/json"}
+        self._session = Session()
+        self._session.headers = headers
 
         if not os.path.isfile(self._cluster_config):
             log_info("Cluster config not found in 'resources/cluster_configs/'")
@@ -313,6 +317,13 @@ class Cluster:
             s += str(server)
         s += "\n"
         return s
+
+    def flush_bucket(self, url, bucket_name):
+        self._session.auth = ("Administrator", "password")
+        log_info("Flushing {} on {}".format(bucket_name, url))
+        resp = self._session.post("{}/pools/default/buckets/{}/controller/doFlush".format(url, bucket_name))
+        resp.raise_for_status()
+        return resp
 
 
 def validate_cluster(sync_gateways, sg_accels, config):
