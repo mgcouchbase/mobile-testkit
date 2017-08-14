@@ -25,8 +25,6 @@ git checkout $1
 pip install -r requirements.txt
 
 # Generate cluster configs
-pwd
-ls
 if [ -f hosts.json ]; then
   python libraries/utilities/generate_config_from_sequoia.py --host-file=hosts.json --topology=$2
 else
