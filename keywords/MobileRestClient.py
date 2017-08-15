@@ -353,9 +353,26 @@ class MobileRestClient:
             "admin_channels": channels,
             "admin_roles": roles
         }
-        resp = self._session.post("{}/{}/_user/".format(url, db), data=json.dumps(data))
-        log_r(resp)
-        resp.raise_for_status()
+        max_retries = 5
+        count = 0
+        while True:
+            if count == max_retries:
+                raise RestError("Could not create user after {} retries!".format(max_retries))
+
+            try:
+                resp = self._session.post("{}/{}/_user/".format(url, db), data=json.dumps(data))
+                log_r(resp)
+                resp.raise_for_status()
+                break
+            except HTTPError as he:
+                log_info("Failed to create user: {}, retrying ...".format(he))
+                if he.response.status_code == 500:
+                    time.sleep(2)
+                    count += 1
+                else:
+                    # Reraise the exception is it is not what we are expecting
+                    raise
+
         return name, password
 
     def update_user(self, url, db, name, password=None, channels=None, roles=None):

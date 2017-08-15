@@ -1,12 +1,15 @@
 import requests
 import json
 import concurrent.futures
+import time
+from requests.exceptions import HTTPError
 
 from libraries.testkit.user import User
 from libraries.testkit import settings
 from libraries.testkit.debug import log_request
 from libraries.testkit.debug import log_response
 from keywords import cbgtconfig
+from keywords.exceptions import RestError
 
 import logging
 log = logging.getLogger(settings.LOGGER)
@@ -84,14 +87,29 @@ class Admin:
             raise ValueError("Channels needs to be a list")
 
         users = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=settings.MAX_REQUEST_WORKERS) as executor:
-            futures = [executor.submit(self.register_user, target=target, db=db, name="{}_{}".format(name_prefix, i), password=password, channels=channels, roles=roles) for i in range(number)]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    user = future.result()
-                    users.append(user)
-                except Exception as e:
-                    raise ValueError("register_bulk_users failed: {}".format(e))
+
+        max_retries = 5
+        count = 0
+        while True:
+            if count == max_retries:
+                raise RestError("Could not register bulk users after {} retries!".format(max_retries))
+
+            count += 1
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=settings.MAX_REQUEST_WORKERS) as executor:
+                futures = [executor.submit(self.register_user, target=target, db=db, name="{}_{}".format(name_prefix, i), password=password, channels=channels, roles=roles) for i in range(number)]
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        user = future.result()
+                        users.append(user)
+                        break
+                    except HTTPError as he:
+                        log.info("register_bulk_users failed, retrying ...")
+                        if he.response.status_code == 500:
+                            time.sleep(2)
+                        else:
+                            # Reraise the exception is it is not what we are expecting
+                            raise
 
         if len(users) != number:
             raise ValueError("Not all users added during register_bulk users")
