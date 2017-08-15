@@ -3,7 +3,9 @@ import os
 import json
 
 import requests
+import time
 from requests import Session
+from requests.exceptions import HTTPError
 
 from keywords.constants import SYNC_GATEWAY_CONFIGS
 from keywords.utils import version_is_binary
@@ -12,7 +14,7 @@ from keywords.utils import version_and_build
 from keywords.utils import hostname_for_url
 from keywords.utils import log_info
 
-from keywords.exceptions import ProvisioningError
+from keywords.exceptions import ProvisioningError, RestError
 
 from libraries.provision.ansible_runner import AnsibleRunner
 from utilities.cluster_config_utils import is_cbs_ssl_enabled
@@ -263,3 +265,24 @@ class SyncGateway:
             )
         if status != 0:
             raise ProvisioningError("Could not stop sync_gateway")
+
+    def are_views_initialized(self, url, db):
+        """ Hit the _user and _role REST API to make sure views are ready """
+        max_retries = 10
+        count = 0
+        while True:
+            if count == max_retries:
+                raise RestError("Could not create user after {} retries!".format(max_retries))
+
+            try:
+                self._session.get("{}/{}/_user/".format(url, db))
+                self._session.get("{}/{}/_role/".format(url, db))
+                break
+            except HTTPError as he:
+                log_info("Failed to query the _user/_role REST API: {}, retrying ...".format(he))
+                if he.response.status_code == 500:
+                    time.sleep(2)
+                    count += 1
+                else:
+                    # Reraise the exception is it is not what we are expecting
+                    raise
