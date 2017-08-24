@@ -975,7 +975,7 @@ def test_sg_sdk_interop_unique_docs(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.parametrize(
     'sg_conf_name, number_docs_per_client, number_updates_per_doc_per_client',
     [
-        ('sync_gateway_default_functional_tests', 1000, 2),
+        ('sync_gateway_default_functional_tests', 1000000, 2),
     ]
 )
 def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
