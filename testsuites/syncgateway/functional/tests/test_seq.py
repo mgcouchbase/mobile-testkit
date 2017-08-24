@@ -17,7 +17,7 @@ from keywords.utils import log_info
 @pytest.mark.bulkops
 @pytest.mark.changes
 @pytest.mark.parametrize("sg_conf_name, num_users, num_docs, num_revisions", [
-    ("sync_gateway_default_functional_tests", 10, 500, 1),
+    ("sync_gateway_default_functional_tests", 1, 2000000, 2),
 ])
 def test_seq(params_from_base_test_setup, sg_conf_name, num_users, num_docs, num_revisions):
 
