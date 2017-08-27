@@ -1100,7 +1100,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     all_docs_resp = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=seth_session)
     assert len(all_docs_resp["rows"]) == number_docs_per_client * 2
     verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
-
+    time.sleep(180)
     # SG: Verify docs (sg + sdk) are there via _changes
     all_docs_via_sg_formatted = [{"id": doc["_id"], "rev": doc["_rev"]} for doc in docs_from_sg_bulk_get]
     sg_client.verify_docs_in_changes(url=sg_url, db=sg_db, expected_docs=all_docs_via_sg_formatted, auth=seth_session)
@@ -1138,7 +1138,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
         # during execution of the future
         update_from_sg_task.result()
         update_from_sdk_task.result()
-
+    time.sleep(180)  # Delay for getting million docs
     # Issue a bulk_get to make sure all docs have auto imported
     docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=all_doc_ids, auth=seth_session)
     assert len(docs_from_sg_bulk_get) == number_docs_per_client * 2
