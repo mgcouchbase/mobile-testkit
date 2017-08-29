@@ -1767,7 +1767,7 @@ class MobileRestClient:
         """
 
         # Convert to ms for the sync_gateway REST api
-        timeout *= 1000
+        timeout *= 180000
 
         auth_type = get_auth_type(auth)
         server_type = self.get_server_type(url)
