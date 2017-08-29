@@ -1112,7 +1112,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     # Build a dictionary of all the doc ids with default number of updates (1 for created)
     all_doc_ids = doc_set_one_ids + doc_set_two_ids
     assert len(all_doc_ids) == number_docs_per_client * 2
-
+    """
     # Update the same documents concurrently from a sync gateway client and and sdk client
     with ThreadPoolExecutor(max_workers=5) as tpe:
         update_from_sg_task = tpe.submit(
@@ -1178,7 +1178,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
         # so make sure it has been update past initial write
         assert int(doc['_rev'].split('-')[0]) > 1
         assert len(doc['_revisions']['ids']) > 1
-
+     """
     # Try concurrent deletes from either side
     with ThreadPoolExecutor(max_workers=5) as tpe:
 
