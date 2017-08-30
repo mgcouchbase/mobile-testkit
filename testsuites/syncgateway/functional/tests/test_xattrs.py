@@ -1091,21 +1091,25 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     assert len(all_docs_ids) == number_docs_per_client * 2
 
     # Verify docs (sg + sdk) via SG bulk_get
+    log_info('Verify docs (sg + sdk) via SG bulk_get')
     docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=all_docs_ids, auth=seth_session)
     assert len(docs_from_sg_bulk_get) == number_docs_per_client * 2
     assert len(errors) == 0
     verify_doc_ids_in_sg_bulk_response(docs_from_sg_bulk_get, number_docs_per_client * 2, all_docs_ids)
 
     # Verify docs (sg + sdk) are there via _all_docs
+    log_info('Verify docs (sg + sdk) are there via _all_docs')
     all_docs_resp = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=seth_session)
     assert len(all_docs_resp["rows"]) == number_docs_per_client * 2
     verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
     time.sleep(180)
     # SG: Verify docs (sg + sdk) are there via _changes
+    log_info('SG: Verify docs (sg + sdk) are there via _changes')
     all_docs_via_sg_formatted = [{"id": doc["_id"], "rev": doc["_rev"]} for doc in docs_from_sg_bulk_get]
     sg_client.verify_docs_in_changes(url=sg_url, db=sg_db, expected_docs=all_docs_via_sg_formatted, auth=seth_session)
 
     # SDK: Verify docs (sg + sdk) are present
+    log_info('SDK: Verify docs (sg + sdk) are present')
     all_docs_via_sdk = sdk_client.get_multi(all_docs_ids)
     verify_doc_ids_in_sdk_get_multi(all_docs_via_sdk, number_docs_per_client * 2, all_docs_ids)
 
@@ -1180,6 +1184,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
         assert len(doc['_revisions']['ids']) > 1
      """
     # Try concurrent deletes from either side
+    log_info('Try concurrent deletes from either side')
     with ThreadPoolExecutor(max_workers=5) as tpe:
 
         sdk_delete_task = tpe.submit(
