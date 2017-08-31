@@ -1,6 +1,8 @@
 import time
 
 import pytest
+from requests import Session
+
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from libraries.testkit import cluster
 from keywords.MobileRestClient import MobileRestClient
@@ -10,6 +12,7 @@ import keywords.constants
 
 from keywords import userinfo
 from keywords import document
+from keywords.utils import log_info
 
 
 @pytest.mark.sanity
@@ -272,3 +275,119 @@ def test_winning_conflict_branch_revisions(params_from_base_test_setup, sg_conf_
     assert len(changes_2["results"]) == 1
     assert changes_2["results"][0]["id"] == "test_doc"
     assert changes_2["results"][0]["changes"][0]["rev"] == "7-foo"
+
+
+@pytest.mark.parametrize("sg_conf_name", [
+    "sync_gateway_default_low_revs"
+])
+def test_conflicts_tombstones_prune(params_from_base_test_setup, sg_conf_name):
+    """ Add 1 doc
+        update five times to create 2- through 6- revision.
+        Add a tombstone to 3-.
+        Add a tombstone to 2-.
+        Add a tombstone to 5-.
+        Update 6- 15 times
+        Issue curl http://sg_ip:4985/db/doc_id?revs=true """
+
+    cluster_config = params_from_base_test_setup["cluster_config"]
+    topology = params_from_base_test_setup["cluster_topology"]
+    mode = params_from_base_test_setup["mode"]
+
+    sg_url = topology["sync_gateways"][0]["public"]
+    sg_admin_url = topology["sync_gateways"][0]["admin"]
+    sg_db = "db"
+
+    sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
+
+    c = cluster.Cluster(cluster_config)
+    c.reset(sg_conf)
+
+    client = MobileRestClient()
+
+    user1_info = userinfo.UserInfo(
+        name="user1",
+        password="pass",
+        channels=["user1"],
+        roles=[]
+    )
+
+    user1_auth = client.create_user(
+        url=sg_admin_url,
+        db=sg_db,
+        name=user1_info.name,
+        password=user1_info.password,
+        channels=user1_info.channels
+    )
+
+    test_doc_body = document.create_doc(doc_id="test_doc", channels=user1_info.channels)
+    rev_gen_1_doc = client.add_doc(url=sg_url, db=sg_db, doc=test_doc_body, auth=user1_auth)
+
+    # Update once for 2-
+    rev_gen_2_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_1_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_2_doc["rev"].startswith("2-")
+
+    # Update once for 3-
+    rev_gen_3_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_2_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_3_doc["rev"].startswith("3-")
+
+    # Update once for 4-
+    rev_gen_4_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_3_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_4_doc["rev"].startswith("4-")
+
+    # Update once for 5-
+    rev_gen_5_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_4_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_5_doc["rev"].startswith("5-")
+
+    # Update once for 6-
+    rev_gen_6_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_5_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_6_doc["rev"].startswith("6-")
+
+    # Add a tombstone to 3-
+    rev_gen_3_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_3_doc["id"],
+        parent_revisions=rev_gen_3_doc["rev"],
+        new_revision="4-foo",
+        auth=user1_auth
+    )
+
+    # Create a tombstone of 4a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_3_doc_conflict["id"], rev=rev_gen_3_doc_conflict["rev"], auth=user1_auth)
+
+    # Create a conflict off of rev 2- (3a)
+    rev_gen_2_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_2_doc["id"],
+        parent_revisions=rev_gen_2_doc["rev"],
+        new_revision="3-foo",
+        auth=user1_auth
+    )
+
+    # Create a tombstone of 3a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_2_doc_conflict["id"], rev=rev_gen_2_doc_conflict["rev"], auth=user1_auth)
+
+    # Create a conflict off of rev 5- (5a)
+    rev_gen_5_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_5_doc["id"],
+        parent_revisions=rev_gen_5_doc["rev"],
+        new_revision="6-foo",
+        auth=user1_auth
+    )
+
+    # Create a tombstone of 6a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_5_doc_conflict["id"], rev=rev_gen_5_doc_conflict["rev"], auth=user1_auth)
+
+    # Update rev 6- 15 times
+    rev_gen_21_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_6_doc["id"], number_updates=15, auth=user1_auth)
+    assert rev_gen_21_doc["rev"].startswith("21-")
+
+    session = Session()
+    resp = session.get("{}/{}/test_doc?revs=true".format(sg_admin_url, sg_db))
+    resp.raise_for_status()
+    resp_json = resp.json()
+
+    log_info("resp_json: {}".format(resp_json))
