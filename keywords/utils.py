@@ -12,8 +12,10 @@ def log_info(message, is_verify=False):
     # by using 'print' the html reporting and running the test with -s will pick up this output in the console
     # If verify is true, the message will have the format "  > This is some message" for cleaner output
 
+    message = "{} {}".format(str(datetime.now()), message)
+
     if is_verify:
-        message = "{}  > {}".format(str(datetime.now()), message)
+        message = "  > {}".format(message)
 
     print(message)
     logging.info(message)
