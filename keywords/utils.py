@@ -1,5 +1,6 @@
 import logging
 import json
+from datetime import datetime
 
 from keywords.exceptions import FeatureSupportedError
 from utilities.cluster_config_utils import get_cbs_servers
@@ -12,7 +13,7 @@ def log_info(message, is_verify=False):
     # If verify is true, the message will have the format "  > This is some message" for cleaner output
 
     if is_verify:
-        message = "  > {}".format(message)
+        message = "{}  > {}".format(str(datetime.now()), message)
 
     print(message)
     logging.info(message)
