@@ -1190,7 +1190,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
         sdk_delete_task = tpe.submit(
             delete_sdk_docs,
             client=sdk_client,
-            docs_to_delete=all_doc_ids
+            docs_to_delete=all_docs_ids
         )
 
         sg_delete_task = tpe.submit(
@@ -1198,7 +1198,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
             client=sg_client,
             url=sg_url,
             db=sg_db,
-            docs_to_delete=all_doc_ids,
+            docs_to_delete=all_docs_ids,
             auth=seth_session
         )
 
@@ -1207,13 +1207,13 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
         sdk_delete_task.result()
         sg_delete_task.result()
 
-    assert len(all_doc_ids) == number_docs_per_client * 2
+    assert len(all_docs_ids) == number_docs_per_client * 2
 
     # Verify all docs deleted from SG context
-    verify_sg_deletes(client=sg_client, url=sg_url, db=sg_db, docs_to_verify_deleted=all_doc_ids, auth=seth_session)
+    verify_sg_deletes(client=sg_client, url=sg_url, db=sg_db, docs_to_verify_deleted=all_docs_ids, auth=seth_session)
 
     # Verify all docs deleted from SDK context
-    verify_sdk_deletes(sdk_client, all_doc_ids)
+    verify_sdk_deletes(sdk_client, all_docs_ids)
 
 
 @pytest.mark.sanity
