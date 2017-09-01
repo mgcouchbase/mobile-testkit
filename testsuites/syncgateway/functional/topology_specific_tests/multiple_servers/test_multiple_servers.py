@@ -103,7 +103,8 @@ def test_rebalance_sanity(params_from_base_test_setup):
 # @pytest.mark.skip(reason="Failing due to - https://github.com/couchbase/sync_gateway/issues/2197")
 def test_server_goes_down_sanity(params_from_base_test_setup):
     """
-    1. Start with a two node couchbase server cluster
+    1. Start with a multiple node couchbase server cluster
+    2. Abruptly stop one of the couchbase servers (not the one
     2. Starting adding docs
     3. Kill one of the server nodes and signal completion
     4. Stop adding docs
@@ -166,30 +167,39 @@ def test_server_goes_down_sanity(params_from_base_test_setup):
         # Fail tests if all docs do not succeed before timeout
         if (time.time() - start) > timeout:
             # Bring server back up before failing the test
+            log_info("Was not able to add docs after attempting for {}".format(time.time() - start))
+
             flakey_server.start()
             main_server.rebalance_in(coucbase_servers, flakey_server)
             raise TimeoutError("Failed to successfully put docs before timeout")
 
         try:
             # Try to add 100 docs in a loop until all succeed, if the never do, fail with timeout
+            log_info("Adding docs")
             docs = client.add_docs(url=sg_url, db=sg_db, number=num_docs, id_prefix=None, auth=session, channels=channels)
 
             # If the above add doc does not throw, it was a successfull add.
             successful_add = True
+
         except requests.exceptions.HTTPError as he:
             log_info("Failed to add docs: {}".format(he))
 
         time.sleep(1)
 
     assert len(docs) == 100
-    log_info("verify_docs_present")
+    log_info("Docs added.  verify_docs_present in _all_docs")
     client.verify_docs_present(url=sg_url, db=sg_db, expected_docs=docs, auth=session)
 
     try:
-        log_info("verify_docs_in_changes")
+        log_info("Docs verified to be present.  verify_docs_in_changes")
 
         client.verify_docs_in_changes(url=sg_url, db=sg_db, expected_docs=docs, auth=session, polling_interval=5)
+
+        log_info("verify_docs_in_changes done")
+
     except keywords.exceptions.TimeoutException:
+        log_info("Timeout trying to verify all docs in changes")
+
         # timeout verifying docs. Bring server back in to restore topology, then fail
         # Failing due to https://github.com/couchbase/sync_gateway/issues/2197
         flakey_server.start()
@@ -198,6 +208,8 @@ def test_server_goes_down_sanity(params_from_base_test_setup):
         raise keywords.exceptions.TimeoutException("Failed to get all changes")
 
     # Test succeeded without timeout, bring server back into topology
+    log_info("Test succeeded")
+
     flakey_server.start()
     main_server.recover(flakey_server)
     main_server.rebalance_in(coucbase_servers, flakey_server)
