@@ -1101,7 +1101,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     log_info('Verify docs (sg + sdk) are there via _all_docs')
     all_docs_resp = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=seth_session)
     assert len(all_docs_resp["rows"]) == number_docs_per_client * 2
-    verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
+    """verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
     time.sleep(180)
     # SG: Verify docs (sg + sdk) are there via _changes
     log_info('SG: Verify docs (sg + sdk) are there via _changes')
@@ -1116,7 +1116,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     # Build a dictionary of all the doc ids with default number of updates (1 for created)
     all_doc_ids = doc_set_one_ids + doc_set_two_ids
     assert len(all_doc_ids) == number_docs_per_client * 2
-    """
+    
     # Update the same documents concurrently from a sync gateway client and and sdk client
     with ThreadPoolExecutor(max_workers=5) as tpe:
         update_from_sg_task = tpe.submit(
