@@ -1947,6 +1947,9 @@ class MobileRestClient:
                 raise ChangesError("Found unexpected docs in changes feed: {}".format(missing_expected_docs))
 
             log_info("Missing expected docs: {}".format(len(expected_doc_map)))
+            if len(expected_doc_map) > 0:
+                log_info("Example missing expected doc id: {}".format(expected_doc_map.keys()[0]))
+
             log_debug("Sequence number map: {}".format(sequence_number_map))
 
             if len(expected_doc_map) == 0:
