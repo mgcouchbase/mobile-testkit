@@ -154,9 +154,6 @@ def test_server_goes_down_sanity(params_from_base_test_setup):
     # Stop second server
     flakey_server.stop()
 
-    # Try to add 100 docs in a loop until all succeed, if the never do, fail with timeout
-    errors = num_docs
-
     # Wait 30 seconds for auto failover
     # (Minimum value suggested - http://docs.couchbase.com/admin/admin/Tasks/tasks-nodeFailover.html)
     # + 15 seconds to add docs
@@ -174,6 +171,7 @@ def test_server_goes_down_sanity(params_from_base_test_setup):
             raise TimeoutError("Failed to successfully put docs before timeout")
 
         try:
+            # Try to add 100 docs in a loop until all succeed, if the never do, fail with timeout
             docs = client.add_docs(url=sg_url, db=sg_db, number=num_docs, id_prefix=None, auth=session, channels=channels)
 
             # If the above add doc does not throw, it was a successfull add.
@@ -181,13 +179,15 @@ def test_server_goes_down_sanity(params_from_base_test_setup):
         except requests.exceptions.HTTPError as he:
             log_info("Failed to add docs: {}".format(he))
 
-        log_info("Seeing: {} errors".format(errors))
         time.sleep(1)
 
     assert len(docs) == 100
+    log_info("verify_docs_present")
     client.verify_docs_present(url=sg_url, db=sg_db, expected_docs=docs, auth=session)
 
     try:
+        log_info("verify_docs_in_changes")
+
         client.verify_docs_in_changes(url=sg_url, db=sg_db, expected_docs=docs, auth=session, polling_interval=5)
     except keywords.exceptions.TimeoutException:
         # timeout verifying docs. Bring server back in to restore topology, then fail
