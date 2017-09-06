@@ -1101,7 +1101,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     log_info('Verify docs (sg + sdk) are there via _all_docs')
     all_docs_resp = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=seth_session)
     assert len(all_docs_resp["rows"]) == number_docs_per_client * 2
-    all_doc_ids = doc_set_one_ids + doc_set_two_ids
+    # all_doc_ids = doc_set_one_ids + doc_set_two_ids
     """verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
     time.sleep(180)
     # SG: Verify docs (sg + sdk) are there via _changes
