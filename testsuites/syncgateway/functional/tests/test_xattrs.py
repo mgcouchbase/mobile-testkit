@@ -1211,7 +1211,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     assert len(all_docs_ids) == number_docs_per_client * 2
 
     """
-    docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=all_doc_ids, auth=seth_session)
+    # docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=all_doc_ids, auth=seth_session)
     docs_from_sg_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=sg_docs, auth=seth_session)
     assert len(errors) == 0
     docs_from_sdk_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=sdk_docs, auth=seth_session)
