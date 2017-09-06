@@ -281,11 +281,14 @@ def test_winning_conflict_branch_revisions(params_from_base_test_setup, sg_conf_
     "sync_gateway_default_low_revs"
 ])
 def test_conflicts_tombstones_prune(params_from_base_test_setup, sg_conf_name):
-    """ Add 1 doc
+    """
+        revs_limit set to 20
+        Add 1 doc
         update five times to create 2- through 6- revision.
         Add a tombstone to 3-.
         Add a tombstone to 2-.
         Add a tombstone to 5-.
+        Add a tombstone to 4-.
         Update 6- 15 times
         Issue curl http://sg_ip:4985/db/doc_id?revs=true """
 
@@ -342,21 +345,28 @@ def test_conflicts_tombstones_prune(params_from_base_test_setup, sg_conf_name):
     rev_gen_6_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_5_doc["id"], number_updates=1, auth=user1_auth)
     assert rev_gen_6_doc["rev"].startswith("6-")
 
-    # Add a tombstone to 3-
-    rev_gen_3_doc_conflict = client.add_conflict(
-        url=sg_url,
-        db=sg_db,
-        doc_id=rev_gen_3_doc["id"],
-        parent_revisions=rev_gen_3_doc["rev"],
-        new_revision="4-foo",
-        auth=user1_auth
-    )
+    # Update once for 7-
+    rev_gen_7_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_6_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_7_doc["rev"].startswith("7-")
 
-    # Create a tombstone of 4a
-    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_3_doc_conflict["id"], rev=rev_gen_3_doc_conflict["rev"], auth=user1_auth)
+    # Update once for 8-
+    rev_gen_8_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_7_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_8_doc["rev"].startswith("8-")
 
-    # Create a conflict off of rev 2- (3a)
-    rev_gen_2_doc_conflict = client.add_conflict(
+    # Update once for 9-
+    rev_gen_9_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_8_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_9_doc["rev"].startswith("9-")
+
+    # Update once for 10-
+    rev_gen_10_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_9_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_10_doc["rev"].startswith("10-")
+
+    # Update once for 10-
+    rev_gen_11_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_10_doc["id"], number_updates=1, auth=user1_auth)
+    assert rev_gen_11_doc["rev"].startswith("11-")
+
+    # Add a conflict to 3-
+    rev_gen_3a_doc = client.add_conflict(
         url=sg_url,
         db=sg_db,
         doc_id=rev_gen_2_doc["id"],
@@ -364,26 +374,84 @@ def test_conflicts_tombstones_prune(params_from_base_test_setup, sg_conf_name):
         new_revision="3-foo",
         auth=user1_auth
     )
+    assert rev_gen_3a_doc["rev"].startswith("3-")
 
-    # Create a tombstone of 3a
-    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_2_doc_conflict["id"], rev=rev_gen_2_doc_conflict["rev"], auth=user1_auth)
+    # Create a tombstone of 4a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_3a_doc["id"], rev=rev_gen_3a_doc["rev"], auth=user1_auth)
 
-    # Create a conflict off of rev 5- (5a)
-    rev_gen_5_doc_conflict = client.add_conflict(
+    # Add a tombstone to 6- (7a)
+    rev_gen_6_doc_conflict = client.add_conflict(
         url=sg_url,
         db=sg_db,
-        doc_id=rev_gen_5_doc["id"],
-        parent_revisions=rev_gen_5_doc["rev"],
-        new_revision="6-foo",
+        doc_id=rev_gen_6_doc["id"],
+        parent_revisions=rev_gen_6_doc["rev"],
+        new_revision="7-foo",
         auth=user1_auth
     )
+    assert rev_gen_6_doc_conflict["rev"].startswith("7-")
 
-    # Create a tombstone of 6a
-    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_5_doc_conflict["id"], rev=rev_gen_5_doc_conflict["rev"], auth=user1_auth)
+    # Create a tombstone of 7a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_6_doc_conflict["id"], rev=rev_gen_6_doc_conflict["rev"], auth=user1_auth)
 
-    # Update rev 6- 15 times
-    rev_gen_21_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_6_doc["id"], number_updates=15, auth=user1_auth)
-    assert rev_gen_21_doc["rev"].startswith("21-")
+    # Create a conflict off of rev 7- (8a)
+    rev_gen_7_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_7_doc["id"],
+        parent_revisions=rev_gen_7_doc["rev"],
+        new_revision="8-foo",
+        auth=user1_auth
+    )
+    assert rev_gen_7_doc_conflict["rev"].startswith("8-")
+
+    # Create a tombstone of 8a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_7_doc_conflict["id"], rev=rev_gen_7_doc_conflict["rev"], auth=user1_auth)
+
+    # Create a conflict off of rev 8- (9a)
+    rev_gen_8_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_8_doc["id"],
+        parent_revisions=rev_gen_8_doc["rev"],
+        new_revision="9-foo",
+        auth=user1_auth
+    )
+    assert rev_gen_8_doc_conflict["rev"].startswith("9-")
+
+    # Create a tombstone of 9a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_8_doc_conflict["id"], rev=rev_gen_8_doc_conflict["rev"], auth=user1_auth)
+
+    # Create a conflict off of rev 9- (10a)
+    rev_gen_9_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_9_doc["id"],
+        parent_revisions=rev_gen_9_doc["rev"],
+        new_revision="10-foo",
+        auth=user1_auth
+    )
+    assert rev_gen_9_doc_conflict["rev"].startswith("10-")
+
+    # Create a tombstone of 10a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_9_doc_conflict["id"], rev=rev_gen_9_doc_conflict["rev"], auth=user1_auth)
+
+    # Create a conflict off of rev 10- (11a)
+    rev_gen_10_doc_conflict = client.add_conflict(
+        url=sg_url,
+        db=sg_db,
+        doc_id=rev_gen_10_doc["id"],
+        parent_revisions=rev_gen_10_doc["rev"],
+        new_revision="11-foo",
+        auth=user1_auth
+    )
+    assert rev_gen_10_doc_conflict["rev"].startswith("11-")
+
+    # Create a tombstone of 11a
+    client.delete_doc(url=sg_url, db=sg_db, doc_id=rev_gen_10_doc_conflict["id"], rev=rev_gen_10_doc_conflict["rev"], auth=user1_auth)
+
+    # Update rev 10- 15 times
+    rev_gen_26_doc = client.update_doc(url=sg_url, db=sg_db, doc_id=rev_gen_11_doc["id"], number_updates=15, auth=user1_auth)
+    assert rev_gen_26_doc["rev"].startswith("26-")
 
     session = Session()
     resp = session.get("{}/{}/test_doc?revs=true".format(sg_admin_url, sg_db))
