@@ -1260,11 +1260,11 @@ class MobileRestClient:
         if auth_type == AuthType.session:
             resp = self._session.post("{}/{}/_bulk_docs".format(url, db),
                                       data=json.dumps(request_body),
-                                      cookies=dict(SyncGatewaySession=auth[1]))
+                                      cookies=dict(SyncGatewaySession=auth[1]), timeout=30)
         elif auth_type == AuthType.http_basic:
-            resp = self._session.post("{}/{}/_bulk_docs".format(url, db), data=json.dumps(request_body), auth=auth)
+            resp = self._session.post("{}/{}/_bulk_docs".format(url, db), data=json.dumps(request_body), auth=auth, timeout=30)
         else:
-            resp = self._session.post("{}/{}/_bulk_docs".format(url, db), data=json.dumps(request_body))
+            resp = self._session.post("{}/{}/_bulk_docs".format(url, db), data=json.dumps(request_body), timeout=30)
 
         log_r(resp)
         resp.raise_for_status()
