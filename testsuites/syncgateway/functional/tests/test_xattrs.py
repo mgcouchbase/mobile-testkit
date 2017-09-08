@@ -1103,7 +1103,7 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     assert len(all_docs_resp["rows"]) == number_docs_per_client * 2
     # all_doc_ids = doc_set_one_ids + doc_set_two_ids
     log_info("Waiting for 1 hour to finish indexing")
-    time.sleep(3600)
+    time.sleep(1800)
     """verify_doc_ids_in_sg_all_docs_response(all_docs_resp, number_docs_per_client * 2, all_docs_ids)
     time.sleep(180)
     # SG: Verify docs (sg + sdk) are there via _changes
@@ -1213,10 +1213,11 @@ def test_sg_sdk_interop_shared_docs(params_from_base_test_setup,
     assert len(all_docs_ids) == number_docs_per_client * 2
 
     """
-    # docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=all_doc_ids, auth=seth_session)
-    docs_from_sg_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=sg_docs, auth=seth_session)
+    docs_from_sg_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=doc_set_one_ids, auth=seth_session)
+    docs_from_sg_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=docs_from_sg_bulk_get, auth=seth_session)
     assert len(errors) == 0
-    docs_from_sdk_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=sdk_docs, auth=seth_session)
+    docs_from_sdk_bulk_get, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=doc_set_one_ids, auth=seth_session)
+    docs_from_sdk_bulk_delete, errors = sg_client.delete_bulk_docs(url=sg_url, db=sg_db, docs=docs_from_sdk_bulk_get, auth=seth_session)
     assert len(errors) == 0
     # Verify all docs deleted from SG context
     log_info("sg deleted docs response {}".format(docs_from_sg_bulk_delete))

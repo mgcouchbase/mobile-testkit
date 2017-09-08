@@ -1330,7 +1330,7 @@ class MobileRestClient:
 
         resp_obj = parse_multipart_response(resp.text)
         logging.debug(resp_obj)
-
+        log_info("All docs response is {}".format(resp_obj))
         docs = []
         errors = []
         for row in resp_obj["rows"]:
