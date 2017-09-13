@@ -20,6 +20,7 @@
       "bucket":"data-bucket",
       "username":"data-bucket",
       "password": "password",
+      "feed_type":"DCP",
       "revs_limit":20,
       "channel_index":{
         "num_shards":16,

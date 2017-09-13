@@ -10,6 +10,7 @@
       "bucket":"data-bucket",
       "username":"data-bucket",
       "password": "password",
+      "feed_type":"DCP",
       "sync": `
 function(doc, oldDoc) {
   // NOTE this function is the same across the iOS, Android, and PhoneGap versions.

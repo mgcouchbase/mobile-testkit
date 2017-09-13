@@ -17,6 +17,7 @@
     "databases":{
         "sg_db1":{
             {{ xattrs }}
+            "feed_type":"DCP",
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket-1",
             "username":"data-bucket-1",
@@ -31,6 +32,7 @@
         },
         "sg_db2":{
             {{ xattrs }}
+            "feed_type":"DCP",
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket-2",
             "username":"data-bucket-2",

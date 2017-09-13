@@ -59,6 +59,7 @@
          },
         {{ autoimport }}
         {{ xattrs }}
+        "feed_type":"DCP",
         "unsupported": {
             "oidc_test_provider":{
                 "enabled":true
