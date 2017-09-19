@@ -13,7 +13,6 @@ from keywords.exceptions import ProvisioningError
 from utilities.cluster_config_utils import persist_cluster_config_environment_prop
 
 
-
 # Add custom arguments for executing tests in this directory
 def pytest_addoption(parser):
     parser.addoption("--liteserv-platform", action="store", help="liteserv-platform: the platform to assign to the liteserv")
