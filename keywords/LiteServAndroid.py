@@ -39,7 +39,7 @@ class LiteServAndroid(LiteServBase):
             return
 
         retries = 5
-        resp = ""
+        resp = None
 
         while True:
             if retries == 0:
@@ -48,11 +48,9 @@ class LiteServAndroid(LiteServBase):
             try:
                 # Package not downloaded, proceed to download from latest builds
                 if version == "1.2.1":
-                    url = "{}/couchbase-lite-android/release/{}/{}/{}".format(LATEST_BUILDS, version,
-                                                                              self.version_build, package_name)
+                    url = "{}/couchbase-lite-android/release/{}/{}/{}".format(LATEST_BUILDS, version, self.version_build, package_name)
                 else:
-                    url = "{}/couchbase-lite-android/{}/{}/{}".format(LATEST_BUILDS, version, self.version_build,
-                                                                      package_name)
+                    url = "{}/couchbase-lite-android/{}/{}/{}".format(LATEST_BUILDS, version, build, package_name)
 
                 log_info("Downloading {} -> {}/{}".format(url, BINARY_DIR, package_name))
 
@@ -65,8 +63,8 @@ class LiteServAndroid(LiteServBase):
                 log_info("Retring download with package_name {}".format(package_name))
                 retries -= 1
 
-        with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
-            f.write(resp.content)
+            with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
+                f.write(resp.content)
 
     def install(self):
         """Install the apk to running Android device or emulator"""
