@@ -38,7 +38,7 @@ class LiteServAndroid(LiteServBase):
             log_info("Package is already downloaded. Skipping.")
             return
 
-        retries = 5
+        retries = 2
         resp = None
 
         while True:
@@ -120,8 +120,8 @@ class LiteServAndroid(LiteServBase):
                 log_info("Error installing {}: {}".format(apk_path, c))
                 num_apks -= 1
 
-        output = subprocess.check_output(["adb", "shell", "pm", "list", "packages"])
-        if "com.couchbase.liteservandroid" not in output:
+        pkgs_output = subprocess.check_output(["adb", "shell", "pm", "list", "packages"])
+        if "com.couchbase.liteservandroid" not in pkgs_output:
             raise LiteServError("Failed to install package: {}".format(output))
 
         log_info("LiteServ installed to {}".format(self.host))
