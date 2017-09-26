@@ -56,15 +56,14 @@ class LiteServAndroid(LiteServBase):
 
                 resp = requests.get(url)
                 resp.raise_for_status()
+                with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
+                    f.write(resp.content)
                 break
             except HTTPError as h:
                 log_info("Error downloading {}: {}".format(package_name, h))
                 package_name = package_name.replace("-{}".format(build), "")
                 log_info("Retring download with package_name {}".format(package_name))
                 retries -= 1
-
-            with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
-                f.write(resp.content)
 
     def install(self):
         """Install the apk to running Android device or emulator"""
