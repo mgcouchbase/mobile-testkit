@@ -104,6 +104,7 @@ class LiteServAndroid(LiteServBase):
             apk_path = apks[num_apks]
             log_info("Installing: {}".format(apk_path))
 
+<<<<<<< HEAD
             try:
                 output = subprocess.check_output(["adb", "install", apk_path])
 
@@ -121,6 +122,10 @@ class LiteServAndroid(LiteServBase):
 
         pkgs_output = subprocess.check_output(["adb", "shell", "pm", "list", "packages"])
         if "com.couchbase.liteservandroid" not in pkgs_output:
+=======
+        output = subprocess.check_output(["adb", "shell", "pm", "list", "packages"])
+        if "com.couchbase.liteservandroid" not in output:
+>>>>>>> master
             raise LiteServError("Failed to install package: {}".format(output))
 
         log_info("LiteServ installed to {}".format(self.host))
