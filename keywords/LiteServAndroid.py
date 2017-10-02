@@ -37,7 +37,7 @@ class LiteServAndroid(LiteServBase):
         if os.path.isfile(expected_binary_path):
             log_info("Package is already downloaded. Skipping.")
             return
-`
+
         retries = 2
         resp = None
 
