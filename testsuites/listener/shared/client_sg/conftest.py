@@ -25,6 +25,7 @@ def pytest_addoption(parser):
     parser.addoption("--sync-gateway-mode", action="store", help="sync-gateway-mode: the mode of sync_gateway to run tests against, channel_cache ('cc') or distributed_index ('di')")
     parser.addoption("--server-version", action="store", help="server-version: version of Couchbase Server to install and run tests against")
     parser.addoption("--xattrs", action="store_true", help="Use xattrs for sync meta storage. Sync Gateway 1.5.0+ and Couchbase Server 5.0+")
+    parser.addoption("--device", action="store_true", help="Enable device if you want to run it on device", default=False)
 
 
 # This will get called once before the first test that
@@ -50,6 +51,7 @@ def setup_client_syncgateway_suite(request):
 
     server_version = request.config.getoption("--server-version")
     xattrs_enabled = request.config.getoption("--xattrs")
+    device_enabled = request.config.getoption("--device")
 
     liteserv = LiteServFactory.create(platform=liteserv_platform,
                                       version_build=liteserv_version,
@@ -65,7 +67,10 @@ def setup_client_syncgateway_suite(request):
     liteserv.download()
 
     # Install LiteServ
-    liteserv.install()
+    if device_enabled and liteserv_platform == "ios":
+        liteserv.install_device()
+    else:
+        liteserv.install()
 
     cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, sync_gateway_mode)
 
@@ -117,12 +122,15 @@ def setup_client_syncgateway_suite(request):
         "liteserv": liteserv,
         "cluster_config": cluster_config,
         "sg_mode": sync_gateway_mode,
-        "xattrs_enabled": xattrs_enabled
+        "xattrs_enabled": xattrs_enabled,
+        "device_enabled": device_enabled,
+        "liteserv_platform": liteserv_platform,
+        "liteserv_version": liteserv_version
     }
 
     log_info("Tearing down suite ...")
-
-    liteserv.remove()
+    if not (device_enabled and liteserv_platform == "ios"):
+        liteserv.remove()
 
 
 # Passed to each testcase, run for each test_* method in client_sg folder
@@ -135,6 +143,9 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
     liteserv = setup_client_syncgateway_suite["liteserv"]
     cluster_config = setup_client_syncgateway_suite["cluster_config"]
     xattrs_enabled = setup_client_syncgateway_suite["xattrs_enabled"]
+    device_enabled = setup_client_syncgateway_suite["device_enabled"]
+    liteserv_platform = setup_client_syncgateway_suite["liteserv_platform"]
+    liteserv_version = setup_client_syncgateway_suite["liteserv_version"]
     test_name = request.node.name
 
     if request.config.getoption("--liteserv-platform") == "macosx" and \
@@ -145,7 +156,11 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
     client = MobileRestClient()
 
     # Start LiteServ and delete any databases
-    ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+    log_info("Starting LiteServ...")
+    if device_enabled and liteserv_platform == "ios":
+        ls_url = liteserv.start_device("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+    else:
+        ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
     client.delete_databases(ls_url)
 
     cluster_helper = ClusterKeywords()
@@ -153,7 +168,6 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
 
     sg_url = cluster_hosts["sync_gateways"][0]["public"]
     sg_admin_url = cluster_hosts["sync_gateways"][0]["admin"]
-
     # Yield values to test case via fixture argument
     yield {
         "cluster_config": cluster_config,
@@ -161,7 +175,11 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
         "ls_url": ls_url,
         "sg_url": sg_url,
         "sg_admin_url": sg_admin_url,
-        "xattrs_enabled": xattrs_enabled
+        "xattrs_enabled": xattrs_enabled,
+        "liteserv": liteserv,
+        "liteserv_platform": liteserv_platform,
+        "device_enabled": device_enabled,
+        "liteserv_version": liteserv_version
     }
 
     log_info("Tearing down test")

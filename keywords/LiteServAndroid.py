@@ -17,12 +17,13 @@ from requests.exceptions import HTTPError
 
 class LiteServAndroid(LiteServBase):
 
-    def download(self):
+    def download(self, version_build=None):
         """
         1. Check to see if .apk is downloaded already. If so, return
         2. Download the LiteServ .apk from latest builds to 'deps/binaries'
         """
-
+        if(version_build is not None):
+            self.version_build = version_build
         version, build = version_and_build(self.version_build)
 
         if version == "1.2.1":
@@ -103,24 +104,26 @@ class LiteServAndroid(LiteServBase):
 
             apk_path = apks[num_apks]
             log_info("Installing: {}".format(apk_path))
-
             try:
-                output = subprocess.check_output(["adb", "install", apk_path])
-
-                if "INSTALL_FAILED_ALREADY_EXISTS" in output or "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in output:
+                output = subprocess.check_output(["adb", "install", "-r", apk_path])
+                break
+            except CalledProcessError as c:
+                log_info("Error installing {}: {}".format(apk_path, c))
+                num_apks -= 1
+            except Exception as e:
+                if "INSTALL_FAILED_ALREADY_EXISTS" in e.message or "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in e.message:
                     # Apk may be installed, remove and retry install
+                    log_info("Trying to remove....")
                     self.remove()
                     count += 1
                     continue
                 else:
                     # Install succeeded, continue
                     break
-            except CalledProcessError as c:
-                log_info("Error installing {}: {}".format(apk_path, c))
-                num_apks -= 1
 
         pkgs_output = subprocess.check_output(["adb", "shell", "pm", "list", "packages"])
         if "com.couchbase.liteservandroid" not in pkgs_output:
+
             raise LiteServError("Failed to install package: {}".format(output))
 
         log_info("LiteServ installed to {}".format(self.host))
@@ -252,3 +255,7 @@ class LiteServAndroid(LiteServBase):
         self.logfile.close()
         self.process.kill()
         self.process.wait()
+
+    def close_app(self):
+        output = subprocess.check_output(["adb", "shell", "input", "keyevent ", "3"])
+        log_info(output)
