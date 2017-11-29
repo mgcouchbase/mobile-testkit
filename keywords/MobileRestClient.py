@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from keywords import attachment
 from libraries.data import doc_generators
+from libraries.provision.ansible_runner import AnsibleRunner
 
 from keywords.constants import AuthType
 from keywords.constants import ServerType
@@ -1104,6 +1105,10 @@ class MobileRestClient:
         auth_type = get_auth_type(auth)
         doc = self.get_doc(url, db, doc_id, auth)
         current_rev = doc["_rev"]
+        try:
+            doc["updates"]
+        except Exception:
+            doc["updates"] = 0
         current_update_number = doc["updates"] + 1
 
         log_info("Updating {}/{}/{}: {} times".format(url, db, doc_id, number_updates))
@@ -1175,6 +1180,8 @@ class MobileRestClient:
 
             if generator == "four_k":
                 doc_body = doc_generators.four_k()
+            elif generator == "simple_user":
+                doc_body = doc_generators.simple_user()
             else:
                 doc_body = doc_generators.simple()
 
@@ -1295,7 +1302,7 @@ class MobileRestClient:
         resp.raise_for_status()
         return resp.json()
 
-    def get_bulk_docs(self, url, db, doc_ids, auth=None, validate=True):
+    def get_bulk_docs(self, url, db, doc_ids, auth=None, validate=True, rev_history="false"):
         """
         Keyword that issues POST _bulk_get docs with the specified 'docs' array.
         docs need to be in the following format:
@@ -1314,15 +1321,14 @@ class MobileRestClient:
         # ]
         doc_ids_formatted = [{"id": doc_id} for doc_id in doc_ids]
         request_body = {"docs": doc_ids_formatted}
-
         auth_type = get_auth_type(auth)
 
         if auth_type == AuthType.session:
-            resp = self._session.post("{}/{}/_bulk_get".format(url, db), data=json.dumps(request_body), cookies=dict(SyncGatewaySession=auth[1]))
+            resp = self._session.post("{}/{}/_bulk_get?revs={}".format(url, db, rev_history), data=json.dumps(request_body), cookies=dict(SyncGatewaySession=auth[1]))
         elif auth_type == AuthType.http_basic:
-            resp = self._session.post("{}/{}/_bulk_get".format(url, db), data=json.dumps(request_body), auth=auth)
+            resp = self._session.post("{}/{}/_bulk_get?revs={}".format(url, db, rev_history), data=json.dumps(request_body), auth=auth)
         else:
-            resp = self._session.post("{}/{}/_bulk_get".format(url, db), data=json.dumps(request_body))
+            resp = self._session.post("{}/{}/_bulk_get?revs={}".format(url, db, rev_history), data=json.dumps(request_body))
 
         log_r(resp)
         resp.raise_for_status()
@@ -1722,7 +1728,41 @@ class MobileRestClient:
 
             break
 
-    def get_changes(self, url, db, since, auth, feed="longpoll", timeout=60, limit=None, skip_user_docs=False):
+    def stream_continuous_changes(self, url, db, since, auth, filter_type=None, filter_channels=None):
+        """
+        Issues a continuous changes feed request and returns the stream
+        """
+        auth_type = get_auth_type(auth)
+        body = {
+            "feed": "continuous",
+            "since": since
+        }
+
+        if filter_type is not None:
+
+            if filter_type == "sync_gateway/bychannel":
+                if filter_channels is None:
+                    raise RestError("channel filter need 'filter_channels' set")
+
+                types.verify_is_list(filter_channels)
+                body["filter"] = "sync_gateway/bychannel"
+                body["channels"] = ",".join(filter_channels)
+
+            else:
+                raise RestError("Unsupported _changes filter_type: {}. Use 'sync_gateway/bychannel'.".format(
+                    filter_type
+                ))
+
+        if auth_type == AuthType.session:
+            resp = self._session.post("{}/{}/_changes".format(url, db), data=json.dumps(body), cookies=dict(SyncGatewaySession=auth[1]), stream=True)
+        elif auth_type == AuthType.http_basic:
+            resp = self._session.post("{}/{}/_changes".format(url, db), data=json.dumps(body), auth=auth, stream=True)
+        else:
+            resp = self._session.post("{}/{}/_changes".format(url, db), data=json.dumps(body), stream=True)
+
+        return resp
+
+    def get_changes(self, url, db, since, auth, feed="longpoll", timeout=60, limit=None, skip_user_docs=False, filter_type=None, filter_channels=None, filter_doc_ids=None):
         """
         Issues a longpoll changes request with a provided since and authentication.
         The timeout is in seconds.
@@ -1746,6 +1786,7 @@ class MobileRestClient:
             resp = self._session.get(request_url)
 
         elif server_type == ServerType.syncgateway:
+
             body = {
                 "feed": feed,
                 "since": since,
@@ -1754,6 +1795,33 @@ class MobileRestClient:
 
             if limit is not None:
                 body["limit"] = limit
+
+            if filter_type is not None:
+
+                if filter_type == "sync_gateway/bychannel":
+                    if filter_channels is None:
+                        raise RestError("channel filter need 'filter_channels' set")
+
+                    types.verify_is_list(filter_channels)
+                    body["filter"] = "sync_gateway/bychannel"
+                    body["channels"] = ",".join(filter_channels)
+
+                elif filter_type == "_doc_ids":
+
+                    if feed != "normal":
+                        raise RestError("'_doc_ids' filter only works with feed=normal")
+
+                    if filter_doc_ids is None:
+                        raise RestError("channel filter need 'filter_channels' set")
+
+                    types.verify_is_list(filter_doc_ids)
+                    body["filter"] = "_doc_ids"
+                    body["doc_ids"] = filter_doc_ids
+
+                else:
+                    raise RestError("Unsupported _changes filter_type: {}. Use 'sync_gateway/bychannel' or '_doc_ids'.".format(
+                        filter_type
+                    ))
 
             log_info("Using POST data: {}".format(body))
 
@@ -1988,6 +2056,16 @@ class MobileRestClient:
 
         return resp.json()
 
+    def view_query_through_channels(self, url, db):
+        """
+        Gets query through channels and return all docs including tombstone docs
+        """
+        resp = self._session.get("{}/{}/_view/channels".format(url, db))
+        log_r(resp)
+        resp.raise_for_status()
+
+        return resp.json()
+
     def verify_view_row_num(self, view_response, expected_num_rows):
         """
         Keyword that verifies the length of rows return from a view is the expected number of rows
@@ -2074,3 +2152,49 @@ class MobileRestClient:
         resp.raise_for_status()
 
         return resp.json()
+
+    def take_db_offline(self, cluster_conf, db):
+        # Take bucket offline
+        ansible_runner = AnsibleRunner(cluster_conf)
+        status = ansible_runner.run_ansible_playbook(
+            "sync-gateway-db-offline.yml",
+            extra_vars={
+                "db": db
+            }
+        )
+
+        return status
+
+    def bring_db_online(self, cluster_conf, db, delay=0):
+        # Bring db online
+        ansible_runner = AnsibleRunner(cluster_conf)
+        status = ansible_runner.run_ansible_playbook(
+            "sync-gateway-db-online.yml",
+            extra_vars={
+                "db": db,
+                "delay": delay
+            }
+        )
+
+        return status
+
+    def get_changes_style_all_docs(self, url, db, auth=None, include_docs=False):
+        """ Get all changes with include docs enabled and style all_docs """
+        auth_type = get_auth_type(auth)
+
+        params = {}
+        if include_docs:
+            params["include_docs"] = "true"
+            params["style"] = "all_docs"
+
+        if auth_type == AuthType.session:
+            resp = self._session.get("{}/{}/_changes".format(url, db), params=params, cookies=dict(SyncGatewaySession=auth[1]))
+        elif auth_type == AuthType.http_basic:
+            resp = self._session.get("{}/{}/_changes".format(url, db), params=params, auth=auth)
+        else:
+            resp = self._session.get("{}/{}/_changes".format(url, db), params=params)
+
+        log_r(resp)
+        resp.raise_for_status()
+        resp_obj = resp.json()
+        return resp_obj

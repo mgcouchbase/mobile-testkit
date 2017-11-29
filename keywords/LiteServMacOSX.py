@@ -16,13 +16,14 @@ from keywords.utils import log_info
 
 class LiteServMacOSX(LiteServBase):
 
-    def download(self):
+    def download(self, version_build=None):
         """
         1. Check to see if package is downloaded already. If so, return
         2. Download the LiteServ package from latest builds to 'deps/binaries'
         3. Unzip the packages and make the binary executable
         """
-
+        if(version_build is not None):
+            self.version_build = version_build
         package_name = "couchbase-lite-macosx-enterprise_{}.zip".format(self.version_build)
 
         # Skip download if packages is already downloaded
@@ -36,7 +37,7 @@ class LiteServMacOSX(LiteServBase):
         if version == "1.2.0":
             package_url = "{}/couchbase-lite-ios/release/{}/macosx/{}/{}".format(LATEST_BUILDS, version, self.version_build, package_name)
         else:
-            package_url = "{}/couchbase-lite-ios/{}/macosx/{}/{}".format(LATEST_BUILDS, version, self.version_build, package_name)
+            package_url = "{}/couchbase-lite-ios/{}/macosx/{}/{}".format(LATEST_BUILDS, version, build, package_name)
 
         # Download package to deps/binaries
         log_info("Downloading: {}".format(package_url))

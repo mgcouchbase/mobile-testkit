@@ -2,7 +2,7 @@ import os
 import sys
 from optparse import OptionParser
 
-from ansible_runner import AnsibleRunner
+from libraries.provision.ansible_runner import AnsibleRunner
 
 from keywords.exceptions import ProvisioningError
 from keywords.ClusterKeywords import ClusterKeywords
@@ -32,17 +32,17 @@ class CouchbaseServerConfig:
         else:
             self.build = None
 
-    def get_baseurl_package(self):
+    def get_baseurl_package(self, cb_server, cbs_platform="centos7"):
 
         if self.build is None:
             # since the user didn't specify a build number,
             # this means user wants an official released version, so
             # return cbmobile-packages bucket url
-            return resolve_cb_mobile_url(self.version)
+            return cb_server.resolve_cb_mobile_url(self.version, cbs_platform=cbs_platform)
         else:
             # the user specified an explicit build number, so grab the
             # build off the "cbnas" server (Couchbase VPN only)
-            return resolve_cb_nas_url(self.version, self.build)
+            return cb_server.resolve_cb_nas_url(self.version, self.build, cbs_platform=cbs_platform)
 
     def __str__(self):
         output = "\n  Couchbase Server configuration\n"
@@ -130,16 +130,20 @@ def get_package_name(version, build_number):
         return "couchbase-server-enterprise-{}-{}-centos7.x86_64.rpm".format(version, build_number)
 
 
-def install_couchbase_server(cluster_config, couchbase_server_config):
+def install_couchbase_server(cluster_config, couchbase_server_config, cbs_platform="centos7"):
 
     log_info(cluster_config)
     log_info(couchbase_server_config)
 
     ansible_runner = AnsibleRunner(cluster_config)
+    cluster_keywords = ClusterKeywords()
+    cluster_topology = cluster_keywords.get_cluster_topology(cluster_config)
+    server_url = cluster_topology["couchbase_servers"][0]
+    cb_server = CouchbaseServer(server_url)
 
     log_info(">>> Installing Couchbase Server")
     # Install Server
-    server_baseurl, server_package_name = couchbase_server_config.get_baseurl_package()
+    server_baseurl, server_package_name = couchbase_server_config.get_baseurl_package(cb_server, cbs_platform)
     status = ansible_runner.run_ansible_playbook(
         "install-couchbase-server-package.yml",
         extra_vars={
@@ -152,10 +156,6 @@ def install_couchbase_server(cluster_config, couchbase_server_config):
 
     # Wait for server to be in 'healthy state'
     print(">>> Waiting for server to be in 'healthy' state")
-    cluster_keywords = ClusterKeywords()
-    cluster_topology = cluster_keywords.get_cluster_topology(cluster_config)
-    server_url = cluster_topology["couchbase_servers"][0]
-    cb_server = CouchbaseServer(server_url)
     cb_server.wait_for_ready_state()
 
 

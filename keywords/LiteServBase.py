@@ -33,6 +33,9 @@ class LiteServBase(object):
     def download(self):
         raise NotImplementedError()
 
+    def download_oldVersion(self):
+        raise NotImplementedError()
+
     def install(self):
         raise NotImplementedError()
 
@@ -80,4 +83,7 @@ class LiteServBase(object):
         raise NotImplementedError()
 
     def remove(self):
+        raise NotImplementedError()
+
+    def close_app(self):
         raise NotImplementedError()

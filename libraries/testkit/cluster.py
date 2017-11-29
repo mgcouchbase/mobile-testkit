@@ -7,12 +7,14 @@ from requests.exceptions import ConnectionError
 import keywords.exceptions
 from keywords.couchbaseserver import CouchbaseServer
 from keywords.exceptions import ProvisioningError
-from keywords.utils import log_info
+from keywords.utils import log_info, add_cbs_to_sg_config_server_field
 from libraries.provision.ansible_runner import AnsibleRunner
 from libraries.testkit.admin import Admin
 from libraries.testkit.config import Config
 from libraries.testkit.sgaccel import SgAccel
 from libraries.testkit.syncgateway import SyncGateway
+from utilities.cluster_config_utils import is_load_balancer_enabled
+from utilities.cluster_config_utils import get_load_balancer_ip
 
 
 class Cluster:
@@ -37,7 +39,18 @@ class Cluster:
         with open("{}.json".format(config)) as f:
             cluster = json.loads(f.read())
 
-        sgs = [{"name": sg["name"], "ip": sg["ip"]} for sg in cluster["sync_gateways"]]
+        # Get load balancer IP
+        lb_ip = None
+        if is_load_balancer_enabled(self._cluster_config):
+            # If load balancer is defined,
+            # Switch all SG URLs to that of load balancer
+            lb_ip = get_load_balancer_ip(self._cluster_config)
+
+            sgs = [{"name": sg["name"], "ip": lb_ip} for sg in cluster["sync_gateways"]]
+            log_info("Using load balancer IP as the SG IP: {}".format(sgs))
+        else:
+            sgs = [{"name": sg["name"], "ip": sg["ip"]} for sg in cluster["sync_gateways"]]
+
         acs = [{"name": ac["name"], "ip": ac["ip"]} for ac in cluster["sg_accels"]]
 
         self.cbs_ssl = cluster["environment"]["cbs_ssl_enabled"]
@@ -71,7 +84,7 @@ class Cluster:
         status = ansible_runner.run_ansible_playbook("stop-sync-gateway.yml")
         assert status == 0, "Failed to stop sync gateway"
 
-        # Stop sync_gateways
+        # Stop sync_gateway accels
         log_info(">>> Stopping sg_accel")
         status = ansible_runner.run_ansible_playbook("stop-sg-accel.yml")
         assert status == 0, "Failed to stop sg_accel"
@@ -115,7 +128,7 @@ class Cluster:
 
         server_port = 8091
         server_scheme = "http"
-
+        couchbase_server_primary_node = add_cbs_to_sg_config_server_field(self._cluster_config)
         if self.cbs_ssl:
             server_port = 18091
             server_scheme = "https"
@@ -126,13 +139,14 @@ class Cluster:
             "server_port": server_port,
             "server_scheme": server_scheme,
             "autoimport": "",
-            "xattrs": ""
+            "xattrs": "",
+            "couchbase_server_primary_node": couchbase_server_primary_node
         }
 
         # Add configuration to run with xattrs
         if self.xattrs:
             playbook_vars["autoimport"] = '"import_docs": "continuous",'
-            playbook_vars["xattrs"] = '"enable_extended_attributes": true'
+            playbook_vars["xattrs"] = '"enable_shared_bucket_access": true,'
 
         status = ansible_runner.run_ansible_playbook(
             "start-sync-gateway.yml",
@@ -160,6 +174,14 @@ class Cluster:
             log_info(">>> Running in channel cache")
 
         return mode
+
+    def restart_services(self):
+        ansible_runner = AnsibleRunner(self._cluster_config)
+        status = ansible_runner.run_ansible_playbook(
+            "restart-services.yml",
+            extra_vars={}
+        )
+        assert status == 0, "Failed to restart services"
 
     def save_cbgt_diagnostics(self):
 
@@ -278,6 +300,20 @@ class Cluster:
                     errors.append((sa, e))
 
         return errors
+
+    def stop_sg_and_accel(self):
+
+        # Stop sync_gateways
+        log_info(">>> Stopping sync_gateway")
+        for sg in self.sync_gateways:
+            status = sg.stop()
+            assert status == 0, "Failed to stop sync gateway for host {}".format(sg.hostname)
+
+        # Stop sync_gateway accels
+        log_info(">>> Stopping sg_accel")
+        for sgaccel in self.sg_accels:
+            status = sgaccel.stop()
+            assert status == 0, "Failed to stop sync gateway for host {}".format(sgaccel.hostname)
 
     def __repr__(self):
         s = "\n\n"

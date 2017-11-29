@@ -8,6 +8,7 @@ from libraries.testkit.parallelize import in_parallel
 
 from keywords.utils import log_info
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
+from keywords.MobileRestClient import MobileRestClient
 
 
 # implements scenarios: 18 and 19
@@ -66,7 +67,11 @@ def test_db_online_offline_webhooks_offline(params_from_base_test_setup, sg_conf
     in_parallel(user_objects, 'update_docs', num_revisions)
     time.sleep(10)
 
-    admin.take_db_offline("db")
+    # Take db offline
+    sg_client = MobileRestClient()
+    status = sg_client.take_db_offline(cluster_conf=cluster_conf, db="db")
+    assert status == 0
+
     time.sleep(5)
     db_info = admin.get_db_info("db")
     log_info("Expecting db state {} found db state {}".format("Offline", db_info['state']))
@@ -75,25 +80,33 @@ def test_db_online_offline_webhooks_offline(params_from_base_test_setup, sg_conf
     webhook_events = ws.get_data()
     time.sleep(5)
     log_info("webhook event {}".format(webhook_events))
-    last_event = webhook_events[-1]
-    assert last_event['state'] == 'offline'
 
-    admin.bring_db_online("db")
-    time.sleep(5)
-    db_info = admin.get_db_info("db")
-    log_info("Expecting db state {} found db state {}".format("Online", db_info['state']))
-    assert db_info["state"] == "Online"
-    webhook_events = ws.get_data()
-    last_event = webhook_events[-1]
-    assert last_event['state'] == 'online'
-    time.sleep(10)
-    log_info("webhook event {}".format(webhook_events))
+    try:
+        last_event = webhook_events[-1]
+        assert last_event['state'] == 'offline'
 
-    ws.stop()
+        # Bring db online
+        status = sg_client.bring_db_online(cluster_conf=cluster_conf, db="db")
+        assert status == 0
+
+        time.sleep(5)
+        db_info = admin.get_db_info("db")
+        log_info("Expecting db state {} found db state {}".format("Online", db_info['state']))
+        assert db_info["state"] == "Online"
+        time.sleep(5)
+        webhook_events = ws.get_data()
+        last_event = webhook_events[-1]
+        assert last_event['state'] == 'online'
+        time.sleep(10)
+        log_info("webhook event {}".format(webhook_events))
+    except IndexError:
+        log_info("Received index error")
+        raise
+    finally:
+        ws.stop()
 
 
 # implements scenarios: 21
-@pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.onlineoffline
 @pytest.mark.webhooks
@@ -156,7 +169,11 @@ def test_db_online_offline_webhooks_offline_two(params_from_base_test_setup, sg_
     webhook_events = ws.get_data()
     time.sleep(5)
     log_info("webhook event {}".format(webhook_events))
-    last_event = webhook_events[-1]
-    assert last_event['state'] == 'offline'
-
-    ws.stop()
+    try:
+        last_event = webhook_events[-1]
+        assert last_event['state'] == 'offline'
+    except IndexError:
+        log_info("Received index error")
+        raise
+    finally:
+        ws.stop()

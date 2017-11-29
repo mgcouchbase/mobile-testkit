@@ -19,6 +19,20 @@ Using 'docker in docker'
 $ docker run --privileged -it --network=cbl --name mobile-testkit -v $(pwd):/opt/mobile-testkit -v $(pwd)/resources/pool.json:/opt/mobile-testkit/resources/pool.json -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker couchbase/mobile-testkit /bin/bash
 ```
 
+NOTE: if you are running this on a remote machine, there is no reason to mount the local dir to `/opt/mobile-testkit`, or mount the pool.json.  Instead run:
+
+```
+ docker run --privileged -it --network=cbl --name mobile-testkit -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker couchbase/mobile-testkit /bin/bash
+```
+
+And then manually copy the `pool.json` file from the host to the container.
+
+If you are running on a Centos7 host and you see an error about not being able to find `/usr/lib64/libltdl.so.7`, try the following workaround of running the same command with an extra volume mount for that particular `.so` object:
+
+```
+docker run ... -v /usr/lib64/libltdl.so.7:/usr/lib64/libltdl.so.7 ...
+```
+
 And then inside the docker container:
 
 ```
@@ -32,7 +46,7 @@ And then inside the docker container:
 
 (cc / no xattrs)
 ```
-docker run --rm --privileged --network=cbl --name mobile-testkit -v $(pwd):/opt/mobile-testkit -v $(pwd)/resources/pool.json:/opt/mobile-testkit/resources/pool.json -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker couchbase/mobile-testkit /bin/bash ./entrypoint.sh master '' cc '' 4.6.2 1.4.1-3 '' testsuites/syncgateway/functional/tests
+docker run --rm --privileged --network=cbl --name mobile-testkit -v hosts.json:/opt/mobile-testkit/hosts.json -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker mobile-testkit-local ./entrypoint.sh master base_cc 'pytest -s --sequoia --server-version=4.6.2 --sync-gateway-version=1.4.1-3 testsuites/functional/tests/'
 ```
 
 ## Capturing network traffic
