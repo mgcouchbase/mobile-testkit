@@ -16,6 +16,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Random;
 import java.util.TimerTask;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,9 +34,12 @@ public class MainActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    numOfDocs = getIntent().getIntExtra("numOfDocs",0);
-    scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
-    syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
+    // numOfDocs = getIntent().getIntExtra("numOfDocs",0);
+    // scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
+    // syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
+    numOfDocs = 10;
+    scenarioRunTimeMinutes = 1;
+    syncGatewayURL = "blip://192.168.33.11:4985/db";
 
     if (syncGatewayURL == null || numOfDocs == 0 || scenarioRunTimeMinutes == 0) {
       Log.e("app", "Did not enter the values for one of them : syncGatewayURL, numOfDocs, scenarioRunTimeMinutes ");
@@ -44,7 +51,13 @@ public class MainActivity extends AppCompatActivity {
     DatabaseConfiguration config = new DatabaseConfiguration(this);
 
     Log.i("state", "Creating database");
-    database = new Database("my-database", config);
+    try {
+      database = new Database("my-database", config);
+    }
+    catch(com.couchbase.lite.CouchbaseLiteException e){
+        Log.e("Exception occurred while creating database ",e.getMessage());
+    }
+
     database.addChangeListener(new DatabaseChangeListener() {
       @Override
       public void changed(DatabaseChange change) {
@@ -74,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     long startTime, stopTime, minutesCounted = 0;
     super.onStart();
 
+    try{
     //Create docs in batch
     database.inBatch(new TimerTask() {
       @Override
@@ -81,37 +95,64 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < numOfDocs; i++) {
           doc = new Document("doc___" + i);
-          doc.set("type", "user");
-          doc.set("name", "user_" + i);
-          database.save(doc);
+          Map<String, Object> docmap = new HashMap<String, Object>();
+          docmap.put("type", "user");
+          docmap.put("name", "user_" + i);
+          doc.set(docmap);
+          try {
+            database.save(doc);
+          }
+          catch(com.couchbase.lite.CouchbaseLiteException ex){
+            Log.e("Failed to save document ", ex.getMessage());
+          }
         }
       }
     });
+    }
+    catch(com.couchbase.lite.CouchbaseLiteException ex){
+      Log.e("Failed to create docs in batch ", ex.getMessage());
+    }
+    
     startTime = System.currentTimeMillis();
 
     //update random doc
     Random rand = new Random();
+    Object doc_obj = new Object();
     while (minutesCounted < scenarioRunTimeMinutes) {
       int n = rand.nextInt(numOfDocs);
       doc = database.getDocument("doc___" + n);
-      doc.set("name", "user_" + k);
-      database.save(doc);
+      Map<String, Object> docmap = new HashMap<String, Object>();
+      docmap.put("name", "user_" + k);
+      doc.set(docmap);
       try {
+        database.save(doc);
         Thread.sleep(1000);
       } catch (InterruptedException e) {
         Log.e("app", e.getMessage());
+      }
+      catch(com.couchbase.lite.CouchbaseLiteException ex){
+        Log.e("Failed to save document ", ex.getMessage());
       }
       stopTime = System.currentTimeMillis();
       minutesCounted = ((stopTime - startTime) / 60000);
       k++;
     }
 
+    for (int i = 0; i < numOfDocs; i++) {
+      doc = database.getDocument("doc___" + i);
+      System.out.println("document user value  for doc id is "+ doc.getObject("name")+" "+"doc___" + i);
+    }
     //Deleting docs
     Log.i("TEST", "before count -> %d", database.getCount());
     Log.i("app", "Deleting docs");
     for (int i = 0; i < numOfDocs - 2; i++) {
       doc = database.getDocument("doc___" + i);
-      database.delete(doc);
+      try {
+        database.delete(doc);
+      }
+      catch(com.couchbase.lite.CouchbaseLiteException ex){
+          Log.e("Failed to delete document ", ex.getMessage());
+      }
     }
     Log.i("TEST", "after count -> %d", database.getCount());
     replicator.stop();

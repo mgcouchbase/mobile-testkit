@@ -26,6 +26,6 @@ dependencies {
   })
   compile 'com.android.support:appcompat-v7:26.0.0-alpha1'
   compile 'com.android.support.constraint:constraint-layout:1.0.2'
-  compile 'com.couchbase.lite:couchbase-lite-android:2.0.0-DB012'
+  compile 'com.couchbase.lite:couchbase-lite-android:2.0.0-DB020'
   testCompile 'junit:junit:4.12'
 }
