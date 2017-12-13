@@ -34,12 +34,12 @@ public class MainActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    // numOfDocs = getIntent().getIntExtra("numOfDocs",0);
-    // scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
-    // syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
-    numOfDocs = 10;
-    scenarioRunTimeMinutes = 1;
-    syncGatewayURL = "blip://192.168.33.11:4985/db";
+    numOfDocs = getIntent().getIntExtra("numOfDocs",0);
+    scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
+    syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
+    // numOfDocs = 10;
+    // scenarioRunTimeMinutes = 1;
+    // syncGatewayURL = "blip://192.168.33.11:4985/db";
 
     if (syncGatewayURL == null || numOfDocs == 0 || scenarioRunTimeMinutes == 0) {
       Log.e("app", "Did not enter the values for one of them : syncGatewayURL, numOfDocs, scenarioRunTimeMinutes ");

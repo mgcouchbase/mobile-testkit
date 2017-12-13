@@ -252,8 +252,8 @@ def params_from_base_suite_setup(request):
     log_info("Tearing down 'params_from_base_suite_setup' ...")
 
     # Stop all sync_gateway and sg_accels as test finished
-    c = cluster.Cluster(cluster_config)
-    c.stop_sg_and_accel()
+    # c = cluster.Cluster(cluster_config)
+    # c.stop_sg_and_accel()
 
 
 # This is called before each test and will yield the dictionary to each test that references the method
