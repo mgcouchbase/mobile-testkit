@@ -2,6 +2,7 @@ package com.couchbase.androidclient;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.content.Intent;
 
 import com.couchbase.lite.Database;
 import com.couchbase.lite.DatabaseChange;
@@ -14,12 +15,10 @@ import com.couchbase.lite.ReplicatorConfiguration;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Random;
-import java.util.TimerTask;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Random;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,8 +37,9 @@ public class MainActivity extends AppCompatActivity {
     scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
     syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
     // numOfDocs = 10;
-    // scenarioRunTimeMinutes = 1;
+    // scenarioRunTimeMinutes = 5;
     // syncGatewayURL = "blip://192.168.33.11:4985/db";
+    Log.e("msg", "Sync gateway url is "+syncGatewayURL+" "+numOfDocs+ " "+scenarioRunTimeMinutes);
 
     if (syncGatewayURL == null || numOfDocs == 0 || scenarioRunTimeMinutes == 0) {
       Log.e("app", "Did not enter the values for one of them : syncGatewayURL, numOfDocs, scenarioRunTimeMinutes ");
@@ -73,8 +73,9 @@ public class MainActivity extends AppCompatActivity {
       e.printStackTrace();
     }
     ReplicatorConfiguration replConfig = new ReplicatorConfiguration(database, uri);
+    ReplicatorConfiguration.ReplicatorType replicatorType;
     replConfig.setContinuous(true);
-
+    replicatorType = replConfig.getReplicatorType();
     replicator = new Replicator(replConfig);
     replicator.start();
 
@@ -137,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
       minutesCounted = ((stopTime - startTime) / 60000);
       k++;
     }
-
+    replicator.stop();
     for (int i = 0; i < numOfDocs; i++) {
       doc = database.getDocument("doc___" + i);
       System.out.println("document user value  for doc id is "+ doc.getObject("name")+" "+"doc___" + i);
@@ -155,8 +156,9 @@ public class MainActivity extends AppCompatActivity {
       }
     }
     Log.i("TEST", "after count -> %d", database.getCount());
-    replicator.stop();
     //database.delete();
-
+    System.out.println("Longevity app testing is done ");
   }
+
+
 }
