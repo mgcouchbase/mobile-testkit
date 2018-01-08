@@ -1,0 +1,4 @@
+/Users/prasannagholap/TestServer/TestServer/obj/Debug/netstandard2.0/TestServer.csprojResolveAssemblyReference.cache
+/Users/prasannagholap/TestServer/TestServer/obj/Debug/netstandard2.0/TestServer.csproj.CoreCompileInputs.cache
+/Users/prasannagholap/TestServer/TestServer/obj/Debug/netstandard2.0/TestServer.AssemblyInfoInputs.cache
+/Users/prasannagholap/TestServer/TestServer/obj/Debug/netstandard2.0/TestServer.AssemblyInfo.cs
