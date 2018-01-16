@@ -57,18 +57,18 @@ namespace Couchbase.Lite.Testing
 
         #region Internal Methods
 
-        internal static void DatabaseAddChangeListener([NotNull] NameValueCollection args,
-            [NotNull] IReadOnlyDictionary<string, object> postBody,
-            [NotNull] HttpListenerResponse response)
-        {
-            With<Database>(postBody, "database", db =>
-            {
-                var listener = new DatabaseChangeListenerProxy();
-                db.Changed += listener.HandleChange;
-                var listenerId = MemoryMap.Store(listener);
-                response.WriteBody(listenerId);
-            });
-        }
+        //internal static void DatabaseAddChangeListener([NotNull] NameValueCollection args,
+        //    [NotNull] IReadOnlyDictionary<string, object> postBody,
+        //    [NotNull] HttpListenerResponse response)
+        //{
+        //    With<Database>(postBody, "database", db =>
+        //    {
+        //        var listener = new DatabaseChangeListenerProxy();
+        //        db.Changed += listener.HandleChange;
+        //        var listenerId = MemoryMap.Store(listener);
+        //        response.WriteBody(listenerId);
+        //    });
+        //}
 
         internal static void DatabaseAddDocuments([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,
@@ -164,10 +164,10 @@ namespace Couchbase.Lite.Testing
             With<Database>(postBody, "database", db =>
             {
                 using (var query = Query.Query
-                    .Select(SelectResult.Expression(Expression.Meta().ID))
+                    .Select(SelectResult.Expression(Meta.ID))
                     .From(DataSource.Database(db)))
                 {
-                    using (var result = query.Run())
+                    using (var result = query.Execute())
                     {
                         var ids = result.Select(x => x.GetString("id"));
                         response.WriteBody(ids);
@@ -202,10 +202,10 @@ namespace Couchbase.Lite.Testing
             {
                 var retVal = new Dictionary<string, object>();
                 using (var query = Query.Query
-                    .Select(SelectResult.Expression(Expression.Meta().ID))
+                       .Select(SelectResult.Expression(Meta.ID))
                     .From(DataSource.Database(db)))
                 {
-                    using (var result = query.Run())
+                    using (var result = query.Execute())
                     {
                         foreach (var id in result.Select(x => x.GetString("id")))
                         {
@@ -236,17 +236,17 @@ namespace Couchbase.Lite.Testing
             With<Database>(postBody, "database", db => response.WriteBody(db.Path ?? String.Empty));
         }
 
-        internal static void DatabaseRemoveChangeListener([NotNull] NameValueCollection args,
-            [NotNull] IReadOnlyDictionary<string, object> postBody,
-            [NotNull] HttpListenerResponse response)
-        {
-            With<Database>(postBody, "database", db => With<DatabaseChangeListenerProxy>(postBody, "changeListener", l =>
-            {
-                db.Changed -= l.HandleChange;
-            }));
+        //internal static void DatabaseRemoveChangeListener([NotNull] NameValueCollection args,
+        //    [NotNull] IReadOnlyDictionary<string, object> postBody,
+        //    [NotNull] HttpListenerResponse response)
+        //{
+        //    With<Database>(postBody, "database", db => With<DatabaseChangeListenerProxy>(postBody, "changeListener", l =>
+        //    {
+        //        db.Changed -= l.HandleChange;
+        //    }));
 
-            response.WriteEmptyBody();
-        }
+        //    response.WriteEmptyBody();
+        //}
 
         internal static void DatabaseSave([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,

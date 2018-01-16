@@ -1,0 +1,14 @@
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/libLiteCore.dylib
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.NetCore.deps.json
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.NetCore.runtimeconfig.json
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.NetCore.runtimeconfig.dev.json
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.NetCore.dll
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.NetCore.pdb
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.dll
+/Users/prasannagholap/TestServer/TestServer.NetCore/bin/Debug/netcoreapp2.0/TestServer.pdb
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.csprojResolveAssemblyReference.cache
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.csproj.CoreCompileInputs.cache
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.AssemblyInfoInputs.cache
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.AssemblyInfo.cs
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.dll
+/Users/prasannagholap/TestServer/TestServer.NetCore/obj/Debug/netcoreapp2.0/TestServer.NetCore.pdb

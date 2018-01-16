@@ -126,7 +126,7 @@ namespace Couchbase.Lite.Testing
             var val = args.GetString("string");
             With<MutableDocument>(postBody, "document", doc =>
             {
-                doc.Set(property, val);
+                doc.SetString(property, val);
                 response.WriteEmptyBody();
             });
         }

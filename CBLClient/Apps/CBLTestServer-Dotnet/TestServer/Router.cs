@@ -54,8 +54,6 @@ namespace Couchbase.Lite.Testing
                 ["database_save"] = DatabaseMethods.DatabaseSave,
                 ["database_contains"] = DatabaseMethods.DatabaseContains,
                 ["database_getCount"] = DatabaseMethods.DatabaseGetCount,
-                ["database_addChangeListener"] = DatabaseMethods.DatabaseAddChangeListener,
-                ["database_removeChangeListener"] = DatabaseMethods.DatabaseRemoveChangeListener,
                 ["databaseChangeListener_changesCount"] = DatabaseMethods.DatabaseChangeListenerChangesCount,
                 ["databaseChangeListener_getChange"] = DatabaseMethods.DatabaseChangeListenerGetChange,
                 ["databaseChange_getDocumentId"] = DatabaseMethods.DatabaseChangeGetDocumentId,
