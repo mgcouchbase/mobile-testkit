@@ -2,6 +2,27 @@
 //  DataTypesInitiatorHandler.swift
 //  CBLTestServer-iOS
 //
+<<<<<<< HEAD
+//  Created by Raghu Sarangapani on 12/20/17.
+//  Copyright © 2017 Raghu Sarangapani. All rights reserved.
+//
+
+import Foundation
+import CouchbaseLiteSwift
+
+
+public class DataTypesInitiatorHandler {
+    public static let VOID = NSObject()
+    
+    public func handleRequest(method: String, args: Args) throws -> Any? {
+        switch method {
+        default:
+            throw RequestHandlerError.MethodNotFound(method)
+        }
+        return DataTypesInitiatorHandler.VOID
+    }
+}
+=======
 //  Created by Raghu Sarangapani on 1/3/18.
 //  Copyright © 2018 Raghu Sarangapani. All rights reserved.
 //
@@ -11,7 +32,7 @@ import CouchbaseLiteSwift
 
 
 public class DataTypesInitiatorRequestHandler {
-    public static let VOID: String? = nil
+    public static let VOID = NSObject()
     fileprivate var _pushPullReplListener:NSObjectProtocol?
     
     public func handleRequest(method: String, args: Args) throws -> Any? {
@@ -38,13 +59,7 @@ public class DataTypesInitiatorRequestHandler {
             map[key] = value
             
         case "datatype_setDate":
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-            let date = Date()
-            let date_string = formatter.string(from: date)
-
-            return formatter.date(from: date_string)
-            
+            return Date()
             
         case "datatype_setDouble":
             let float_obj: Float = args.get(name: "value")!
@@ -54,10 +69,7 @@ public class DataTypesInitiatorRequestHandler {
             let obj: Float = args.get(name: "value")! as Float
             return obj
             
-        case "datatype_setLong":
-            // There is no Long type in Swift
-            let obj: Int64 = args.get(name: "value")! as Int64
-            return obj
+        // There is no Long type in Swift
             
         case "datatype_compare":
             let first: String = args.get(name: "first")!
@@ -72,10 +84,11 @@ public class DataTypesInitiatorRequestHandler {
         case "datatype_compareDate":
             let date1: Date = args.get(name: "date1")!
             let date2: Date = args.get(name: "date2")!
+            
             let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            formatter.dateFormat = "y-MM-dd H:m:ss.SSSS"
 
-            if date1 == date2 {
+            if formatter.string(from: date1) == formatter.string(from: date2) {
                 return true
             } else {
                 return false
@@ -91,24 +104,15 @@ public class DataTypesInitiatorRequestHandler {
                 return false
             }
 
-        case "datatype_compareLong":
-            let long1: Int = args.get(name: "long1")!
-            let long2: Int = args.get(name: "long2")!
+        case "datatype_compareHashMap":
+            let dict1: DictionaryObject = args.get(name: "dict1")!
+            let dict2: DictionaryObject = args.get(name: "dict2")!
             
-            if Int64(long1) == Int64(long2) {
+            if dict1 == dict2 {
                 return true
             } else {
                 return false
             }
-    
-        case "datatype_compareHashMap":
-            let first: Dictionary<String, Any> = args.get(name: "first")!
-            let second: Dictionary<String, Any> = args.get(name: "second")!
-            
-            print("first is \(first)")
-            print("second is \(second)")
-            
-            return NSDictionary(dictionary: first).isEqual(to: second)
             
         case "datatype_compareHashMap_org":
             let first: Dictionary<String, Any> = args.get(name: "first")!
@@ -141,3 +145,4 @@ public class DataTypesInitiatorRequestHandler {
     }
 }
 
+>>>>>>> refs/remotes/origin/feature/cbl20-query

@@ -136,10 +136,16 @@ public class DatabaseRequestHandler {
         database.delete();
    }
 
-    public boolean exists(Args args){
+   public void deleteDbByName(Args args) throws CouchbaseLiteException {
         String dbName = args.get("dbName");
         File directory = args.get("directory");
-        return Database.exists(dbName, directory.getParentFile());
+        Database.delete(dbName, directory.getParentFile());
+   }
+
+    public boolean exists(Args args){
+        String name = args.get("name");
+        File directory = args.get("directory");
+        return Database.exists(name, directory.getParentFile());
     }
 
     public boolean contains(Args args) {

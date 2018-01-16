@@ -1,22 +1,10 @@
 import random
 import pytest
-
-from CBLClient.Database import Database
-from CBLClient.Document import Document
-from CBLClient.Dictionary import Dictionary
-from CBLClient.DataTypeInitiator import DataTypeInitiator
 from keywords.utils import random_string
 
-BASE_URL = "http://172.16.1.154:8080"
-#BASE_URL = "http://192.168.0.117:8080"
 
+@pytest.mark.usefixtures("class_init")
 class TestDocument(object):
-
-    db_obj = Database(BASE_URL)
-    doc_obj = Document(BASE_URL)
-    dict_obj = Dictionary(BASE_URL)
-    datatype = DataTypeInitiator(BASE_URL)
-    db_obj.create("dbname")
 
     @pytest.mark.parametrize("doc_id1, doc_id2", [
         (random_string(1), random_string(1)),
@@ -28,7 +16,7 @@ class TestDocument(object):
         (random_string(6).upper(), random_string(6).upper()),
         (random_string(8, digit=True), random_string(8, digit=True)),
         (random_string(128), random_string(128)),
-        ])
+    ])
     def test_document(self, doc_id1, doc_id2):
         '''
         @summary: Testing Document Constructor
@@ -57,13 +45,16 @@ class TestDocument(object):
         (random_string(5), random_string(9).upper()),
         (random_string(5), "{}12".format(random_string(5))),
         (random_string(5), random_string(10, digit=True))
-        ])
+    ])
     def test_contains(self, key, value):
         '''
         @summary: Testing Document set/contains method
         '''
+        if self.liteserv_platform == "ios" and value == "":
+            pytest.skip("Test not applicable for ios")
+
         doc = self.doc_obj.create()
-        doc = self.doc_obj.setString(doc, key, value)
+        self.doc_obj.setString(doc, key, value)
         assert self.doc_obj.contains(doc, key)
 
     @pytest.mark.parametrize("num_of_keys", [
@@ -71,7 +62,7 @@ class TestDocument(object):
         99,
         999,
         9999
-        ])
+    ])
     def test_count(self, num_of_keys):
         '''
         @summary: Testing Document count method
@@ -81,7 +72,7 @@ class TestDocument(object):
         for i in range(num_of_keys):
             key = "test_{}".format(i)
             value = "Test content - {}".format(i)
-            doc = self.doc_obj.setString(doc, key, value)
+            self.doc_obj.setString(doc, key, value)
         assert self.doc_obj.count(doc) == num_of_keys
 
     def test_remove(self):
@@ -91,7 +82,7 @@ class TestDocument(object):
         key = "test"
         value = "test-1"
         doc = self.doc_obj.create()
-        doc = self.doc_obj.setString(doc, key, value)
+        self.doc_obj.setString(doc, key, value)
         assert self.doc_obj.contains(doc, "test")
         self.doc_obj.remove(doc, "test")
         assert not self.doc_obj.contains(doc, "test")
@@ -102,7 +93,7 @@ class TestDocument(object):
         '''
         doc = self.doc_obj.create()
 
-        #checking get and sets for String
+        # checking get and sets for String
         hashmap = {}
         key = "string_key"
         value = "Test String"
@@ -129,7 +120,7 @@ class TestDocument(object):
         '''
         doc = self.doc_obj.create()
 
-        #checking for empty doc
+        # checking for empty doc
         assert self.doc_obj.getKeys(doc) == []
         result_list = []
         key = "string_key"
@@ -163,11 +154,14 @@ class TestDocument(object):
         (random_string(5), "{}12".format(random_string(5))),
         (random_string(5), random_string(10, digit=True)),
         (random_string(128), random_string(128))
-        ])
+    ])
     def test_get_set_string(self, key, value):
         '''
         @summary: Testing Get and Set String method of Document API
         '''
+        if self.liteserv_platform == "ios" and value == "":
+            pytest.skip("Test not applicable for ios")
+
         doc = self.doc_obj.create()
         self.doc_obj.setString(doc, key, value)
         assert value == self.doc_obj.getString(doc, key)
@@ -177,7 +171,7 @@ class TestDocument(object):
         (random_string(6), random.randint(10, 99)),
         (random_string(6), random.randint(100, 999)),
         (random_string(6), random.randint(1000, 9999))
-        ])
+    ])
     def test_get_set_integer(self, key, value):
         '''
         @summary: Testing Get and Set Integer method of Document API
@@ -188,7 +182,8 @@ class TestDocument(object):
 
     @pytest.mark.parametrize("key, value", [
         (random_string(6), True),
-        (random_string(6), False)])
+        (random_string(6), False)
+    ])
     def test_get_set_boolean(self, key, value):
         '''
         @summary: Testing Get and Set Boolean method of Document API
@@ -220,14 +215,14 @@ class TestDocument(object):
         date_obj = self.datatype.setDate()
         self.doc_obj.setDate(doc, key, date_obj)
         new_date = self.doc_obj.getDate(doc, key)
-        assert self.datatype.compare(date_obj, new_date)
+        assert self.datatype.compareDate(date_obj, new_date)
 
     @pytest.mark.parametrize("key, value", [
         (random_string(6), "{}".format(random.uniform(0, 1))),
         (random_string(6), "{}".format(random.uniform(1, 10))),
         (random_string(6), "{}".format(random.uniform(11, 100))),
         (random_string(6), "{}".format(random.uniform(101, 1000)))
-        ])
+    ])
     def test_get_set_double(self, key, value):
         '''
         @summary: Testing Get and Set Double method of Document API
@@ -235,21 +230,21 @@ class TestDocument(object):
         doc = self.doc_obj.create()
         double_obj = self.datatype.setDouble(value)
         self.doc_obj.setDouble(doc, key, double_obj)
-        assert self.datatype.compare(double_obj,
-                                     self.doc_obj.getDouble(doc, key))
+        assert self.datatype.compareDouble(double_obj,
+                                           self.doc_obj.getDouble(doc,
+                                                                  key))
 
     @pytest.mark.parametrize("key, value", [
         (random_string(6), round(random.uniform(0, 1), 4)),
         (random_string(6), round(random.uniform(1, 10), 4)),
         (random_string(6), round(random.uniform(11, 100), 4)),
         (random_string(6), round(random.uniform(101, 1000), 4))
-        ])
+    ])
     def test_get_set_float(self, key, value):
         '''
         @summary: Testing Get and Set Float method of Document API
         '''
         doc = self.doc_obj.create()
-#         float_obj = self.datatype.setFloat(value)
         self.doc_obj.setFloat(doc, key, value)
         result = self.doc_obj.getFloat(doc, key)
         assert value == result
@@ -259,7 +254,7 @@ class TestDocument(object):
         (random_string(6), "{}".format(random.randint(10, 99))),
         (random_string(6), "{}".format(random.randint(100, 999))),
         (random_string(6), "{}".format(random.randint(1000, 9999)))
-        ])
+    ])
     def test_get_set_long(self, key, value):
         '''
         @summary: Testing Get and Set Float method of Document API
@@ -268,4 +263,4 @@ class TestDocument(object):
         long_obj = self.datatype.setLong(value)
         self.doc_obj.setLong(doc, key, long_obj)
         result = self.doc_obj.getLong(doc, key)
-        assert self.datatype.compare(long_obj, result)
+        assert self.datatype.compareLong(long_obj, result)

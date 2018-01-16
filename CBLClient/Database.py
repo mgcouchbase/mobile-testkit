@@ -6,6 +6,7 @@ from keywords.utils import log_info
 from keywords import types
 from libraries.data import doc_generators
 
+
 class Database(object):
     _db = None
 
@@ -36,12 +37,6 @@ class Database(object):
             raise Exception("Either pass database and document or pass \
             name and path to delete the document.")
         return self._client.invokeMethod("database_delete", args)
-
-    def exists(self, db_name, directory):
-        args = Args()
-        args.setString("dbName", db_name)
-        args.setMemoryPointer("directory", directory)
-        return self._client.invokeMethod("database_exists", args)
 
     def purge(self, database, document):
         args = Args()
@@ -148,6 +143,12 @@ class Database(object):
         args = Args()
         args.setMemoryPointer("database", database)
         return self._client.invokeMethod("database_getIndexes", args)
+
+    def exists(self, name, directory=None):
+        args = Args()
+        args.setString("name", name)
+        args.setMemoryPointer("directory", directory)
+        return self._client.invokeMethod("database_exists", args)
 
     def create_value_index(self, database, prop):
         args = Args()

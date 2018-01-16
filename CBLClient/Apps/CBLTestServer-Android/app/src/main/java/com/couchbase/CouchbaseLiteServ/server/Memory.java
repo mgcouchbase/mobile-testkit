@@ -1,7 +1,9 @@
 package com.couchbase.CouchbaseLiteServ.server;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Memory {
     private Map<String, Object> _memory = new HashMap<>();
@@ -25,5 +27,10 @@ public class Memory {
 
     public Map<String, Object> get_memory_map(){
         return _memory;
+    }
+
+    public void flushMemory(){
+        _memory.clear();
+        _address = 0;
     }
 }
