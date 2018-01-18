@@ -46,5 +46,18 @@ namespace Couchbase.Lite.Testing
             var authenticator = MemoryMap.New<BasicAuthenticator>(username, password);
             response.WriteBody(authenticator);
         }
+
+        public static void GetPassword([NotNull] NameValueCollection args,
+                                       [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                       [NotNull] HttpListenerResponse response)
+        {
+            With<BasicAuthenticator>(postBody, "authenticator", au => response.WriteBody(au.Password));
+        }
+        public static void GetUsername([NotNull] NameValueCollection args,
+                               [NotNull] IReadOnlyDictionary<string, object> postBody,
+                               [NotNull] HttpListenerResponse response)
+        {
+            With<BasicAuthenticator>(postBody, "authenticator", au => response.WriteBody(au.Username));
+        }
     }
 }
