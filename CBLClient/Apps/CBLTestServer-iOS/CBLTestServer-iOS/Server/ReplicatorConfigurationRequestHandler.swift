@@ -22,7 +22,6 @@ public class ReplicatorConfigurationRequestHandler {
         case "replicatorConfiguration_create":
             let sourceDb: Database = args.get(name: "sourceDb")!
             let targetDb: Database? = args.get(name: "targetDb")!
-            let secure: Bool? = args.get(name: "secure")!
             let targetURI: String? = args.get(name: "targetURI")!
             
             if (targetDb != nil){
@@ -30,11 +29,8 @@ public class ReplicatorConfigurationRequestHandler {
                 return ReplicatorConfiguration.Builder(withDatabase: sourceDb, target: target)
             } else if (targetURI != nil){
                 var target: URLEndpoint
-                if secure != nil {
-                    target = URLEndpoint(withHost: targetURI!, secure: secure!)
-                } else {
-                    target = URLEndpoint(withHost: targetURI!, secure: false)
-                }
+                target = URLEndpoint(withURL: URL(string: targetURI!)!)
+
                 return ReplicatorConfiguration.Builder(withDatabase: sourceDb, target: target)
             } else {
                 throw RequestHandlerError.InvalidArgument("Incorrect configuration parameter provided")

@@ -44,7 +44,6 @@ public class ReplicatorRequestHandler {
             let documentIDs: [String]? = args.get(name: "documentIDs")
             let authenticator: Authenticator? = args.get(name: "authenticator")
             let conflictResolver: ConflictResolver? = args.get(name: "conflictResolver")
-            let secure: Bool? = args.get(name: "secure")
 
             var replicatorType = ReplicatorType.pushAndPull
 
@@ -60,12 +59,7 @@ public class ReplicatorRequestHandler {
 
             if (source_db != nil && target_url != nil) {
                 var target: URLEndpoint
-                if secure != nil {
-                    target = URLEndpoint(withHost: target_url!, secure: secure!)
-                } else {
-                    target = URLEndpoint(withHost: target_url!, secure: false)
-                }
-                
+                target = URLEndpoint(withURL: URL(string: target_url!)!)
                 let config = ReplicatorConfiguration.Builder(withDatabase: source_db!, target: target)
 
                 config.setReplicatorType(replicatorType)
