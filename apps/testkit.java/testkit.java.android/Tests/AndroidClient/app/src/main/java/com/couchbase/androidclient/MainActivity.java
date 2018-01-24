@@ -33,9 +33,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-    numOfDocs = getIntent().getIntExtra("numOfDocs",0);
+    /*numOfDocs = getIntent().getIntExtra("numOfDocs",0);
     scenarioRunTimeMinutes = getIntent().getLongExtra("scenarioRunTimeMinutes",0);
     String syncGatewayURL = getIntent().getStringExtra("syncGatewayURL");
+*/
+        numOfDocs = 1000;
+        scenarioRunTimeMinutes = 10;
+        String syncGatewayURL = "ws://192.168.0.112:4985/db/";
         if (syncGatewayURL == null || numOfDocs == 0 || scenarioRunTimeMinutes == 0) {
             Log.e("app", "Did not enter the values for one of them : syncGatewayURL, numOfDocs, scenarioRunTimeMinutes ");
             finish();
@@ -70,18 +74,18 @@ public class MainActivity extends AppCompatActivity {
         replBuilder.setContinuous(true);
         BasicAuthenticator authenticator = new BasicAuthenticator("travel-sample", "password");
         replBuilder.setAuthenticator(authenticator);
-        replBuilder.setReplicatorType(ReplicatorConfiguration.ReplicatorType.PUSH);
+        replBuilder.setReplicatorType(ReplicatorConfiguration.ReplicatorType.PUSH_AND_PULL);
 
         replicator = new Replicator(replConfig);
         replicator.start();
-
+/*
         ReplicatorConfiguration.Builder pullBuilder = new ReplicatorConfiguration.Builder(replConfig);
         ReplicatorConfiguration pullReplConfig = pullBuilder.build();
         pullBuilder.setReplicatorType(ReplicatorConfiguration.ReplicatorType.PULL);
         pullBuilder.setAuthenticator(authenticator);
         pullBuilder.setContinuous(true);
         pullReplicator = new Replicator(pullReplConfig);
-        pullReplicator.start();
+        pullReplicator.start();*/
 
     }
 
@@ -120,9 +124,9 @@ public class MainActivity extends AppCompatActivity {
             int n = rand.nextInt(numOfDocs);
             MutableDocument doc = database.getDocument("doc___" + n).toMutable();
             System.out.println("updating doc: doc__" + n);
-            System.out.println("Before" + doc.getString("name"));
+            System.out.println("Before: " + doc.getString("name"));
             doc = doc.setString("name", "New_user_" + k);
-            System.out.println("After" + doc.getString("name"));
+            System.out.println("After: " + doc.getString("name"));
             try {
                 database.save(doc);
             } catch (CouchbaseLiteException e) {
