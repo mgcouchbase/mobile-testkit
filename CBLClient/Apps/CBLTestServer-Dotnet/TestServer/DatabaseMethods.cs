@@ -25,8 +25,11 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using static Couchbase.Lite.DatabaseChangedEventArgs;
 
-using Couchbase.Lite.Query;
+using  Couchbase.Lite.Query;
+using static Couchbase.Lite.Query.QueryBuilder;
+
 
 using JetBrains.Annotations;
 
@@ -124,12 +127,13 @@ namespace Couchbase.Lite.Testing
             response.WriteBody(bodyObj);
         }
 
-        internal static void DatabaseContains([NotNull] NameValueCollection args,
-            [NotNull] IReadOnlyDictionary<string, object> postBody,
-            [NotNull] HttpListenerResponse response)
+        internal static void DatabaseCompact([NotNull] NameValueCollection args,
+                                             [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                             [NotNull] HttpListenerResponse response)
         {
-            var docId = args.GetString("id");
-            With<Database>(postBody, "database", db => response.WriteBody(db.Contains(docId)));
+            With<Database>(postBody, "database", db => db.Compact());
+            int bodyObj = -1;
+            response.WriteBody(bodyObj);
         }
 
         internal static void DatabaseCreate([NotNull]NameValueCollection args,
@@ -150,6 +154,27 @@ namespace Couchbase.Lite.Testing
             response.WriteBody(bodyResponse);
         }
 
+
+        // TODO
+        internal static void DatabaseDeleteByName([NotNull] NameValueCollection args,
+                                                  [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                                  [NotNull] HttpListenerResponse response)
+        {
+            
+            With<Database>(postBody, "database", db => db.Delete());
+            int bodyResponse = -1;
+            response.WriteBody(bodyResponse);
+        }
+
+        internal static void DatabaseExists([NotNull] NameValueCollection args,
+                                                  [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                                  [NotNull] HttpListenerResponse response)
+        {
+            var name = postBody["name"].ToString();
+            var directory = postBody["directory"].ToString();
+            response.WriteBody(Database.Exists(name, directory));
+        }
+
         internal static void DatabaseGetCount([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,
             [NotNull] HttpListenerResponse response)
@@ -163,15 +188,13 @@ namespace Couchbase.Lite.Testing
         {
             With<Database>(postBody, "database", db =>
             {
-                using (var query = Query.Query
+                using (var query = Query.QueryBuilder
                     .Select(SelectResult.Expression(Meta.ID))
                     .From(DataSource.Database(db)))
                 {
-                    using (var result = query.Execute())
-                    {
-                        var ids = result.Select(x => x.GetString("id"));
-                        response.WriteBody(ids);
-                    }
+                    var result = query.Execute();
+                    var ids = result.Select(x => x.GetString("id"));
+                    response.WriteBody(ids);
                 }
             });
         }
@@ -201,39 +224,55 @@ namespace Couchbase.Lite.Testing
             With<Database>(postBody, "database", db =>
             {
                 var retVal = new Dictionary<string, object>();
-                using (var query = Query.Query
+                using (var query = Query.QueryBuilder
                        .Select(SelectResult.Expression(Meta.ID))
                     .From(DataSource.Database(db)))
                 {
-                    using (var result = query.Execute())
+                    var result = query.Execute();
+                    foreach (var id in result.Select(x => x.GetString("id")))
                     {
-                        foreach (var id in result.Select(x => x.GetString("id")))
+                        using (var doc = db.GetDocument(id))
                         {
-                            using (var doc = db.GetDocument(id))
-                            {
-                                retVal[id] = doc.ToDictionary();
-                            }
+                            retVal[id] = doc.ToDictionary();
                         }
-
-                        response.WriteBody(retVal);
                     }
+
+                    response.WriteBody(retVal);
                 }
             });
+        }
+
+        internal static void DatabaseIndexes([NotNull] NameValueCollection args,
+                                                  [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                                  [NotNull] HttpListenerResponse response)
+        {
+            With<Database>(postBody, "database", db => response.WriteBody(db.GetIndexes()));
         }
 
         internal static void DatabaseGetName([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,
             [NotNull] HttpListenerResponse response)
         {
-            //var dbId = postBody["database"];
             With<Database>(postBody, "database", db => response.WriteBody(db.Name ?? String.Empty));
         }
 
         internal static void DatabasePath([NotNull] NameValueCollection args,
-            [NotNull] IReadOnlyDictionary<string, object> postBody,
-            [NotNull] HttpListenerResponse response)
+                                          [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                          [NotNull] HttpListenerResponse response)
         {
             With<Database>(postBody, "database", db => response.WriteBody(db.Path ?? String.Empty));
+        }
+
+
+        internal static void DatabasePurge([NotNull] NameValueCollection args,
+                                          [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                          [NotNull] HttpListenerResponse response)
+        {
+            With<Database>(postBody, "database", db => 
+            {
+                With<MutableDocument>(postBody, "document", docid => db.Purge(docid));
+                response.WriteEmptyBody();
+            });
         }
 
         //internal static void DatabaseRemoveChangeListener([NotNull] NameValueCollection args,
@@ -254,6 +293,66 @@ namespace Couchbase.Lite.Testing
         {
             With<Database>(postBody, "database", db => With<MutableDocument>(postBody, "document", doc => db.Save(doc)));
             response.WriteEmptyBody();
+        }
+
+        internal static void DatabaseSaveDocuments([NotNull] NameValueCollection args,
+                                                   [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                                   [NotNull] HttpListenerResponse response)
+        {
+            Dictionary<string, Dictionary <string, Object>> docDict = (Dictionary<string, Dictionary<string, Object>>) postBody["documents"];
+            With<Database>(postBody, "database", db =>
+            {
+                db.InBatch(() =>
+               {
+                   foreach (string id in docDict.Keys)
+                   {
+                        Dictionary<string, Object> docVal = docDict[id];
+                        MutableDocument doc = new MutableDocument(id, docVal);
+                        db.Save(doc);
+                   }
+               });
+            });
+            response.WriteEmptyBody();
+        }
+
+
+        internal static void DatabaseUpdateDocument([NotNull] NameValueCollection args,
+                                           [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                           [NotNull] HttpListenerResponse response)
+        {
+            With<Database>(postBody, "database", db =>
+            {
+                With<MutableDocument>(postBody, "document", doc =>
+                {
+                    string id = doc.Id;
+                    Dictionary<string, Object> data = (Dictionary < string, Object>) doc.GetValue(id);
+                    MutableDocument UpdateDoc = db.GetDocument(id).ToMutable();
+                    UpdateDoc.SetData(data);
+                    db.Save(UpdateDoc);
+                });
+                response.WriteEmptyBody();
+            });
+        }
+
+        internal static void DatabaseUpdateDocuments([NotNull] NameValueCollection args,
+                                   [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                   [NotNull] HttpListenerResponse response)
+        {
+            Dictionary<string, Dictionary<string, Object>> docDict = (Dictionary<string, Dictionary<string, Object>>)postBody["documents"];
+            With<Database>(postBody, "database", db =>
+            {
+                db.InBatch(() =>
+                {
+                    foreach (string id in docDict.Keys)
+                    {
+                        Dictionary<string, Object> docVal = docDict[id];
+                        MutableDocument UpdateDoc = db.GetDocument(id).ToMutable();
+                        UpdateDoc.SetData(docVal);
+                        db.Save(UpdateDoc);
+                    }
+                });
+            });
+            response.WriteEmptyBody();           
         }
 
         #endregion
@@ -283,5 +382,12 @@ namespace Couchbase.Lite.Testing
         }
 
         #endregion
+    }
+
+    internal class MyDatabaseChangeListener : DatabaseChangeListener
+    {
+        private List<DatabaseChange> changes;
+
+        public List
     }
 }

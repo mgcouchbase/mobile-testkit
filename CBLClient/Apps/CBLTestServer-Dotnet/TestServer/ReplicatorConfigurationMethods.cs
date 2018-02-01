@@ -53,6 +53,9 @@ namespace Couchbase.Lite.Testing
                 {
                     With<Database>(postBody, "targetDB", tdb => response.WriteBody(MemoryMap.New<ReplicatorConfiguration>(sdb, tdb)));
                 }
+                else{
+                    throw new ArgumentException("Invalid value for replication_type");
+                }
             });
         }
 

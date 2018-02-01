@@ -2,14 +2,13 @@
   "version": 3,
   "targets": {
     "MonoAndroid,Version=v8.0": {
-      "Couchbase.Lite/2.0.0-db021": {
+      "Couchbase.Lite/2.0.0-b0520": {
         "type": "package",
         "dependencies": {
-          "Couchbase.Lite.Support.Android": "[2.0.0-db021]",
-          "Microsoft.Extensions.DependencyInjection": "[1.1.1, 2.0.0)",
-          "Microsoft.Extensions.Logging": "[1.1.2, 2.0.0)",
+          "Couchbase.Lite.Support.Android": "[2.0.0-b0520]",
           "NETStandard.Library": "1.6.0",
           "Newtonsoft.Json": "9.0.1",
+          "SimpleInjector": "4.0.12",
           "System.Net.NetworkInformation": "4.3.0",
           "System.Security.Cryptography.Algorithms": "4.3.0"
         },
@@ -57,19 +56,6 @@
           "lib/MonoAndroid10/_._": {}
         }
       },
-      "Microsoft.Extensions.DependencyInjection/1.1.1": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "1.1.1",
-          "NETStandard.Library": "1.6.1"
-        },
-        "compile": {
-          "lib/netstandard1.1/Microsoft.Extensions.DependencyInjection.dll": {}
-        },
-        "runtime": {
-          "lib/netstandard1.1/Microsoft.Extensions.DependencyInjection.dll": {}
-        }
-      },
       "Microsoft.Extensions.DependencyInjection.Abstractions/1.1.1": {
         "type": "package",
         "dependencies": {
@@ -81,20 +67,6 @@
         },
         "runtime": {
           "lib/netstandard1.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {}
-        }
-      },
-      "Microsoft.Extensions.Logging/1.1.2": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "1.1.1",
-          "Microsoft.Extensions.Logging.Abstractions": "1.1.2",
-          "NETStandard.Library": "1.6.1"
-        },
-        "compile": {
-          "lib/netstandard1.1/Microsoft.Extensions.Logging.dll": {}
-        },
-        "runtime": {
-          "lib/netstandard1.1/Microsoft.Extensions.Logging.dll": {}
         }
       },
       "Microsoft.Extensions.Logging.Abstractions/1.1.2": {
@@ -191,6 +163,19 @@
         },
         "runtime": {
           "lib/netstandard1.3/Newtonsoft.Json.dll": {}
+        }
+      },
+      "SimpleInjector/4.0.12": {
+        "type": "package",
+        "dependencies": {
+          "NETStandard.Library": "1.6.0",
+          "System.ComponentModel": "4.0.1"
+        },
+        "compile": {
+          "lib/netstandard1.3/SimpleInjector.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard1.3/SimpleInjector.dll": {}
         }
       },
       "System.AppContext/4.3.0": {
@@ -713,7 +698,7 @@
         "type": "project",
         "framework": ".NETStandard,Version=v2.0",
         "dependencies": {
-          "Couchbase.Lite": "2.0.0-db021",
+          "Couchbase.Lite": "2.0.0-b0520",
           "JetBrains.Annotations": "11.1.0",
           "Newtonsoft.Json": "10.0.3"
         },
@@ -727,12 +712,12 @@
     }
   },
   "libraries": {
-    "Couchbase.Lite/2.0.0-db021": {
-      "sha512": "9Dzhk0W4t1sMUZMTBTGbe54k1QWVaU4v51Px6GEG+ISjDgY7DPYO3vs8CMj+LMMi8q3HWvROwTPZ/l/mkTQ+RA==",
+    "Couchbase.Lite/2.0.0-b0520": {
+      "sha512": "hsYjPOKAw56i50Xq7snVCKgTMALgltRCuD3plcaBQ3jMdlqU6BB3XqC/hzzqUDy9/jK4+QO+KCQ/hdyPPxS/zQ==",
       "type": "package",
-      "path": "couchbase.lite/2.0.0-db021",
+      "path": "couchbase.lite/2.0.0-b0520",
       "files": [
-        "couchbase.lite.2.0.0-db021.nupkg.sha512",
+        "couchbase.lite.2.0.0-b0520.nupkg.sha512",
         "couchbase.lite.nuspec",
         "lib/netstandard1.4/Couchbase.Lite.dll",
         "lib/netstandard1.4/Couchbase.Lite.pdb",
@@ -826,17 +811,6 @@
         "ref/xamarinwatchos10/_._"
       ]
     },
-    "Microsoft.Extensions.DependencyInjection/1.1.1": {
-      "sha512": "HPromF7+ssYXilQndxMbuPfn2w9C9mP2owmNC48/bgts/TWBMlvnUYsvOvTC8Ojn0DuiDDGmHNqOtxwwvFSpAA==",
-      "type": "package",
-      "path": "microsoft.extensions.dependencyinjection/1.1.1",
-      "files": [
-        "lib/netstandard1.1/Microsoft.Extensions.DependencyInjection.dll",
-        "lib/netstandard1.1/Microsoft.Extensions.DependencyInjection.xml",
-        "microsoft.extensions.dependencyinjection.1.1.1.nupkg.sha512",
-        "microsoft.extensions.dependencyinjection.nuspec"
-      ]
-    },
     "Microsoft.Extensions.DependencyInjection.Abstractions/1.1.1": {
       "sha512": "sKsx2jEkabcI954cB6MoU2LUxv8YTByV8+ifqbFtIF8gFqPb4/CfPxwvxrYW+aXc4V44KKHOyeTDgyc4B7fjYg==",
       "type": "package",
@@ -846,17 +820,6 @@
         "lib/netstandard1.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "microsoft.extensions.dependencyinjection.abstractions.1.1.1.nupkg.sha512",
         "microsoft.extensions.dependencyinjection.abstractions.nuspec"
-      ]
-    },
-    "Microsoft.Extensions.Logging/1.1.2": {
-      "sha512": "LydGeNbeOBTLt3qYz8L3wpRl4TIE6sLBTROiWlU5uckJOaTBCtOTonTbUWrdYEvjOEDFlKySsKUI7HmS7sjrrA==",
-      "type": "package",
-      "path": "microsoft.extensions.logging/1.1.2",
-      "files": [
-        "lib/netstandard1.1/Microsoft.Extensions.Logging.dll",
-        "lib/netstandard1.1/Microsoft.Extensions.Logging.xml",
-        "microsoft.extensions.logging.1.1.2.nupkg.sha512",
-        "microsoft.extensions.logging.nuspec"
       ]
     },
     "Microsoft.Extensions.Logging.Abstractions/1.1.2": {
@@ -955,6 +918,23 @@
         "newtonsoft.json.10.0.3.nupkg.sha512",
         "newtonsoft.json.nuspec",
         "tools/install.ps1"
+      ]
+    },
+    "SimpleInjector/4.0.12": {
+      "sha512": "10Qj1UiitErW7ktN13sYxg9vrbHClJ7ThXj6n/27bKAO4V+bIcRRSJDGbMYz54x290Q/ELFJOu9Q/3KicqivTg==",
+      "type": "package",
+      "path": "simpleinjector/4.0.12",
+      "files": [
+        "lib/net40/SimpleInjector.dll",
+        "lib/net40/SimpleInjector.xml",
+        "lib/net45/SimpleInjector.dll",
+        "lib/net45/SimpleInjector.xml",
+        "lib/netstandard1.0/SimpleInjector.dll",
+        "lib/netstandard1.0/SimpleInjector.xml",
+        "lib/netstandard1.3/SimpleInjector.dll",
+        "lib/netstandard1.3/SimpleInjector.xml",
+        "simpleinjector.4.0.12.nupkg.sha512",
+        "simpleinjector.nuspec"
       ]
     },
     "System.AppContext/4.3.0": {
@@ -3835,6 +3815,7 @@
       ],
       "sources": {
         "http://mobile.nuget.couchbase.com/nuget/Developer/": {},
+        "http://mobile.nuget.couchbase.com/nuget/Internal": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
