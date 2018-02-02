@@ -36,10 +36,10 @@ class TestDatabase(object):
             assert err_msg in str(err_resp)
         # checking document in db with empty name
         doc_id = self.db_obj.getDocument(db, "")
-        assert doc_id == -1
+        assert doc_id == None
         # checking for a non-existing doc in DB
         doc_id = self.db_obj.getDocument(db, "I-do-not-exist")
-        assert doc_id == -1
+        assert doc_id == None
 
     def test_saveDocument_exception(self):
         if self.liteserv_platform == "ios":
@@ -88,7 +88,7 @@ class TestDatabase(object):
         '''
         db = self.db_obj.create(db_name)
         assert self.db_obj.getName(db) == db_name
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db_name", [
         random_string(1),
@@ -106,28 +106,7 @@ class TestDatabase(object):
         @summary: Testing close method of Database API
         '''
         db = self.db_obj.create(db_name)
-        assert self.db_obj.close(db) == -1
-
-    @pytest.mark.parametrize("db_name", [
-        random_string(1),
-        random_string(6),
-        random_string(128),
-        "_{}".format(random_string(6)),
-        "{}_".format(random_string(6)),
-        "_{}_".format(random_string(6)),
-        random_string(6, digit=True),
-        random_string(6).upper(),
-    ])
-    def test_contains(self, db_name):
-        '''
-        @summary: Testing contains method of Database API
-        '''
-        doc_id_prefix = "bar"
-        doc = self.doc_obj.create(doc_id=doc_id_prefix)
-        db = self.db_obj.create(db_name)
-        self.db_obj.saveDocument(db, doc)
-        assert self.db_obj.contains(db, doc_id_prefix)
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.close(db) == None
 
     @pytest.mark.parametrize("db_name", [
         random_string(1),
@@ -145,7 +124,7 @@ class TestDatabase(object):
         '''
         db = self.db_obj.create(db_name)
         path = self.db_obj.getPath(db)
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
         assert self.db_obj.exists(db_name, path) is False
 
     @pytest.mark.parametrize("db_name, doc_id", [
@@ -165,26 +144,23 @@ class TestDatabase(object):
         '''
         db_name = db_name.lower()
         db = self.db_obj.create(db_name)
-        assert self.db_obj.getDocument(db, doc_id) == -1
+        assert self.db_obj.getDocument(db, doc_id) == None
 
         doc = self.doc_obj.create(doc_id=doc_id)
-        self.doc_obj.setString(doc, "key", "value")
-        doc_latest = self.db_obj.saveDocument(db, doc)
+        doc = self.doc_obj.setString(doc, "key", "value")
+        self.db_obj.saveDocument(db, doc)
         doc_res = self.db_obj.getDocument(db, doc_id)
         assert doc_res is not None
         assert self.doc_obj.getId(doc_res) == doc_id
         assert self.db_obj.getCount(db) == 1
-
-        doc_res = self.db_obj.getDocument(db, doc_id)
-        assert doc_res is not None
         assert self.doc_obj.getString(doc_res, "key") == "value"
 
-        self.db_obj.delete(document=doc_latest, database=db)
+        self.db_obj.delete(document=doc, database=db)
         doc_res = self.db_obj.getDocument(db, doc_id)
         assert self.db_obj.getCount(db) == 0
         doc_res = self.db_obj.getDocument(db, doc_id)
-        assert doc_res == -1
-        assert self.db_obj.deleteDB(db) == -1
+        assert doc_res == None
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db_name, doc_id, num_of_docs", [
         (random_string(6), random_string(8), 9),
@@ -202,7 +178,7 @@ class TestDatabase(object):
             self.db_obj.saveDocument(db, doc)
         doc_count = self.db_obj.getCount(db)
         assert num_of_docs == doc_count
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db_name", [
         random_string(1),
@@ -222,7 +198,7 @@ class TestDatabase(object):
         path = self.db_obj.getPath(db)
 #         directory = "/".join(path.split("/")[:-2])
         assert self.db_obj.exists(db_name, path)
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
         assert not self.db_obj.exists(db_name, path)
 
     @pytest.mark.parametrize("db_name, doc_id", [
@@ -246,7 +222,7 @@ class TestDatabase(object):
         self.db_obj.saveDocument(db, doc)
         new_doc = self.db_obj.getDocument(db, doc_id)
         assert self.doc_obj.getId(new_doc) == self.doc_obj.getId(doc)
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db_name", [
         random_string(1),
@@ -265,7 +241,7 @@ class TestDatabase(object):
         '''
         db = self.db_obj.create(db_name)
         assert db_name == str(self.db_obj.getName(db))
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db_name", [
         random_string(1),
@@ -284,7 +260,7 @@ class TestDatabase(object):
         '''
         db = self.db_obj.create(db_name)
         assert self.db_obj.getPath(db)
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     @pytest.mark.parametrize("db1, db2, doc_id", [
         # "",
@@ -309,10 +285,10 @@ class TestDatabase(object):
         self.db_obj.saveDocument(db_1, doc)
         self.db_obj.saveDocument(db_2, doc)
         self.db_obj.purge(document=doc, database=db_1)
-        assert self.db_obj.getDocument(db_2, doc_id) == -1
+        assert self.db_obj.getDocument(db_2, doc_id) == None
         assert self.db_obj.getDocument(db_2, doc_id)
-        assert self.db_obj.deleteDB(db_1) == -1
-        assert self.db_obj.deleteDB(db_2) == -1
+        assert self.db_obj.deleteDB(db_1) == None
+        assert self.db_obj.deleteDB(db_2) == None
 
     @pytest.mark.parametrize("db_name, doc_id", [
         (random_string(1), random_string(6)),
@@ -332,11 +308,11 @@ class TestDatabase(object):
         doc = self.doc_obj.create(doc_id)
         db = self.db_obj.create(db_name)
         doc_in_db_check = self.db_obj.getDocument(db, doc_id)
-        assert doc_in_db_check == -1
+        assert doc_in_db_check == None
         self.db_obj.saveDocument(db, doc)
         doc_res = self.db_obj.getDocument(db, doc_id)
         assert doc_id == str(self.doc_obj.getId(doc_res))
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None
 
     def test_getDocuments(self):
         '''
@@ -358,4 +334,4 @@ class TestDatabase(object):
         docs_in_db = self.db_obj.getDocuments(db, ids)
         assert num_of_docs == self.db_obj.getCount(db)
         assert documents == docs_in_db
-        assert self.db_obj.deleteDB(db) == -1
+        assert self.db_obj.deleteDB(db) == None

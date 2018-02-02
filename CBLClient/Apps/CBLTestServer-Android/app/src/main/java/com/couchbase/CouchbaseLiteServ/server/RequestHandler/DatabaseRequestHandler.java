@@ -1,6 +1,7 @@
 package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.CouchbaseLiteException;
@@ -10,11 +11,12 @@ import com.couchbase.lite.DatabaseChange;
 import com.couchbase.lite.DatabaseChangeListener;
 import com.couchbase.lite.DatabaseConfiguration;
 import com.couchbase.lite.Document;
-import com.couchbase.lite.DocumentChangeListener;
 import com.couchbase.CouchbaseLiteServ.MainActivity;
+import com.couchbase.lite.ListenerToken;
 import com.couchbase.lite.Meta;
 import com.couchbase.lite.MutableDocument;
 import com.couchbase.lite.Query;
+import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Result;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
@@ -33,9 +35,24 @@ public class DatabaseRequestHandler {
 
     public Database create(Args args) throws CouchbaseLiteException {
         String name = args.get("name");
-        Context context = MainActivity.getAppContext();
-        DatabaseConfiguration databaseConfig = new DatabaseConfiguration(context);
-        return new Database(name, databaseConfig);
+        DatabaseConfiguration config = args.get("config");
+        if (config == null) {
+            Context context = MainActivity.getAppContext();
+            config = new DatabaseConfiguration(context);
+        }
+        return new Database(name, config);
+    }
+
+    public ListenerToken addChangeListener(Args args) {
+        Database database = args.get("database");
+        MyDatabaseChangeListener changeListener = new MyDatabaseChangeListener();
+        return database.addChangeListener(changeListener);
+    }
+
+    public void removeChangeListener(Args args) {
+        Database database = args.get("database");
+        ListenerToken changeListener = args.get("changeListener");
+        database.removeChangeListener(changeListener);
     }
 
     public Database create(String name) throws CouchbaseLiteException {
@@ -59,6 +76,7 @@ public class DatabaseRequestHandler {
 
     public File getPath(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
+        System.out.println("database path is "+database.getPath());
         return database.getPath();
     }
 
@@ -89,6 +107,37 @@ public class DatabaseRequestHandler {
             }
         }
         return documents;
+    }
+
+    public void updateDocument(Args args) throws CouchbaseLiteException {
+        Database database = args.get("database");
+        MutableDocument document = args.get("document");
+        String id = document.getId();
+        Map<String, Object> data = (Map<String, Object>) document.getValue(id);
+        MutableDocument updateDoc = database.getDocument(id).toMutable();
+        updateDoc.setData(data);
+        database.save(updateDoc);
+    }
+
+    public void updateDocuments(Args args) throws CouchbaseLiteException {
+        final Database database = args.get("database");
+        final Map<String, Map<String, Object>> documents = args.get("documents");
+        database.inBatch(new Runnable() {
+            @Override
+            public void run() {
+                for (Map.Entry<String, Map<String, Object>> entry : documents.entrySet()) {
+                    String id = entry.getKey();
+                    Map<String, Object> data = entry.getValue();
+                    MutableDocument updatedDoc = database.getDocument(id).toMutable();
+                    updatedDoc.setData(data);
+                    try {
+                        database.save(updatedDoc);
+                    } catch (CouchbaseLiteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
     }
 
     public void purge(Args args) throws CouchbaseLiteException {
@@ -127,13 +176,18 @@ public class DatabaseRequestHandler {
     public void delete(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
         Document document = args.get("document");
-
         database.delete(document);
    }
 
     public void deleteDB(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
-        database.delete();
+        try {
+            database.delete();
+        }catch (CouchbaseLiteException ex){
+            Log.e("deleteDB", "deleteDB() ERROR !!!!!!");
+            ex.printStackTrace();
+        }
+        System.out.println("database delete ");
    }
 
    public void deleteDbByName(Args args) throws CouchbaseLiteException {
@@ -148,22 +202,23 @@ public class DatabaseRequestHandler {
         return Database.exists(name, directory.getParentFile());
     }
 
+/*    method dropped in DB022
     public boolean contains(Args args) {
        Database database = args.get("database");
        String id = args.get("id");
        return database.contains(id);
-    }
+    }*/
 
     public List<String> getDocIds(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(database));
         List<String> result = new ArrayList<String>();
         ResultSet results = query.execute();
         for (Result row : results){
 
-            result.add(row.getString("_id"));
+            result.add(row.getString("id"));
         }
         Collections.sort(result);
         return result;
@@ -194,23 +249,23 @@ public class DatabaseRequestHandler {
 //        }
 //    }
 
-    public int databaseChangeListener_changesCount(Args args) {
+    public int databaseChangeListenerChangesCount(Args args) {
         MyDatabaseChangeListener changeListener = args.get("changeListener");
         return changeListener.getChanges().size();
     }
 
-    public DatabaseChange databaseChangeListener_getChange(Args args) {
+    public DatabaseChange databaseChangeListenerGetChange(Args args) {
         MyDatabaseChangeListener changeListener = args.get("changeListener");
         int index = args.get("index");
         return changeListener.getChanges().get(index);
     }
 
-    public Database databaseChange_getDatabase(Args args){
+    public Database changeGetDatabase(Args args){
         DatabaseChange change = args.get("change");
         return change.getDatabase();
     }
 
-    public List<String> databaseChange_getDocumentId(Args args) {
+    public List<String> changeGetDocumentId(Args args) {
         DatabaseChange change = args.get("change");
         return change.getDocumentIDs();
     }

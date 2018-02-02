@@ -11,10 +11,7 @@
         "db":{
             {{ autoimport }}
             {{ xattrs }}
-            "unsupported": { 
-                "allow_conflicts": false,
-                "replicator_2":true
-             },
+            "allow_conflicts": false,
             "revs_limit": 5,
             "rev_cache_size": 1000,
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",

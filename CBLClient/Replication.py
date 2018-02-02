@@ -1,26 +1,32 @@
+import time
+
 from CBLClient.Client import Client
 from CBLClient.Args import Args
-from keywords.utils import log_info
+from CBLClient.Authenticator import Authenticator
 
 
-class Replication:
-    _client = None
-    _baseUrl = None
+class Replication(object):
+    '''
+    classdocs
+    '''
+    baseUrl = None
 
-    def __init__(self, baseUrl):
-        self.baseUrl = baseUrl
+    def __init__(self, base_url):
+        '''
+        Constructor
+        '''
+        self.base_url = base_url
 
         # If no base url was specified, raise an exception
-        if not self.baseUrl:
-            raise Exception("No baseUrl specified")
-
-        self._client = Client(baseUrl)
+        if not self.base_url:
+            raise Exception("No base_url specified")
+        self._client = Client(base_url)
+        self.config = None
 
     def configure(self, source_db, target_url=None, target_db=None, replication_type="push_pull", continuous=False,
                   channels=None, documentIDs=None, replicator_authenticator=None, headers=None):
         args = Args()
         args.setMemoryPointer("source_db", source_db)
-        args.setString("replication_type", replication_type)
         args.setBoolean("continuous", continuous)
         if channels is not None:
             args.setArray("channels", channels)
@@ -28,107 +34,301 @@ class Replication:
             args.setArray("documentIDs", documentIDs)
         if replicator_authenticator is not None:
             args.setMemoryPointer("authenticator", replicator_authenticator)
+        if replication_type is None:
+            replication_type = "push_pull" 
+        args.setString("replication_type", replication_type)
         if headers is not None:
             args.setDictionary("headers", headers)
-        if target_db is None:
+        if target_url is not None:
             args.setString("target_url", target_url)
-            return self._client.invokeMethod("replicator_configureRemoteDbUrl", args)
+        if target_db is not None:
+            args.setMemoryPointer("target_db", target_db)
+        return self._client.invokeMethod("replicatorConfiguration_configure", args)
+
+    """def create(self, source_db, target_db=None, target_url=None):
+        args = Args()
+        args.setMemoryPointer("sourceDb", source_db)
+        if target_db:
+            args.setMemoryPointer("targetDb", target_db)
+        elif target_url:
+            args.setMemoryPointer("targetURI", target_url)
         else:
-            args.setString("target_db", target_db)
-            return self._client.invokeMethod("configure_replicator_local_db", args)
+            raise Exception("Pass either target_db or target_url.")
+        return self._client.invokeMethod("replicatorConfiguration_create",
+                                         args) """
+
+#     Protected method now
+#     def copy(self, configuration):
+#         args = Args()
+#         args.setMemoryPointer("configuration", configuration)
+#         return self._client.invokeMethod("replicatorConfiguration_copy", args)
+
+    def getAuthenticator(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getAuthenticator",
+                                         args)
+
+    def getChannels(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getChannels",
+                                         args)
+
+    def getConflictResolver(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getConflictResolver",
+                                         args)
+
+    def getDatabase(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getDatabase",
+                                         args)
+
+    def getDocumentIDs(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getDocumentIDs",
+                                         args)
+
+    def getPinnedServerCertificate(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getPinnedServerCertificate",
+                                         args)
+
+    def getReplicatorType(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getReplicatorType",
+                                         args)
+
+    def getTarget(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_getTarget", args)
+
+    def isContinuous(self, configuration):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        return self._client.invokeMethod("replicatorConfiguration_isContinuous",
+                                         args)
+
+    def setAuthenticator(self, configuration, authenticator):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setMemoryPointer("authenticator", authenticator)
+        return self._client.invokeMethod("replicatorConfiguration_setAuthenticator",
+                                         args)
+
+    def setChannels(self, configuration, channels):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setArray("channels", channels)
+        return self._client.invokeMethod("replicatorConfiguration_setChannels",
+                                         args)
+
+    def setConflictResolver(self, configuration, conflict_resolver):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setMemoryPointer("conflictResolver", conflict_resolver)
+        return self._client.invokeMethod("replicatorConfiguration_setConflictResolver",
+                                         args)
+
+    def setContinuous(self, configuration, continuous):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setBoolean("continuous", continuous)
+        return self._client.invokeMethod("replicatorConfiguration_setContinuous",
+                                         args)
+
+    def setDocumentIDs(self, configuration, document_ids):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setArray("documentIds", document_ids)
+        return self._client.invokeMethod("replicatorConfiguration_setDocumentIDs",
+                                         args)
+
+    def setPinnedServerCertificate(self, configuration, cert):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setArray("cert", cert)
+        return self._client.invokeMethod("replicatorConfiguration_setPinnedServerCertificate",
+                                         args)
+
+    def setReplicatorType(self, configuration, repl_type):
+        args = Args()
+        args.setMemoryPointer("configuration", configuration)
+        args.setMemoryPointer("replType", repl_type)
+        return self._client.invokeMethod("replicatorConfiguration_setReplicatorType",
+                                         args)
 
     def create(self, config):
         args = Args()
         args.setMemoryPointer("config", config)
         return self._client.invokeMethod("replicator_create", args)
 
-    def authentication(self, session_id=None, cookie=None, username=None, password=None, authentication_type="basic"):
+    def getConfig(self, replicator):
         args = Args()
-        args.setString("authentication_type", authentication_type)
-        if authentication_type == "session":
-            args.setString("sessionId", session_id)
-            args.setString("cookieName", cookie)
-        else:
-            args.setString("username", username)
-            args.setString("password", password)
-        return self._client.invokeMethod("replicator_create_authenticator", args)
-
-    def start(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        self._client.invokeMethod("replicator_start", args)
-
-    def stop(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        self._client.invokeMethod("replicator_stop", args)
-
-    def status(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        return self._client.invokeMethod("replicator_status", args)
-
-    def get_config(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
+        args.setMemoryPointer("replicator", replicator)
         return self._client.invokeMethod("replicator_config", args)
 
-    def get_completed(self, replication_obj):
+#     Same as status method
+#     def getStatus(self, replicator):
+#         args = Args()
+#         args.setMemoryPointer("replicator", replicator)
+#         return self._client.invokeMethod("replicator_getStatus", args)
+
+    def addChangeListener(self, replicator):
         args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        return self._client.invokeMethod("replicator_getCompleted", args)
-
-    def get_total(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        return self._client.invokeMethod("replicator_getTotal", args)
-
-    def get_activitylevel(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-        
-        return self._client.invokeMethod("replicator_getActivityLevel", args)
-
-    def get_error(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
-        return self._client.invokeMethod("replicator_getError", args)
-
-    def add_change_listener(self, replication_obj):
-        args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
-
+        args.setMemoryPointer("replicator", replicator)
         return self._client.invokeMethod("replicator_addChangeListener", args)
 
-    def remove_change_listener(self, replication_obj, change_listener):
+    def removeChangeListener(self, replicator, change_listener):
         args = Args()
-        args.setMemoryPointer("replication_obj", replication_obj)
+        args.setMemoryPointer("replicator", replicator)
         args.setMemoryPointer("changeListener", change_listener)
-
         return self._client.invokeMethod("replicator_removeChangeListener", args)
 
-    def get_changes_count(self, change_listener):
+    def toString(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_toString", args)
+
+#     Not available any more
+#     def networkReachable(self, replicator):
+#         args = Args()
+#         args.setMemoryPointer("replicator", replicator)
+#         return self._client.invokeMethod("replicator_networkReachable", args)
+# 
+#     def networkUnreachable(self, replicator):
+#         args = Args()
+#         args.setMemoryPointer("replicator", replicator)
+#         return self._client.invokeMethod("replicator_networkUnreachable", args)
+
+    def start(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_start", args)
+
+    def stop(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_stop", args)
+
+    def status(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_status", args)
+
+    def getCompleted(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_getCompleted", args)
+
+    def getTotal(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_getTotal", args)
+
+    def getActivitylevel(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_getActivityLevel", args)
+
+    def getError(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+#         error = self._client.invokeMethod("replicator_getError", args)
+#         if error.__contains__("@"):
+#             error = None
+        return self._client.invokeMethod("replicator_getError", args)
+
+    def getChangesCount(self, change_listener):
         args = Args()
         args.setMemoryPointer("changeListener", change_listener)
+        return self._client.invokeMethod("replicator_changeListenerChangesCount", args)
 
-        return self._client.invokeMethod("replicatorChangeListener_changesCount", args)
-
-    def get_changes_changelistener(self, change_listener, index):
+    def getChangesChangeListener(self, change_listener):
         args = Args()
         args.setMemoryPointer("changeListener", change_listener)
-        args.setInt("index", index)
+        # args.setInt("index", index)
+        return self._client.invokeMethod("replicator_changeListenerGetChanges", args)
 
-        return self._client.invokeMethod("replicatorChangeListener_getChange", args)
+    def configure_and_replicate(self, source_db, replicator_authenticator, target_db=None, target_url=None, replication_type="push_pull", continuous=True,
+                                channels=None):
+        if target_db is None:
+            repl_config = self.configure(source_db, target_url=target_url, continuous=continuous,
+                                         replication_type=replication_type, channels=channels, replicator_authenticator=replicator_authenticator)
+        else:
+            repl_config = self.configure(source_db, target_db=target_db, continuous=continuous,
+                                         replication_type=replication_type, channels=channels, replicator_authenticator=replicator_authenticator)
+        repl = self.create(repl_config)
+        self.start(repl)
+        self.wait_until_replicator_idle(repl)
+        return repl
 
-    def conflict_resolver(self, conflict_type="giveup"):
+    def wait_until_replicator_idle(self, repl):
+        max_times = 10
+        count = 0
+        # Sleep until replicator completely processed
+        activity_level = self.getActivitylevel(repl)
+        while activity_level != "idle" and count < max_times:
+            print "sleeping... actvity level is", activity_level
+            time.sleep(0.5)
+            if activity_level == "idle" or activity_level == "offline" or activity_level == "connecting":
+                count += 1
+            if activity_level == "stopped":
+                break
+            err = self.getError(repl)
+            # TODO remove the condition of 'connection reset by peer'
+            # once https://github.com/couchbase/sync_gateway/issues/3249 is fixed
+            # if err != -1: #-1 means Null or None, so if any error, just raise the exception
+            if err is not None and err != 'nil':
+                raise Exception("Error while replicating", err)
+            activity_level = self.getActivitylevel(repl)
+
+    def create_session_configure_replicate(self, baseUrl, sg_admin_url, sg_db, username, password,
+                                           channels, sg_client, cbl_db, sg_blip_url, replication_type=None, continuous=True):
+
+        authenticator = Authenticator(baseUrl)
+        sg_client.create_user(sg_admin_url, sg_db, username, password, channels=channels)
+        cookie, session_id = sg_client.create_session(sg_admin_url, sg_db, "autotest")
+        session = cookie, session_id
+        replicator_authenticator = authenticator.authentication(session_id, cookie, authentication_type="session")
+        # replicator_authenticator = authenticator.authentication(username=username, password=password, authentication_type="basic")
+        repl_config = self.configure(cbl_db, sg_blip_url, continuous=continuous, channels=channels, replication_type=replication_type, replicator_authenticator=replicator_authenticator)
+        repl = self.create(repl_config)
+        self.start(repl)
+        self.wait_until_replicator_idle(repl)
+
+        return session, replicator_authenticator, repl
+
+"""
+    def configure(self, source_db, target_url=None, target_db=None,
+                  replication_type="push_pull", continuous=False,
+                  channels=None, document_ids=None,
+                  replicator_authenticator=None):
         args = Args()
-        args.setString("conflict_type", conflict_type)
-        
-        return self._client.invokeMethod("replicator_conflict_resolver", args)
+        args.setString("replication_type", replication_type)
+        repl_config_obj = ReplicatorConfiguration(self.base_url)
+        if target_url:
+            self.config = repl_config_obj.create(source_db, target_url=target_url)
+        elif target_db:
+            self.config = repl_config_obj.create(source_db, target_db=target_db)
+
+        if channels is not None:
+            repl_config_obj.setChannels(self.config, channels)
+
+        if document_ids is not None:
+            repl_config_obj.setDocumentIDs(self.config, document_ids)
+
+        if replicator_authenticator is not None:
+            repl_config_obj.setAuthenticator(self.config, replicator_authenticator)
+
+        repl_config_obj.setContinuous(self.config, continuous)
+        repl_config_obj.setReplicatorType(self.config, replication_type)
+        return self.create(self.config)
+"""

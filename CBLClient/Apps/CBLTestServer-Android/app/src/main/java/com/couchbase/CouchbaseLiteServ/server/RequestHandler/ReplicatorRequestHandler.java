@@ -1,6 +1,7 @@
 package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 import com.couchbase.CouchbaseLiteServ.server.Args;
+import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Replicator;
 import com.couchbase.lite.ReplicatorChange;
 import com.couchbase.lite.ReplicatorChangeListener;
@@ -23,15 +24,21 @@ public class ReplicatorRequestHandler {
         return replicator.getConfig();
     }
 
-    public Replicator.ActivityLevel getStatus(Args args){
+    public String status(Args args){
         Replicator replicator = args.get("replicator");
-        return replicator.getStatus().getActivityLevel();
+        return replicator.getStatus().toString();
     }
 
-    public void addChangeListener(Args args){
+    public String getActivityLevel(Args args) {
+        Replicator replicator = args.get("replicator");
+        return replicator.getStatus().getActivityLevel().toString().toLowerCase();
+    }
+
+    public ReplicatorChangeListener addChangeListener(Args args){
         Replicator replicator = args.get("replicator");
         MyReplicatorListener changeListener = new MyReplicatorListener();
         replicator.addChangeListener(changeListener);
+        return changeListener;
     }
 
     public void removeChangeListener(Args args){
@@ -45,16 +52,6 @@ public class ReplicatorRequestHandler {
         return replicator.toString();
     }
 
-    public void networkReachable(Args args){
-        Replicator replicator = args.get("replicator");
-        replicator.networkReachable();
-    }
-
-    public void networkUnreachable(Args args){
-        Replicator replicator = args.get("replicator");
-        replicator.networkUnreachable();
-    }
-
     public void start(Args args){
         Replicator replicator = args.get("replicator");
         replicator.start();
@@ -65,20 +62,63 @@ public class ReplicatorRequestHandler {
         replicator.stop();
     }
 
-    public Replicator replicatorChangeGetReplicator(Args args){
+    public Replicator changeGetReplicator(Args args){
         ReplicatorChange change = args.get("change");
         return change.getReplicator();
     }
 
-    public Replicator.Status replicatorChangeGetStatus(Args args){
+    public Replicator.Status changeGetStatus(Args args){
         ReplicatorChange change = args.get("change");
         return change.getStatus();
     }
+
+    public int changeListenerChangesCount(Args args) {
+        MyReplicatorListener changeListener = args.get("changeListener");
+        return changeListener.getChanges().size();
+    }
+
+    public List<ReplicatorChange> changeListenerGetChanges(Args args) {
+        MyReplicatorListener changeListener = args.get("changeListener");
+        return changeListener.getChanges();
+    }
+    public CouchbaseLiteException replicatorGetError(Args args) {
+        Replicator replicator = args.get("replicator");
+        return replicator.getStatus().getError();
+    }
+
+    public ReplicatorConfiguration config(Args args) {
+        Replicator replicator = args.get("replicator");
+        return replicator.getConfig();
+    }
+
+    public long getCompleted(Args args) {
+        Replicator replicator = args.get("replicator");
+        return replicator.getStatus().getProgress().getCompleted();
+    }
+
+    public long getTotal(Args args) {
+        Replicator replicator = args.get("replicator");
+        return replicator.getStatus().getProgress().getTotal();
+    }
+
+    public String getError(Args args) {
+        Replicator replicator = args.get("replicator");
+        CouchbaseLiteException error = replicator.getStatus().getError();
+        if (error != null) {
+            return error.toString();
+        }
+        return null;
+    }
+
+    public Boolean isContinous(Args args) {
+        ReplicatorConfiguration config = args.get("config");
+        return config.isContinuous();
+    }
+
 }
 
 class MyReplicatorListener implements ReplicatorChangeListener{
     private List<ReplicatorChange> changes;
-
     public List<ReplicatorChange> getChanges(){
         return changes;
     }

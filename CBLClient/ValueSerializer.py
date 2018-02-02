@@ -5,7 +5,7 @@ from CBLClient.MemoryPointer import MemoryPointer
 class ValueSerializer(object):
     @staticmethod
     def serialize(value):
-        if value is None:
+        if value is None or value == "None":
             return "null"
         elif isinstance(value, MemoryPointer):
             return value.getAddress()
@@ -48,7 +48,6 @@ class ValueSerializer(object):
             for obj in value:
                 string = ValueSerializer.serialize(obj)
                 string_list.append(string)
-
             return json.dumps(string_list)
 
         raise RuntimeError("Invalid value type: {}: {}".format(value, type(value)))
@@ -74,16 +73,23 @@ class ValueSerializer(object):
         elif value.startswith("#"):
             if "." in value:
                 return float(value[1:])
-            return int(value[1:])
+            else:
+                return int(value[1:])
+        elif value == "true":
+            return True
+        elif value == "false":
+            return False
         elif value.startswith("{"):
             string_map = json.loads(value)
-            dict_map = {}
+            map = {}
+
             for entry in string_map:
                 key = str(entry)
                 obj = ValueSerializer.deserialize(string_map[key])
 
-                dict_map[key] = obj
-            return dict_map
+                map[key] = obj
+
+            return map
         elif value.startswith("["):
             string_list = json.loads(value)
             res_list = []

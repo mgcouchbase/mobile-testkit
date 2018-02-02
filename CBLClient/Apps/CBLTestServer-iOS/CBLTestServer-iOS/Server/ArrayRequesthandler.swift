@@ -22,7 +22,7 @@ public class ArrayRequestHandler {
         case "array_create":
             let array: [Any]? = args.get(name: "content_array")!
             if array != nil {
-                return MutableArrayObject(withData: array)
+                return MutableArrayObject(data: array)
             } else {
                 return MutableArrayObject()
             }
@@ -368,6 +368,5 @@ public class ArrayRequestHandler {
         default:
             throw RequestHandlerError.MethodNotFound(method)
         }
-        return ArrayRequestHandler.VOID
     }
 }

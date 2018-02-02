@@ -11,12 +11,12 @@ import com.couchbase.lite.Function;
 import com.couchbase.lite.Meta;
 import com.couchbase.lite.Ordering;
 import com.couchbase.lite.Query;
+import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Result;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,19 +24,19 @@ public class QueryRequestHandler {
 
    public Query select(Args args){
        SelectResult select_result = args.get("select_result");
-       return Query.select(select_result);
+       return QueryBuilder.select(select_result);
    }
 
     public Query distinct(Args args){
         SelectResult select_result = args.get("select_prop");
         DataSource from_prop = args.get("from_prop");
-        Expression whr_key_prop = args.get("whr_key_prop");
-        return Query.select(select_result).from(from_prop).where(whr_key_prop);
+        Expression whr_key_prop = Expression.value(args.get("whr_key_prop"));
+        return QueryBuilder.select(select_result).from(from_prop).where(whr_key_prop);
     }
 
     public Query create(Args args){
         SelectResult select_result = args.get("select_result");
-        return Query.select(select_result);
+        return QueryBuilder.select(select_result);
     }
 
     public ResultSet run(Args args) throws CouchbaseLiteException {
@@ -58,9 +58,8 @@ public class QueryRequestHandler {
     public Map<String, Object> getDoc(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
         int out = database.getCount();
-        String doc_id = args.get("doc_id");
-        boolean check = database.contains(doc_id);
-            Query query = Query
+        Expression doc_id = Expression.value(args.get("doc_id"));
+        Query query = QueryBuilder
                 .select(SelectResult.all())
                 .from(DataSource.database(database))
                 .where((Meta.id).equalTo(doc_id));
@@ -72,9 +71,9 @@ public class QueryRequestHandler {
 
     public List<Object> docsLimitOffset(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
-        int limit = args.get("limit");
-        int offset = args.get("offset");
-        Query search_query = Query
+        Expression limit = Expression.value(args.get("limit"));
+        Expression offset = Expression.value(args.get("offset"));
+        Query search_query = QueryBuilder
                 .select(SelectResult.all())
                 .from(DataSource.database(database))
                 .limit(limit, offset);
@@ -91,9 +90,9 @@ public class QueryRequestHandler {
         String select_property1 = args.get("select_property1");
         String select_property2 = args.get("select_property2");
         String whr_key = args.get("whr_key");
-        String whr_val = args.get("whr_val");
+        Expression whr_val = Expression.value(args.get("whr_val"));
 
-        Query search_query = Query
+        Query search_query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)),
                         SelectResult.expression(Expression.property(select_property2)))
@@ -113,12 +112,12 @@ public class QueryRequestHandler {
         String whr_key2 = args.get("whr_key2");
         String whr_key3 = args.get("whr_key3");
         String whr_key4 = args.get("whr_key4");
-        String whr_val1 = args.get("whr_val1");
-        String whr_val2 = args.get("whr_val2");
-        String whr_val3 = args.get("whr_val3");
-        Boolean whr_val4 = args.get("whr_val4");
+        Expression whr_val1 = Expression.value(args.get("whr_val1"));
+        Expression whr_val2 = Expression.value(args.get("whr_val2"));
+        Expression whr_val3 = Expression.value(args.get("whr_val3"));
+        Expression whr_val4 = Expression.value(args.get("whr_val4"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id))
                 .from(DataSource.database(database))
                 .where(Expression.property(whr_key1).equalTo(whr_val1)
@@ -138,10 +137,10 @@ public class QueryRequestHandler {
         String select_property1 = args.get("select_property1");
         String select_property2 = args.get("select_property2");
         String like_key = args.get("like_key");
-        String whr_val = args.get("whr_val");
-        String like_val = args.get("like_val");
+        Expression whr_val = Expression.value(args.get("whr_val"));
+        Expression like_val = Expression.value(args.get("like_val"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)),
                         SelectResult.expression(Expression.property(select_property2)))
@@ -160,10 +159,10 @@ public class QueryRequestHandler {
         String select_property1 = args.get("select_property1");
         String select_property2 = args.get("select_property2");
         String regex_key = args.get("regex_key");
-        String whr_val = args.get("whr_val");
-        String regex_val = args.get("regex_val");
+        Expression whr_val = Expression.value(args.get("whr_val"));
+        Expression regex_val = Expression.value(args.get("regex_val"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)),
                         SelectResult.expression(Expression.property(select_property2)))
@@ -180,9 +179,9 @@ public class QueryRequestHandler {
         Database database = args.get("database");
         String whr_key = args.get("whr_key");
         String select_property1 = args.get("select_property1");
-        String whr_val = args.get("whr_val");
+        Expression whr_val = Expression.value(args.get("whr_val"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)))
                 .from(DataSource.database(database))
@@ -198,9 +197,9 @@ public class QueryRequestHandler {
         Database database = args.get("database");
         String select_property1 = args.get("select_property1");
         String select_property2 = args.get("select_property2");
-        String substring = args.get("substring");
+        Expression substring = Expression.value(args.get("substring"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)),
                         SelectResult.expression(Expression.property(select_property2)))
@@ -215,9 +214,9 @@ public class QueryRequestHandler {
     public List<Object> isNullOrMissing(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
         String select_property1 = args.get("select_property1");
-        int limit = args.get("limit");
+        Expression limit = Expression.value(args.get("limit"));
         List<Object> resultArray = new ArrayList<Object>();
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)))
                 .from(DataSource.database(database))
@@ -234,15 +233,15 @@ public class QueryRequestHandler {
         String select_property1 = args.get("select_property1");
         String whr_key1 = args.get("whr_key1");
         String whr_key2 = args.get("whr_key2");
-        String whr_val1 = args.get("whr_val1");
-        String whr_val2 = args.get("whr_val2");
-        String equal_to = args.get("equal_to");
+        Expression whr_val1 = Expression.value(args.get("whr_val1"));
+        Expression whr_val2 = Expression.value(args.get("whr_val2"));
+        Expression equal_to = Expression.value(args.get("equal_to"));
         List<Object> resultArray = new ArrayList<Object>();
 
         Collation collation = Collation.unicode()
                 .ignoreAccents(true)
                 .ignoreCase(true);
-        Query query = Query
+        Query query = QueryBuilder
                 .select(SelectResult.expression(Meta.id),
                         SelectResult.expression(Expression.property(select_property1)))
                 .from(DataSource.database(database))
@@ -254,4 +253,6 @@ public class QueryRequestHandler {
         }
         return resultArray;
     }
+
+
 }

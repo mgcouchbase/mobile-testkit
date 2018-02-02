@@ -1,9 +1,10 @@
 package com.couchbase.CouchbaseLiteServ.server;
 
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.BasicAuthenticatorRequestHandler;
-import com.couchbase.CouchbaseLiteServ.server.RequestHandler.CollationRequestHandler;
+import com.couchbase.CouchbaseLiteServ.server.RequestHandler.CollatorRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DataSourceRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DataTypesInitiatorHandler;
+import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DatabaseConfigurationRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DatabaseRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DictionaryRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.DocumentRequestHandler;
@@ -15,7 +16,6 @@ import com.couchbase.CouchbaseLiteServ.server.RequestHandler.ReplicatorRequestHa
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.ResultRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.SelectResultRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.SessionAuthenticatorRequestHandler;
-import com.couchbase.lite.ReplicatorConfiguration;
 import com.google.gson.Gson;
 
 import org.nanohttpd.protocols.http.IHTTPSession;
@@ -27,9 +27,7 @@ import org.nanohttpd.protocols.http.response.Status;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +102,10 @@ public class Server extends NanoHTTPD {
                 String method_to_call = method.split("_")[1];
                 Method target;
                 switch (handlerType){
+                    case "databaseConfiguration":
+                        target = DatabaseConfigurationRequestHandler.class.getMethod(method_to_call, Args.class);
+                        requestHandler = new DatabaseConfigurationRequestHandler();
+                        break;
                     case "database":
                         target = DatabaseRequestHandler.class.getMethod(method_to_call, Args.class);
                         requestHandler = new DatabaseRequestHandler();
@@ -149,8 +151,8 @@ public class Server extends NanoHTTPD {
                         requestHandler = new SelectResultRequestHandler();
                         break;
                     case "collation":
-                        target = CollationRequestHandler.class.getMethod(method_to_call, Args.class);
-                        requestHandler = new CollationRequestHandler();
+                        target = CollatorRequestHandler.class.getMethod(method_to_call, Args.class);
+                        requestHandler = new CollatorRequestHandler();
                         break;
                     case "result":
                         target = ResultRequestHandler.class.getMethod(method_to_call, Args.class);
@@ -179,7 +181,7 @@ public class Server extends NanoHTTPD {
                 IStatus status = Status.OK;
                 return Response.newFixedLengthResponse(status, "text/plain", body.getBytes());
             } else {
-                return Response.newFixedLengthResponse(Status.OK, "text/plain", "I-1");
+                return Response.newFixedLengthResponse(Status.OK, "text/plain", "null");
             }
         } catch (Exception e) {
             // TODO: How should we handle exceptions?

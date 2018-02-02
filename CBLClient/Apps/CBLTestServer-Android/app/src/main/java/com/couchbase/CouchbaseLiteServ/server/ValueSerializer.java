@@ -56,7 +56,7 @@ public class ValueSerializer {
     }
 
     public static <T> T deserialize(String value, Memory memory) {
-        if ((value == null) || (value == "null")) {
+        if ((value == null) || (value.equals("null"))) {
             return null;
         } else if (value.startsWith("@")) {
             return memory.get(value);
@@ -72,11 +72,6 @@ public class ValueSerializer {
                 String key = entry.getKey();
                 String nestedVal;
                 String val = entry.getValue();
-//                if (val.startsWith("\"")){
-//                    nestedVal = val.substring(1, value.length() - 1);
-//                } else {
-//                    nestedVal = val;
-//                }
                 Object object = deserialize(val, memory);
 
                 map.put(key, object);

@@ -5,36 +5,94 @@ import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.Authenticator;
 import com.couchbase.lite.ConflictResolver;
 import com.couchbase.lite.Database;
+import com.couchbase.lite.DatabaseEndpoint;
 import com.couchbase.lite.ReplicatorConfiguration;
+import com.couchbase.lite.URLEndpoint;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.Dictionary;
 import java.util.List;
+import java.util.Map;
 
-/**
- *
- */
 public class ReplicatorConfigurationRequestHandler {
 
-    public ReplicatorConfiguration create(Args args) throws MalformedURLException, URISyntaxException {
+    public ReplicatorConfiguration builderCreate(Args args) throws MalformedURLException, URISyntaxException {
         Database sourceDb = args.get("sourceDb");
         Database targetDb = args.get("targetDb");
-        URI targetURI = new URI((String) args.get("targetURI"));
-
+        URI targetURI = null;
+        if (args.get("targetURI") != null) {
+            targetURI = new URI((String) args.get("targetURI"));
+        }
         if (targetDb != null){
-            return new ReplicatorConfiguration(sourceDb, targetDb);
+            DatabaseEndpoint target = new DatabaseEndpoint(targetDb);
+            return new ReplicatorConfiguration(sourceDb, target);
         } else if (targetURI != null){
-            return new ReplicatorConfiguration(sourceDb, targetURI);
+            URLEndpoint target = new URLEndpoint(targetURI);
+            return new ReplicatorConfiguration(sourceDb, target);
         } else {
             throw new IllegalArgumentException("Incorrect configuration parameter provided");
         }
     }
 
-    public ReplicatorConfiguration copy(Args args){
-        ReplicatorConfiguration replicatorConfiguration = args.get("configuration");
-        return replicatorConfiguration.copy();
+    public ReplicatorConfiguration configure(Args args) throws Exception {
+        Database sourceDb = args.get("source_db");
+        URI targetURL = null;
+        if (args.get("target_url") != null){
+            targetURL = new URI((String) args.get("target_url"));
+        }
+        Database targetDb = args.get("target_db");
+        String replicatorType = args.get("replication_type");
+        Boolean continuous = args.get("continuous");
+        List<String> channels = args.get("channels");
+        List<String> documentIds = args.get("documentIDs");
+        Authenticator authenticator = args.get("authenticator");
+        ConflictResolver conflictResolver = args.get("conflictResolver");
+        Map<String, String> headers = args.get("headers");
+
+        replicatorType = replicatorType.toLowerCase();
+        ReplicatorConfiguration.ReplicatorType replType;
+        if (replicatorType.equals("push")) {
+            replType = ReplicatorConfiguration.ReplicatorType.PUSH;
+        } else if (replicatorType.equals("pull")) {
+            replType = ReplicatorConfiguration.ReplicatorType.PULL;
+        } else {
+            replType = ReplicatorConfiguration.ReplicatorType.PUSH_AND_PULL;
+        }
+        ReplicatorConfiguration config;
+        if (sourceDb != null && targetURL != null) {
+            URLEndpoint target = new URLEndpoint(targetURL);
+            config = new ReplicatorConfiguration(sourceDb, target);
+        } else if (sourceDb != null && targetDb != null) {
+            DatabaseEndpoint target = new DatabaseEndpoint(targetDb);
+            config = new ReplicatorConfiguration(sourceDb, target);
+        } else {
+            throw new Exception("\"No source db provided or target url provided\"");
+        }
+        if (continuous != null) {
+            config.setContinuous(true);
+        }
+        if (headers != null) {
+            config.setHeaders(headers);
+        }
+        config.setAuthenticator(authenticator);
+        config.setReplicatorType(replType);
+        if (conflictResolver != null) {
+            config.setConflictResolver(conflictResolver);
+        }
+        if (channels != null) {
+            config.setChannels(channels);
+        }
+        if (documentIds != null) {
+            config.setDocumentIDs(documentIds);
+        }
+        return config;
+    }
+
+    public ReplicatorConfiguration create(Args args) {
+        ReplicatorConfiguration config = args.get("configuration");
+        return config;
     }
 
     public Authenticator getAuthenticator(Args args){
@@ -44,7 +102,6 @@ public class ReplicatorConfigurationRequestHandler {
 
     public List<String>  getChannels(Args args){
         ReplicatorConfiguration replicatorConfiguration = args.get("configuration");
-
         return replicatorConfiguration.getChannels();
     }
 

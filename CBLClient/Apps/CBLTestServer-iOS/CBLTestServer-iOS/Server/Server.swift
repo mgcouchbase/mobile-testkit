@@ -20,7 +20,7 @@ enum RequestHandlerError: Error {
 }
 
 public class Server {
-    let kPort:UInt = 8989
+    let kPort:UInt = 8080
     let server: GCDWebServer!
     let dictionaryRequestHandler: DictionaryRequestHandler!
     let queryRequestHandler: QueryRequestHandler!
@@ -34,6 +34,14 @@ public class Server {
     let blobRequestHandler: BlobRequestHandler!
     let datatypeRequestHandler: DataTypesInitiatorRequestHandler!
     let replicatorConfigurationRequestHandler: ReplicatorConfigurationRequestHandler!
+    let expressionRequestHandler: ExpressionRequestHandler!
+    let collationRequestHandler: CollationRequestHandler!
+    let dataSourceRequestHandler: DataSourceRequestHandler!
+    let functionRequestHandler: FunctionRequestHandler!
+    let selectResultRequestHandler: SelectResultRequestHandler!
+    let resultRequestHandler: ResultRequestHandler!
+    let basicAuthenticatorRequestHandler: BasicAuthenticatorRequestHandler!
+    let databaseConfigurationRequestHandler: DatabaseConfigurationRequestHandler!
     let memory = Memory()
     
     public init() {
@@ -50,6 +58,14 @@ public class Server {
         blobRequestHandler = BlobRequestHandler()
         datatypeRequestHandler = DataTypesInitiatorRequestHandler()
         replicatorConfigurationRequestHandler = ReplicatorConfigurationRequestHandler()
+        expressionRequestHandler = ExpressionRequestHandler()
+        collationRequestHandler = CollationRequestHandler()
+        dataSourceRequestHandler = DataSourceRequestHandler()
+        functionRequestHandler = FunctionRequestHandler()
+        selectResultRequestHandler = SelectResultRequestHandler()
+        resultRequestHandler = ResultRequestHandler()
+        basicAuthenticatorRequestHandler = BasicAuthenticatorRequestHandler()
+        databaseConfigurationRequestHandler = DatabaseConfigurationRequestHandler()
         server = GCDWebServer()
         server.addDefaultHandler(forMethod: "POST", request: GCDWebServerDataRequest.self) {
             (request) -> GCDWebServerResponse? in
@@ -85,6 +101,7 @@ public class Server {
                         } else {
                             args.set(value: "", forName: param.key as! String)
                         }
+                        print("param and value is \(param.key) and value is \(param.value)")
                     }
                 }
 
@@ -92,11 +109,15 @@ public class Server {
                 var body: Any? = nil
                 if "release" == method {
                     self.memory.remove(address: rawArgs["object"] as! String)
-                } else {
+                } else if "flushMemory" == method {
+                    self.memory.flushMemory()
+                } else{
                     var result: Any? = nil
                     if method.hasPrefix("query") {
                         result = try self.queryRequestHandler.handleRequest(method: method, args: args)
-                    } else if method.hasPrefix("database") {
+                    } else if method.hasPrefix("databaseConfiguration") {
+                        result = try self.databaseConfigurationRequestHandler.handleRequest(method: method, args: args)
+                    }else if method.hasPrefix("database") {
                         result = try self.databaseRequestHandler.handleRequest(method: method, args: args)
                     } else if method.hasPrefix("document") {
                         result = try self.documentRequestHandler.handleRequest(method: method, args: args)
@@ -104,7 +125,7 @@ public class Server {
                         result = try self.dictionaryRequestHandler.handleRequest(method: method, args: args)
                     } else if method.hasPrefix("array") {
                         result = try self.arrayRequestHandler.handleRequest(method: method, args: args)
-                    } else if method.hasPrefix("sessionauthenticator") {
+                    } else if method.hasPrefix("sessionAuthenticator") {
                         result = try self.sessionauthenticatorRequestHandler.handleRequest(method: method, args: args)
                     } else if method.hasPrefix("encryptionkey") {
                         result = try self.encryptionkeyRequestHandler.handleRequest(method: method, args: args)
@@ -118,10 +139,25 @@ public class Server {
                         result = try self.replicatorConfigurationRequestHandler.handleRequest(method: method, args: args)
                     } else if method.hasPrefix("replicator") {
                         result = try self.replicatorRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("expression") {
+                        result = try self.expressionRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("collation") {
+                        result = try self.collationRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("dataSource") {
+                        result = try self.dataSourceRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("function") {
+                        result = try self.functionRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("selectResult") {
+                        result = try self.selectResultRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("result") {
+                        result = try self.resultRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("basicAuthenticator") {
+                        result = try self.basicAuthenticatorRequestHandler.handleRequest(method: method, args: args)
                     } else {
                         throw ServerError.MethodNotImplemented(method)
                     }
                     if result != nil {
+                        print("result is \(result)")
                         body = ValueSerializer.serialize(value: result, memory: self.memory);
                     }
                 }
@@ -135,6 +171,7 @@ public class Server {
             } catch let error as NSError {
                 // Send 400 error code
                 let response = GCDWebServerDataResponse(text: error.localizedDescription)!
+                print("Error is : \(error.localizedDescription)")
                 response.statusCode = error.code as Int
                 return response
             }

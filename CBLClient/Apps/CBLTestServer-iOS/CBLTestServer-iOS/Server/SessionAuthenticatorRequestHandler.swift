@@ -19,35 +19,21 @@ public class SessionAuthenticatorRequestHandler {
         //////////////////////////
         // SessionAuthenticator //
         //////////////////////////
-        case "sessionauthenticator_createwithDate":
-            let sessionId: String = args.get(name: "sessionId")!
-            let cookieName:String = args.get(name: "cookieName")!
-            let expires: Date = args.get(name: "expires")!
+        case "sessionAuthenticator_create":
+            let sessionid: String! = args.get(name: "sessionId")
+            let cookiename: String! = args.get(name: "cookieName")
+            return SessionAuthenticator(sessionID: sessionid, cookieName: cookiename)
             
-            return SessionAuthenticator(sessionID: sessionId, expireDate: expires, cookieName: cookieName)
-
-        case "sessionauthenticator_createwithString":
-            let sessionId: String = args.get(name: "sessionId")!
-            let cookieName:String = args.get(name: "cookieName")!
-            let expireString: Any = args.get(name: "expires")!
-            
-            return SessionAuthenticator(sessionID: sessionId, expireString: expireString, cookieName: cookieName)
-
-        case "sessionauthenticator_getSessionId":
+        case "sessionAuthenticator_getSessionId":
             let session: SessionAuthenticator = args.get(name: "session")!
             return session.sessionID
 
-        case "sessionauthenticator_getCookieName":
+        case "sessionAuthenticator_getCookieName":
             let session: SessionAuthenticator = args.get(name: "session")!
             return session.cookieName
-        
-        case "sessionauthenticator_getExpires":
-            let session: SessionAuthenticator = args.get(name: "session")!
-            return session.expires
 
         default:
             throw RequestHandlerError.MethodNotFound(method)
         }
-        return SessionAuthenticatorRequestHandler.VOID
     }
 }

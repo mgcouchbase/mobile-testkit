@@ -12,7 +12,7 @@ class TestReplication(object):
     cbl_db_name = "cbl_db"
     sg_db = "db"
 
-    def test_replication_configuration_valid_values(self, params_from_base_test_setup):
+    def test_replication1_configuration_valid_values1_1(self, params_from_base_test_setup):
         """
         @summary:
         1. Create CBL DB and create bulk doc in CBL
@@ -24,7 +24,7 @@ class TestReplication(object):
         sg_admin_url = params_from_base_test_setup["sg_admin_url"]
         sg_mode = params_from_base_test_setup["mode"]
         cluster_config = params_from_base_test_setup["cluster_config"]
-        sg_blip_url = sg_admin_url.replace("http", "blip")
+        sg_blip_url = sg_admin_url.replace("http", "ws")
         sg_blip_url = "{}/db".format(sg_blip_url)
         channels = ["ABC"]
 
@@ -38,12 +38,13 @@ class TestReplication(object):
         self.sg_client.create_session(sg_admin_url, self.sg_db, "travel-sample")
 
         authenticator = self.base_auth_obj.create("travel-sample", "password")
-        replicator = self.repl_obj.configure(source_db=cbl_db,
+        config = self.repl_obj.configure(source_db=cbl_db,
                                              target_url=sg_blip_url,
                                              replication_type="PUSH_AND_PULL",
                                              continuous=True,
                                              channels=channels,
                                              replicator_authenticator=authenticator)
+        replicator = self.repl_obj.create(config)
         self.repl_obj.start(replicator)
         sleep(5)
         self.repl_obj.stop(replicator)
@@ -67,13 +68,13 @@ class TestReplication(object):
         ("PUSH", "session", 10, 5),
         ("PULL", "session", 10, 5)
     ])
-    def test_replication_configuration_with_one_way_replication(self, params_from_base_test_setup,
-                                                                repl_type, auth_type, sg_docs_count, cbl_docs_count):
+    def test_replication_configuration_with_one_way_replication1(self, params_from_base_test_setup,
+                                                                 repl_type, auth_type, sg_docs_count, cbl_docs_count):
         sg_url = params_from_base_test_setup["sg_url"]
         sg_admin_url = params_from_base_test_setup["sg_admin_url"]
         sg_mode = params_from_base_test_setup["mode"]
         cluster_config = params_from_base_test_setup["cluster_config"]
-        sg_blip_url = sg_admin_url.replace("http", "blip")
+        sg_blip_url = sg_admin_url.replace("http", "ws")
         sg_blip_url = "{}/db".format(sg_blip_url)
         channels = ["ABC"]
         sg_doc_ids, cbl_db, _, _ = self.setup_sg_cbl_docs(cluster_config,
@@ -122,7 +123,7 @@ class TestReplication(object):
         sg_admin_url = params_from_base_test_setup["sg_admin_url"]
         sg_mode = params_from_base_test_setup["mode"]
         cluster_config = params_from_base_test_setup["cluster_config"]
-        sg_blip_url = sg_admin_url.replace("http", "blip")
+        sg_blip_url = sg_admin_url.replace("http", "ws")
         sg_blip_url = "{}/db".format(sg_blip_url)
         channels = ["ABC"]
 
@@ -168,7 +169,7 @@ class TestReplication(object):
         """
         sg_url = params_from_base_test_setup["sg_url"]
         sg_admin_url = params_from_base_test_setup["sg_admin_url"]
-        sg_blip_url = sg_url.replace("http", "blip")
+        sg_blip_url = sg_url.replace("http", "ws")
         sg_blip_url = "{}/db".format(sg_blip_url)
         channels = ["ABC"]
 
@@ -215,7 +216,7 @@ class TestReplication(object):
 
         sg_url = params_from_base_test_setup["sg_url"]
         sg_admin_url = params_from_base_test_setup["sg_admin_url"]
-        sg_blip_url = sg_url.replace("http", "blip")
+        sg_blip_url = sg_url.replace("http", "ws")
         sg_blip_url = "{}/db".format(sg_blip_url)
         channels = ["ABC"]
 
