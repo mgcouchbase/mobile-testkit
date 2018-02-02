@@ -1,6 +1,6 @@
 ﻿<Properties StartupConfiguration="{A8E9786C-64F3-46EF-894C-9A7E51AC9210}|Default" NuGet.AddPackagesDialog.IncludePrerelease="True">
   <MonoDevelop.Ide.ItemProperties.TestServer.NetCore PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="TestServer.NetCore/Program.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="TestServer/DatabaseConfigurationMethods.cs">
     <Files>
       <File FileName="TestServer/DatabaseMethods.cs" Line="385" Column="5" />
       <File FileName="TestServer/ReplicationMethods.cs" Line="130" Column="10" />
@@ -8,6 +8,7 @@
       <File FileName="TestServer/SessionAuthenticationMethods.cs" Line="69" Column="10" />
       <File FileName="TestServer/QueryMethods.cs" Line="105" Column="30" />
       <File FileName="TestServer.NetCore/Program.cs" Line="41" Column="19" />
+      <File FileName="TestServer/DatabaseConfigurationMethods.cs" Line="23" Column="17" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />

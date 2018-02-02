@@ -20,13 +20,20 @@ namespace Couchbase.Lite.Testing
                                  [NotNull] IReadOnlyDictionary<string, object> postBody,
                                  [NotNull] HttpListenerResponse response)
         {
-            var directory = postBody["directory"].ToString();
             var databaseConfig = new DatabaseConfiguration();
-            databaseConfig.Directory = directory;
-
-            With<IConflictResolver>(postBody, "conflictResolver", cr => databaseConfig.ConflictResolver = cr);
-            With<EncryptionKey>(postBody, "encryptionKey", er => databaseConfig.EncryptionKey = er);
-
+            if (postBody.ContainsKey("directory"))
+            {
+                var directory = postBody["directory"].ToString();
+                databaseConfig.Directory = directory;
+            }
+            if (postBody.ContainsKey("conflictResolver"))
+            {
+                With<IConflictResolver>(postBody, "conflictResolver", cr => databaseConfig.ConflictResolver = cr);
+            }
+            if (postBody.ContainsKey("encryptionKey"))
+            {
+                With<EncryptionKey>(postBody, "encryptionKey", er => databaseConfig.EncryptionKey = er);
+            }
             var databaseConfigId = MemoryMap.Store(databaseConfig);
             response.WriteBody(databaseConfigId);
         }

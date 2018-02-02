@@ -140,17 +140,33 @@ namespace Couchbase.Lite.Testing
             [NotNull]HttpListenerResponse response)
         {
             var name = postBody["name"];
-            var databaseId = MemoryMap.New<Database>(name, default(DatabaseConfiguration));
-            response.WriteBody(databaseId);
+            if (postBody.ContainsKey("config"))
+            {
+                With<DatabaseConfiguration>(postBody, "config", config => response.WriteBody(MemoryMap.New<Database>(name, config)));
+            }
+            else
+            {
+                var databaseId = MemoryMap.New<Database>(name, default(DatabaseConfiguration));
+                response.WriteBody(databaseId);
+            }
         }
 
-        internal static void DatabaseDelete([NotNull] NameValueCollection args,
+        internal static void DatabaseDeleteDB([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,
             [NotNull] HttpListenerResponse response)
         {
             With<Database>(postBody, "database", db => db.Delete());
             int bodyResponse = -1;
             response.WriteBody(bodyResponse);
+        }
+
+        internal static void DatabaseDelete([NotNull] NameValueCollection args,
+            [NotNull] IReadOnlyDictionary<string, object> postBody,
+            [NotNull] HttpListenerResponse response)
+        {
+            With<Database>(postBody, "database", db => 
+                           With<MutableDocument>(postBody , "document", doc => db.Delete(doc)));
+            response.WriteEmptyBody();
         }
 
 
