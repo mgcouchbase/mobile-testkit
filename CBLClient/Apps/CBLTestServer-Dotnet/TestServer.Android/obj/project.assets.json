@@ -3801,11 +3801,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/prasannagholap/TestServer/TestServer.Android/TestServer.Android.csproj",
+      "projectUniqueName": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.Android/TestServer.Android.csproj",
       "projectName": "TestServer.Android",
-      "projectPath": "/Users/prasannagholap/TestServer/TestServer.Android/TestServer.Android.csproj",
+      "projectPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.Android/TestServer.Android.csproj",
       "packagesPath": "/Users/prasannagholap/.nuget/packages/",
-      "outputPath": "/Users/prasannagholap/TestServer/TestServer.Android/obj",
+      "outputPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.Android/obj",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/prasannagholap/.config/NuGet/NuGet.Config"
@@ -3821,8 +3821,8 @@
       "frameworks": {
         "monoandroid80": {
           "projectReferences": {
-            "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj": {
-              "projectPath": "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj"
+            "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj": {
+              "projectPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj"
             }
           }
         }

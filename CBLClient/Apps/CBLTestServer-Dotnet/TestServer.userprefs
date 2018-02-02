@@ -14,7 +14,7 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore>
-      <Breakpoint file="/Users/prasannagholap/TestServer/TestServer/DatabaseMethods.cs" relfile="TestServer/DatabaseMethods.cs" line="127" column="1" />
+      <Breakpoint file="/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/DatabaseMethods.cs" relfile="TestServer/DatabaseMethods.cs" line="127" column="1" />
     </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />

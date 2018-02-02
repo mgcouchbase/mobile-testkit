@@ -4575,11 +4575,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj",
+      "projectUniqueName": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj",
       "projectName": "TestServer",
-      "projectPath": "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj",
+      "projectPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj",
       "packagesPath": "/Users/prasannagholap/.nuget/packages/",
-      "outputPath": "/Users/prasannagholap/TestServer/TestServer/obj",
+      "outputPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/obj",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"

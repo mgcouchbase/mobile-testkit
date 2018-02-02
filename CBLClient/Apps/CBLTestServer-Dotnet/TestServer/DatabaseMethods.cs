@@ -314,17 +314,19 @@ namespace Couchbase.Lite.Testing
                                                    [NotNull] IReadOnlyDictionary<string, object> postBody,
                                                    [NotNull] HttpListenerResponse response)
         {
-            Dictionary<string, Dictionary <string, Object>> docDict = (Dictionary<string, Dictionary<string, Object>>) postBody["documents"];
+            var docDict = (Dictionary<string, object>) postBody["documents"];
             With<Database>(postBody, "database", db =>
             {
                 db.InBatch(() =>
                {
-                   foreach (string id in docDict.Keys)
-                   {
-                        Dictionary<string, Object> docVal = docDict[id];
-                        MutableDocument doc = new MutableDocument(id, docVal);
-                        db.Save(doc);
-                   }
+                    foreach (var body in docDict)
+                    {
+                        string id = body.Key;
+                        var docBody = (Dictionary<string, object>)body.Value;
+                        MutableDocument doc = new MutableDocument(id, docBody);
+                       db.Save(doc);
+
+                    }
                });
             });
             response.WriteEmptyBody();
