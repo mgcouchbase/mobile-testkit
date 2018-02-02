@@ -52,27 +52,46 @@ namespace Couchbase.Lite.Testing
             With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Config)); 
         }
 
-        public static void GetStatus([NotNull] NameValueCollection args,
+        public static void GetActivityLevel([NotNull] NameValueCollection args,
+                             [NotNull] IReadOnlyDictionary<string, object> postBody,
+                             [NotNull] HttpListenerResponse response)
+        {
+            With<Replicator>(postBody, "replicator", rep =>
+            {
+                response.WriteBody(rep.Status.Activity.ToString().ToLower());
+            });
+        }
+
+        public static void GetCompleted([NotNull] NameValueCollection args,
+                     [NotNull] IReadOnlyDictionary<string, object> postBody,
+                     [NotNull] HttpListenerResponse response)
+        {
+            With<Replicator>(postBody, "replicator", rep =>
+            {
+                response.WriteBody(rep.Status.Progress.Completed);
+            });
+        }
+
+        public static void GetError([NotNull] NameValueCollection args,
                                      [NotNull] IReadOnlyDictionary<string, object> postBody,
                                      [NotNull] HttpListenerResponse response)
         {
-            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Status.Activity));  
+            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Status.Error.ToString()));
         }
 
-        public static void AddChangeListener([NotNull] NameValueCollection args,
-                                             [NotNull] IReadOnlyDictionary<string, object> postBody,
-                                             [NotNull] HttpListenerResponse response)
+        public static void GetTotal([NotNull] NameValueCollection args,
+                                     [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                     [NotNull] HttpListenerResponse response)
         {
-            ReplicationStatusChangedEventArgs changeListener = new ReplicationStatusChangedEventArgs();
-            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.AddChangeListener(changeListener)));  
+            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Status.Progress.Total));
         }
 
-        //public void addChangeListener(Args args)
-        //{
-        //    Replicator replicator = args.get("replicator");
-        //    MyReplicatorListener changeListener = new MyReplicatorListener();
-        //    replicator.addChangeListener(changeListener);
-        //}
+        public static void IsContinuous([NotNull] NameValueCollection args,
+                                        [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                        [NotNull] HttpListenerResponse response)
+        {
+            With<ReplicatorConfiguration>(postBody, "configuration", repConf => response.WriteBody(repConf.Continuous));
+        }
 
         public static void ToString([NotNull] NameValueCollection args,
                                              [NotNull] IReadOnlyDictionary<string, object> postBody,
@@ -80,8 +99,6 @@ namespace Couchbase.Lite.Testing
         {
             With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.ToString()));
         }
-
-
 
         public static void StartReplication([NotNull] NameValueCollection args,
             [NotNull] IReadOnlyDictionary<string, object> postBody,
@@ -104,7 +121,15 @@ namespace Couchbase.Lite.Testing
                 response.WriteEmptyBody();
             });
         }
+
+        public static void Status([NotNull] NameValueCollection args,
+                             [NotNull] IReadOnlyDictionary<string, object> postBody,
+                             [NotNull] HttpListenerResponse response)
+        {
+            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Status.ToString()));
+        }
     }
+
 }
 
 

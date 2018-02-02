@@ -56,12 +56,12 @@ namespace Couchbase.Lite.Testing
             With<SessionAuthenticator>(postBody, "session", si => response.WriteBody(si.CookieName));
         }
 
-        public static void GetExpires([NotNull] NameValueCollection args,
-                        [NotNull] IReadOnlyDictionary<string, object> postBody,
-                        [NotNull] HttpListenerResponse response)
-        {
-            With<SessionAuthenticator>(postBody, "session", si => response.WriteBody(si.Expires));
-        }
+        //public static void GetExpires([NotNull] NameValueCollection args,
+        //                [NotNull] IReadOnlyDictionary<string, object> postBody,
+        //                [NotNull] HttpListenerResponse response)
+        //{
+        //    With<SessionAuthenticator>(postBody, "session", si => response.WriteBody(si.Expires));
+        //}
 
         public static void GetSessionId([NotNull] NameValueCollection args,
                                         [NotNull] IReadOnlyDictionary<string, object> postBody,

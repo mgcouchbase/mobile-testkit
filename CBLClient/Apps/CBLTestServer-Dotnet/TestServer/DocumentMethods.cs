@@ -182,7 +182,7 @@ namespace Couchbase.Lite.Testing
         {
             var key = postBody["key"].ToString();
             var val = (bool)postBody["value"];
-            With<MutableDocument>(postBody, "document", doc => response.WriteBody(doc.SetInt(key, val)));
+            With<MutableDocument>(postBody, "document", doc => response.WriteBody(doc.SetBoolean(key, val)));
         }
 
         public static void DocumentGetBlob([NotNull] NameValueCollection args,

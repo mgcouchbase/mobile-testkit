@@ -38,7 +38,7 @@ namespace Couchbase.Lite.Testing.NetCore
             {
                 ["start_sync_gateway"] = OrchestrationMethods.StartSyncGateway,
                 ["kill_sync_gateway"] = OrchestrationMethods.KillSyncGateway,
-                ["compile_query"] = QueryMethods.CompileQuery,
+                //["compile_query"] = QueryMethods.CompileQuery,
                 ["start_cb_server"] = OrchestrationMethods.StartCouchbaseServer,
                 ["stop_cb_server"] = OrchestrationMethods.StopCouchbaseServer
             });

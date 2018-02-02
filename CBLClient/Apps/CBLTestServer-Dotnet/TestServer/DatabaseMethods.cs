@@ -123,8 +123,7 @@ namespace Couchbase.Lite.Testing
             [NotNull] HttpListenerResponse response)
         {
             With<Database>(postBody, "database", db => db.Close());
-            int bodyObj = -1;
-            response.WriteBody(bodyObj);
+            response.WriteEmptyBody();
         }
 
         internal static void DatabaseCompact([NotNull] NameValueCollection args,
@@ -384,10 +383,4 @@ namespace Couchbase.Lite.Testing
         #endregion
     }
 
-    internal class MyDatabaseChangeListener : DatabaseChangeListener
-    {
-        private List<DatabaseChange> changes;
-
-        public List
-    }
 }

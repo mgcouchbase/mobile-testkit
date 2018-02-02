@@ -43,15 +43,19 @@ namespace Couchbase.Lite.Testing
         {
             With<Database>(postBody, "sourceDb", sdb =>
             {
-                if (postBody.ContainsKey("targetURI"))
+                if (postBody["targetURI"] != null)
                 {
-                    var targetUrl = new Uri(args.GetString("targetURI"));
+                    var targetUrl = (URLEndpoint) postBody["targetURI"];
                     var replicationConfig = MemoryMap.New<ReplicatorConfiguration>(sdb, targetUrl);
                     response.WriteBody(replicationConfig);
                 }
-                else if (postBody.ContainsKey("targetDb"))
+                else if (postBody["targetDb"] != null)
                 {
-                    With<Database>(postBody, "targetDB", tdb => response.WriteBody(MemoryMap.New<ReplicatorConfiguration>(sdb, tdb)));
+                    With<Database>(postBody, "targetDB", tdb => 
+                    {
+                        DatabaseEndpoint dbEndPoint = new DatabaseEndpoint(tdb);
+                        response.WriteBody(MemoryMap.New<ReplicatorConfiguration>(sdb, dbEndPoint)); 
+                    });
                 }
                 else{
                     throw new ArgumentException("Invalid value for replication_type");
@@ -65,6 +69,75 @@ namespace Couchbase.Lite.Testing
         //{
         //    With<ReplicatorConfiguration>(postBody, "configuration", repConf => response.WriteBody(repConf.Copy());
         //}
+
+        public static void Configure([NotNull] NameValueCollection args,
+                                                     [NotNull] IReadOnlyDictionary<string, object> postBody,
+                                                     [NotNull] HttpListenerResponse response)
+        {
+            var replicatorType = postBody["replication_type"].ToString().ToLower();
+            var continuous = (bool)postBody["continuous"];
+            var channels = (List<string>) postBody["channels"];
+            var documentIds = (List<string>)postBody["documentIds"];
+
+            Authenticator authenticator = MemoryMap.Get<Authenticator>(postBody["authenticator"].ToString());
+            IConflictResolver conflictResolver = MemoryMap.Get<IConflictResolver>(postBody["conflictResolver"].ToString());
+            Dictionary<String, String> headers = (Dictionary<String, String>) postBody["headers"];
+
+            ReplicatorType replType = new ReplicatorType();
+
+            if (replicatorType == "push")
+            {
+                replType = ReplicatorType.Push;
+            }
+            else if (replicatorType == "pull")
+            {
+                replType = ReplicatorType.Pull;
+            }
+            else 
+            {
+                replType = ReplicatorType.PushAndPull;
+            }
+            ReplicatorConfiguration config = null;
+            With<Database>(postBody, "sourceDb", sdb =>
+            {
+                if (postBody["targetURI"] != null)
+                {
+                    var targetUrl = (URLEndpoint)postBody["targetURI"];
+                    config = new ReplicatorConfiguration(sdb, targetUrl);
+                }
+                else if (postBody["targetDb"] != null)
+                {
+                    With<Database>(postBody, "targetDB", tdb =>
+                    {
+                        DatabaseEndpoint dbEndPoint = new DatabaseEndpoint(tdb);
+                        config = new ReplicatorConfiguration(sdb, dbEndPoint);
+                    });
+                }
+                if (continuous)
+                {
+                    config.Continuous = true;
+                }
+                if (headers != null)
+                {
+                    config.Headers = headers;
+                }
+                config.Authenticator = authenticator;
+                config.ReplicatorType = replType;
+                if (conflictResolver != null)
+                {
+                    config.ConflictResolver = conflictResolver;
+                }
+                if (channels != null)
+                {
+                    config.Channels = channels;
+                }
+                if (documentIds != null)
+                {
+                    config.DocumentIDs = documentIds;
+                }
+                response.WriteBody(MemoryMap.Store(config));
+            });
+        }
 
         public static void GetAuthenticator([NotNull] NameValueCollection args,
                                             [NotNull] IReadOnlyDictionary<string, object> postBody,
@@ -186,6 +259,31 @@ namespace Couchbase.Lite.Testing
             With<ReplicatorConfiguration>(postBody, "configuration", repConf =>
             {
                 repConf.DocumentIDs = documentIds;
+            });
+        }
+
+        public static void SetReplicatorType([NotNull] NameValueCollection args,
+                     [NotNull] IReadOnlyDictionary<string, object> postBody,
+                     [NotNull] HttpListenerResponse response)
+        {
+            var replicatorType = postBody["replication_type"].ToString().ToLower();
+            ReplicatorType replType = new ReplicatorType();
+
+            if (replicatorType == "push")
+            {
+                replType = ReplicatorType.Push;
+            }
+            else if (replicatorType == "pull")
+            {
+                replType = ReplicatorType.Pull;
+            }
+            else
+            {
+                replType = ReplicatorType.PushAndPull;
+            }
+            With<ReplicatorConfiguration>(postBody, "configuration", repConf =>
+            {
+                repConf.ReplicatorType = replType;
             });
         }
 
