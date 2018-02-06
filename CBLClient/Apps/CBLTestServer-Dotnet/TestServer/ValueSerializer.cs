@@ -20,13 +20,47 @@ namespace Couchbase.Lite.Testing
             {
                 return "null";
             }
+            else if (t.Equals(typeof(bool)))
+            {
+                Boolean item = Convert.ToBoolean(value);
+                return item ? "true" : "false";
+            }
             else if (t.Equals(typeof(string)))
             {
-                return value.ToString();
+                return "\"" + value.ToString() + "\"";
             }
-            else if (t.Equals(typeof(int)) || t.Equals(typeof(UInt64)))
+            else if (t.Equals(typeof(int)) || t.Equals(typeof(uint)))
             {
                 return "I" + value;
+            }
+            else if (t.Equals(typeof(long)) || t.Equals(typeof(ulong)))
+            {
+                return "L" + value;
+            }
+            else if (t.Equals(typeof(float)))
+            {
+                return "F" + value;
+            }
+            else if (t.Equals(typeof(Dictionary<,>)))
+            {
+                Dictionary<string, object> dictionary = (Dictionary<string, object>) value;
+                Dictionary<string, string> stringMap = new Dictionary<string, string>();
+                foreach (string key in dictionary.Keys)
+                {
+                    stringMap[key] = Serialize(dictionary[key], dictionary[key].GetType());
+                }
+                return JsonConvert.SerializeObject(stringMap);
+            }
+            else if (t.Equals(typeof(List<>)))
+            {
+                List<object> list = (List<object>) value; 
+                List<string> stringList = new List<string>();
+                
+                foreach (var item in list)
+                {
+                    stringList.Add(Serialize(item, item.GetType()));
+                }
+                return JsonConvert.SerializeObject(stringList);
             }
             else
             {
@@ -56,6 +90,10 @@ namespace Couchbase.Lite.Testing
                     var dictJsonObj = JsonConvert.DeserializeObject<Dictionary<string, string>>(value);
                     Dictionary<string, object> dictObj = new Dictionary<string, object>();
                     bodyObj[key] = Deserialize(dictJsonObj);
+                }
+                else if (value.StartsWith("["))
+                {
+                    var listJsonObj = JsonConvert.DeserializeObject<List<string>>(value);
                 }
                 else
                 {

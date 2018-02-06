@@ -43,9 +43,7 @@ namespace Couchbase.Lite.Testing
         {
             var sessionId = postBody["sessionId"].ToString();
             var cookieName = postBody["cookieName"].ToString();
-            double expires = Convert.ToDouble(postBody["expires"].ToString());
-            DateTime expiryPeriod = DateTime.Now.AddSeconds(expires);
-            var authenticator = MemoryMap.New<SessionAuthenticator>(sessionId, expiryPeriod, cookieName);
+            var authenticator = MemoryMap.New<SessionAuthenticator>(sessionId, cookieName);
             response.WriteBody(authenticator);
         }
 

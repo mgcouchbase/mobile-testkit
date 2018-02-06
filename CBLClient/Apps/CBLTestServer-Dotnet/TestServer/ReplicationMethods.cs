@@ -58,7 +58,8 @@ namespace Couchbase.Lite.Testing
         {
             With<Replicator>(postBody, "replicator", rep =>
             {
-                response.WriteBody(rep.Status.Activity.ToString().ToLower());
+                ReplicatorActivityLevel activityLevel = rep.Status.Activity;
+                response.WriteBody(activityLevel.ToString().ToLower());
             });
         }
 
@@ -76,7 +77,15 @@ namespace Couchbase.Lite.Testing
                                      [NotNull] IReadOnlyDictionary<string, object> postBody,
                                      [NotNull] HttpListenerResponse response)
         {
-            With<Replicator>(postBody, "replicator", rep => response.WriteBody(rep.Status.Error.ToString()));
+            With<Replicator>(postBody, "replicator", rep =>
+            {
+                Exception ex = rep.Status.Error;
+                if (ex != null)
+                {
+                    response.WriteBody(ex.ToString());
+                }
+                response.WriteEmptyBody();
+            });
         }
 
         public static void GetTotal([NotNull] NameValueCollection args,

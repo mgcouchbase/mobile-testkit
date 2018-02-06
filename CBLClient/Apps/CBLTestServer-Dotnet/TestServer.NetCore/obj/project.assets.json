@@ -15022,11 +15022,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.NetCore/TestServer.NetCore.csproj",
+      "projectUniqueName": "/Users/prasannagholap/TestServer/TestServer.NetCore/TestServer.NetCore.csproj",
       "projectName": "TestServer.NetCore",
-      "projectPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.NetCore/TestServer.NetCore.csproj",
+      "projectPath": "/Users/prasannagholap/TestServer/TestServer.NetCore/TestServer.NetCore.csproj",
       "packagesPath": "/Users/prasannagholap/.nuget/packages/",
-      "outputPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer.NetCore/obj",
+      "outputPath": "/Users/prasannagholap/TestServer/TestServer.NetCore/obj",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
@@ -15045,8 +15045,8 @@
       "frameworks": {
         "netcoreapp2.0": {
           "projectReferences": {
-            "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj": {
-              "projectPath": "/Users/prasannagholap/mobile-testkit/CBLClient/Apps/CBLTestServer-Dotnet/TestServer/TestServer.csproj"
+            "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj": {
+              "projectPath": "/Users/prasannagholap/TestServer/TestServer/TestServer.csproj"
             }
           }
         }

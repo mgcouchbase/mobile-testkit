@@ -74,66 +74,72 @@ namespace Couchbase.Lite.Testing
                                                      [NotNull] IReadOnlyDictionary<string, object> postBody,
                                                      [NotNull] HttpListenerResponse response)
         {
-            var replicatorType = postBody["replication_type"].ToString().ToLower();
-            var continuous = (bool)postBody["continuous"];
-            var channels = (List<string>) postBody["channels"];
-            var documentIds = (List<string>)postBody["documentIds"];
-
-            Authenticator authenticator = MemoryMap.Get<Authenticator>(postBody["authenticator"].ToString());
-            IConflictResolver conflictResolver = MemoryMap.Get<IConflictResolver>(postBody["conflictResolver"].ToString());
-            Dictionary<String, String> headers = (Dictionary<String, String>) postBody["headers"];
-
-            ReplicatorType replType = new ReplicatorType();
-
-            if (replicatorType == "push")
-            {
-                replType = ReplicatorType.Push;
-            }
-            else if (replicatorType == "pull")
-            {
-                replType = ReplicatorType.Pull;
-            }
-            else 
-            {
-                replType = ReplicatorType.PushAndPull;
-            }
             ReplicatorConfiguration config = null;
-            With<Database>(postBody, "sourceDb", sdb =>
+            
+            With<Database>(postBody, "source_db", sdb =>
             {
-                if (postBody["targetURI"] != null)
+                if (postBody.ContainsKey("target_url"))
                 {
-                    var targetUrl = (URLEndpoint)postBody["targetURI"];
+                    Uri uri = new Uri(postBody["target_url"].ToString());
+                    URLEndpoint targetUrl =  new URLEndpoint(uri);
                     config = new ReplicatorConfiguration(sdb, targetUrl);
                 }
-                else if (postBody["targetDb"] != null)
+                else if (postBody.ContainsKey("target_db"))
                 {
-                    With<Database>(postBody, "targetDB", tdb =>
+                    With<Database>(postBody, "target_db", tdb =>
                     {
                         DatabaseEndpoint dbEndPoint = new DatabaseEndpoint(tdb);
                         config = new ReplicatorConfiguration(sdb, dbEndPoint);
                     });
                 }
-                if (continuous)
+                else
                 {
-                    config.Continuous = true;
+                    throw new Exception("Illegal arguments provided");
                 }
-                if (headers != null)
+                if (postBody.ContainsKey("continous"))
                 {
-                    config.Headers = headers;
+                    config.Continuous = Convert.ToBoolean(postBody["continous"]);
                 }
-                config.Authenticator = authenticator;
-                config.ReplicatorType = replType;
-                if (conflictResolver != null)
+                if (postBody.ContainsKey("channels"))
                 {
+                    config.Channels = (List<string>) postBody["channels"];
+                }
+                if (postBody.ContainsKey("documentIds"))
+                {
+                    config.DocumentIDs = (List<string>)postBody["documentIds"]; ;
+                }
+                if (postBody.ContainsKey("authenticator"))
+                {
+                    Authenticator authenticator = MemoryMap.Get<Authenticator>(postBody["authenticator"].ToString());
+                    config.Authenticator = authenticator;
+                }
+                if (postBody.ContainsKey("conflictResolver"))
+                {
+                    IConflictResolver conflictResolver = MemoryMap.Get<IConflictResolver>(postBody["conflictResolver"].ToString());
                     config.ConflictResolver = conflictResolver;
                 }
-                if (channels != null)
+
+                if (postBody.ContainsKey("headers"))
                 {
-                    config.Channels = channels;
+                    Dictionary<String, String> headers = (Dictionary<String, String>)postBody["headers"];
+                    config.Headers = headers;
                 }
-                if (documentIds != null)
+
+                if (postBody.ContainsKey("replicatorType"))
                 {
-                    config.DocumentIDs = documentIds;
+                    var replicatorType = postBody["replication_type"].ToString().ToLower();
+                    if (replicatorType == "push")
+                    {
+                        config.ReplicatorType = ReplicatorType.Push;
+                    }
+                    else if (replicatorType == "pull")
+                    {
+                        config.ReplicatorType = ReplicatorType.Pull;
+                    }
+                    else
+                    {
+                        config.ReplicatorType = ReplicatorType.PushAndPull;
+                    }
                 }
                 response.WriteBody(MemoryMap.Store(config));
             });

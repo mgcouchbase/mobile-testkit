@@ -72,14 +72,14 @@ namespace Couchbase.Lite.Testing
             ["document_setString"] = DocumentMethods.DocumentSetString,
             ["replicatorConfiguration_configure"] = ReplicatorConfigurationMethods.Configure,
             ["replicator_create"] = ReplicationMethods.Create,
+            ["replicator_start"] = ReplicationMethods.StartReplication,
+            ["replicator_stop"] = ReplicationMethods.StopReplication,
             ["replicator_getActivityLevel"] = ReplicationMethods.GetActivityLevel,
             ["replicator_getError"] = ReplicationMethods.GetError,
             ["replicator_getTotal"] = ReplicationMethods.GetTotal,
             ["replicator_getConfig"] = ReplicationMethods.GetConfig,
             ["replicatorConfiguration_setAuthenticator"] = ReplicatorConfigurationMethods.SetAuthenticator,
             ["configure_replication"] = ReplicatorConfigurationMethods.Configure,
-            ["start_replication"] = ReplicationMethods.StartReplication,
-            ["stop_replication"] = ReplicationMethods.StopReplication,
             ["replication_getStatus"] = ReplicationMethods.Status,
             ["release"] = ReleaseObject
             };
