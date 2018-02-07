@@ -208,7 +208,7 @@ namespace Couchbase.Lite.Testing
                     .From(DataSource.Database(db)))
                 {
                     var result = query.Execute();
-                    var ids = result.Select(x => x.GetString("id"));
+                    var ids = result.Select(x => x.GetString("id")).ToList();
                     response.WriteBody(ids);
                 }
             });
@@ -355,14 +355,15 @@ namespace Couchbase.Lite.Testing
                                    [NotNull] IReadOnlyDictionary<string, object> postBody,
                                    [NotNull] HttpListenerResponse response)
         {
-            Dictionary<string, Dictionary<string, Object>> docDict = (Dictionary<string, Dictionary<string, Object>>)postBody["documents"];
+            var docDict = (Dictionary<string, object>)postBody["documents"];
             With<Database>(postBody, "database", db =>
             {
                 db.InBatch(() =>
                 {
-                    foreach (string id in docDict.Keys)
+                    foreach (var body in docDict)
                     {
-                        Dictionary<string, Object> docVal = docDict[id];
+                        string id = body.Key;
+                        Dictionary<string, Object> docVal = (Dictionary<string, object>) body.Value;
                         MutableDocument UpdateDoc = db.GetDocument(id).ToMutable();
                         UpdateDoc.SetData(docVal);
                         db.Save(UpdateDoc);

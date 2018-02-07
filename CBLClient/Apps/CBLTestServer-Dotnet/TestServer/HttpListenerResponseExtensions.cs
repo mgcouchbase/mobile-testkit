@@ -39,7 +39,7 @@ namespace Couchbase.Lite.Testing
             }
             Type bodyObjType = bodyObj.GetType();
             var postBody = JsonConvert.SerializeObject(bodyObj);
-            var serializedBody = ValueSerializer.Serialize(postBody, bodyObjType);
+            var serializedBody = ValueSerializer.Serialize(bodyObj, bodyObjType);
             var body = Encoding.UTF8.GetBytes(serializedBody);
             response.ContentType = "application/json";
             response.ContentLength64 = body.LongLength;

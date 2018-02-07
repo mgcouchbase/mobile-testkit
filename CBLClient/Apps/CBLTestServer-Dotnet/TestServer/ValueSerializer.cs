@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -41,19 +42,17 @@ namespace Couchbase.Lite.Testing
             {
                 return "F" + value;
             }
-            else if (t.Equals(typeof(Dictionary<,>)))
+            else if (value is IDictionary dictionary)
             {
-                Dictionary<string, object> dictionary = (Dictionary<string, object>) value;
                 Dictionary<string, string> stringMap = new Dictionary<string, string>();
                 foreach (string key in dictionary.Keys)
                 {
-                    stringMap[key] = Serialize(dictionary[key], dictionary[key].GetType());
+                    stringMap.Add(key ,Serialize(dictionary[key], dictionary[key].GetType()));
                 }
                 return JsonConvert.SerializeObject(stringMap);
             }
-            else if (t.Equals(typeof(List<>)))
-            {
-                List<object> list = (List<object>) value; 
+            else if (value is IList list)
+            { 
                 List<string> stringList = new List<string>();
                 
                 foreach (var item in list)
@@ -64,6 +63,7 @@ namespace Couchbase.Lite.Testing
             }
             else
             {
+                Console.WriteLine("Type of Value is " + t.ToString());
                 return value.ToString();
             }
 
@@ -103,4 +103,5 @@ namespace Couchbase.Lite.Testing
             return bodyObj;
         }
     }
+
 }
