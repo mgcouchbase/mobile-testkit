@@ -95,7 +95,12 @@ namespace Couchbase.Lite.Testing
                     continue;
                 }
 
-                Router.Handle(nextRequest.Request.Url, nextRequest.Request.InputStream ?? NullStream, nextRequest.Response);
+                try {
+                    Router.Handle(nextRequest.Request.Url, nextRequest.Request.InputStream ?? NullStream,
+                        nextRequest.Response);
+                } catch (Exception e) {
+                    Console.Error.WriteLine($"Exception caught during router handling: {e}");
+                }
             }
         }
 

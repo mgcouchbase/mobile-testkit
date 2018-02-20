@@ -6,8 +6,6 @@ using System.Net;
 using System.Threading.Tasks;
 using Couchbase.Lite;
 
-using static Couchbase.Lite.Conflict;
-
 
 using JetBrains.Annotations;
 
