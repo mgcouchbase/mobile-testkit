@@ -59,19 +59,21 @@ def setup_client_syncgateway_suite(request):
                                       storage_engine=liteserv_storage_engine)
 
     if xattrs_enabled and version_is_binary(sync_gateway_version):
-            check_xattr_support(server_version, sync_gateway_version)
+        check_xattr_support(server_version, sync_gateway_version)
 
     log_info("Downloading LiteServ ...")
     # Download LiteServ
-    liteserv.download()
+    # liteserv.download()
 
     # Install LiteServ
-    if device_enabled and liteserv_platform == "ios":
-        liteserv.install_device()
-    else:
-        liteserv.install()
+    # if device_enabled and liteserv_platform == "ios":
+    #     liteserv.install_device()
+    # else:
+    #     liteserv.install()
 
     cluster_config = "{}/base_{}".format(CLUSTER_CONFIGS_DIR, sync_gateway_mode)
+    cluster_utils = ClusterKeywords()
+    cluster_utils.set_cluster_config(cluster_config.split("/")[-1])
 
     try:
         server_version
@@ -123,8 +125,8 @@ def setup_client_syncgateway_suite(request):
     }
 
     log_info("Tearing down suite ...")
-    if not (device_enabled and liteserv_platform == "ios"):
-        liteserv.remove()
+    # if not (device_enabled and liteserv_platform == "ios"):
+    #     liteserv.remove()
 
 
 # Passed to each testcase, run for each test_* method in client_sg folder
@@ -151,10 +153,11 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
 
     # Start LiteServ and delete any databases
     log_info("Starting LiteServ...")
-    if device_enabled and liteserv_platform == "ios":
-        ls_url = liteserv.start_device("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
-    else:
-        ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+    # if device_enabled and liteserv_platform == "ios":
+    #     ls_url = liteserv.start_device("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+    # else:
+    #     ls_url = liteserv.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(liteserv).__name__, test_name, datetime.datetime.now()))
+    ls_url = "http://192.168.33.24:59840"
     client.delete_databases(ls_url)
 
     cluster_helper = ClusterKeywords()
@@ -178,8 +181,8 @@ def setup_client_syncgateway_test(request, setup_client_syncgateway_suite):
 
     log_info("Tearing down test")
 
-    client.delete_databases(ls_url)
-    liteserv.stop()
+    # client.delete_databases(ls_url)
+    # liteserv.stop()
 
     # if the test failed pull logs
     if request.node.rep_call.failed:

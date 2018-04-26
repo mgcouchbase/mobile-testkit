@@ -250,7 +250,7 @@ def test_initial_push_replication(setup_client_syncgateway_test, continuous):
     ls_db = "ls_db"
     seth_channels = ["ABC", "NBC"]
 
-    num_docs = 10000
+    num_docs = 10
 
     cluster_config = setup_client_syncgateway_test["cluster_config"]
     sg_mode = setup_client_syncgateway_test["sg_mode"]
@@ -280,7 +280,8 @@ def test_initial_push_replication(setup_client_syncgateway_test, continuous):
         number=num_docs,
         id_prefix="seeded_doc",
         generator="four_k",
-        channels=seth_channels
+        channels=seth_channels,
+        attachments_generator=attachment.generate_2_png_10_10
     )
     assert len(docs) == num_docs
 
@@ -302,6 +303,9 @@ def test_initial_push_replication(setup_client_syncgateway_test, continuous):
 
     # Verify docs replicated to sync_gateway
     client.verify_docs_present(url=sg_one_public, db=sg_db, expected_docs=docs, auth=session)
+
+    # Verify docs on CBL
+    client.verify_docs_present(url=ls_url, db=ls_db, expected_docs=docs, auth=session, attachments=True)
 
     # Verify docs show up in sync_gateway's changes feed
     client.verify_docs_in_changes(url=sg_one_public, db=sg_db, expected_docs=docs, auth=session)

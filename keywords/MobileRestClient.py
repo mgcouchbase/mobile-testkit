@@ -1720,10 +1720,18 @@ class MobileRestClient:
                     doc_id = resp_doc["key"]
                     doc_data = self._session.get("{}/{}/{}".format(url, db, doc_id))
                     doc_json = doc_data.json()
+                    doc_att = {}
+
+                    # log_info("doc_json: {}; resp_doc: {}; expected_attachment_map[resp_doc[id]]: {}; doc_json[_attachments].keys(): {}".format(doc_json, resp_doc, expected_attachment_map[resp_doc["id"]], doc_json["_attachments"].keys()))
 
                     if "_attachments" not in doc_json and "id" in resp_doc and expected_attachment_map[resp_doc["id"]] != doc_json["_attachments"].keys():
                         all_attachments_returned = False
                         missing_attachment_docs.append(doc_id)
+                    else:
+                        for att in doc_json["_attachments"].keys():
+                            log_info("att: {}".format(att))
+                            doc_att[doc_id] = self._session.get("{}/{}/{}/{}".format(url, db, doc_id, att))
+                            log_info("attachments: {}".format(doc_att))
 
             logging.debug("Missing Docs = {}".format(missing_docs))
             log_info("Num found docs: {}".format(len(resp_obj["rows"]) - len(missing_docs)))
