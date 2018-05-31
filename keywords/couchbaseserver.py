@@ -14,6 +14,7 @@ from keywords.remoteexecutor import RemoteExecutor
 from keywords.exceptions import CBServerError, ProvisioningError, TimeoutError, RBACUserCreationError, RBACUserDeletionError
 from keywords.utils import log_r, log_info, log_debug, log_error, hostname_for_url
 from keywords import types
+from utilities.cluster_config_utils import is_x509_auth
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -218,10 +219,12 @@ class CouchbaseServer:
             # All nodes are heathy if it made it to here
             break
 
-    def _create_internal_rbac_bucket_user(self, bucketname):
+    def _create_internal_rbac_bucket_user(self, bucketname, cluster_config):
         # Create user with username=bucketname and assign role
         # bucket_admin and cluster_admin
         roles = "ro_admin,bucket_full_access[{}]".format(bucketname)
+        if is_x509_auth(cluster_config):
+            roles = "admin"
         password = 'password'
 
         data_user_params = {
@@ -326,7 +329,7 @@ class CouchbaseServer:
         ram_per_bucket_mb = int(effective_ram_mb / num_buckets)
         return ram_per_bucket_mb
 
-    def create_buckets(self, bucket_names):
+    def create_buckets(self, bucket_names, cluster_config):
         """
         # Figure out what total ram available is
         # Divide by number of buckets
@@ -341,9 +344,9 @@ class CouchbaseServer:
         per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
 
         for bucket_name in bucket_names:
-            self.create_bucket(bucket_name, per_bucket_ram_mb)
+            self.create_bucket(cluster_config, bucket_name, per_bucket_ram_mb)
 
-    def create_bucket(self, name, ram_quota_mb=1024):
+    def create_bucket(self, cluster_config, name, ram_quota_mb=1024):
         """
         1. Create CBS bucket via REST
         2. Create client connection and poll until bucket is available
@@ -384,7 +387,7 @@ class CouchbaseServer:
 
         # Create a user with username=bucketname
         if server_major_version >= 5:
-            self._create_internal_rbac_bucket_user(name)
+            self._create_internal_rbac_bucket_user(name, cluster_config)
 
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()

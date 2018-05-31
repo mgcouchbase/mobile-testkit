@@ -10,7 +10,7 @@ from optparse import OptionParser
 
 
 class ClusterDef:
-    def __init__(self, name, num_sgs, num_acs, num_cbs, num_lgs, num_lbs):
+    def __init__(self, name, num_sgs, num_acs, num_cbs, num_lgs, num_lbs, x509_certs):
         self.name = name
         self.num_sgs = num_sgs
         self.num_acs = num_acs
@@ -28,7 +28,7 @@ class ClusterDef:
         )
 
 
-def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
+def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows, x509_certs):
 
     connection_string = ""
     if use_docker:
@@ -363,6 +363,8 @@ def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
         f.write("cbs_ssl_enabled=False\n")
         f.write("xattrs_enabled=False\n")
         f.write("sg_lb_enabled=False\n")
+        if x509_certs:
+            f.write("x509_certs=True\n")
 
         if sg_windows:
             f.write("\n\n[sync_gateways:vars]\n")
@@ -393,7 +395,8 @@ def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
             "environment": {
                 "cbs_ssl_enabled": False,
                 "xattrs_enabled": False,
-                "sg_lb_enabled": False
+                "sg_lb_enabled": False,
+                "x509_certs": x509_certs
             }
         }
 
@@ -418,79 +421,79 @@ def get_hosts(pool_file="resources/pool.json"):
     return ips, ip_to_node_type
 
 
-def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False, sg_accel_windows=False):
+def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False, sg_accel_windows=False, x509_certs=False):
 
     cluster_confs = [
 
-        ClusterDef("base_cc", num_sgs=1, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("base_di", num_sgs=1, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("ci_cc", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=0),
-        ClusterDef("ci_di", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=0, num_lbs=0),
-        ClusterDef("base_lb_cc", num_sgs=3, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=1),
-        ClusterDef("base_lb_di", num_sgs=3, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=1),
-        ClusterDef("ci_lb_cc", num_sgs=3, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=1),
-        ClusterDef("ci_lb_di", num_sgs=3, num_acs=3, num_cbs=3, num_lgs=0, num_lbs=1),
-        ClusterDef("2each_lb_cc", num_sgs=2, num_acs=0, num_cbs=2, num_lgs=0, num_lbs=1),
-        ClusterDef("2each_lb_di", num_sgs=2, num_acs=2, num_cbs=2, num_lgs=0, num_lbs=1),
-        ClusterDef("multiple_servers_cc", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=0),
-        ClusterDef("multiple_servers_di", num_sgs=1, num_acs=1, num_cbs=3, num_lgs=0, num_lbs=0),
-        ClusterDef("multiple_sg_accels_di", num_sgs=1, num_acs=3, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("multiple_sync_gateways_cc", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("multiple_sync_gateways_di", num_sgs=2, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("load_balancer_cc", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=1),
-        ClusterDef("load_balancer_di", num_sgs=2, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=1),
-        ClusterDef("1sg", num_sgs=1, num_acs=0, num_cbs=0, num_lgs=0, num_lbs=0),
-        ClusterDef("2sgs", num_sgs=2, num_acs=0, num_cbs=0, num_lgs=0, num_lbs=0),
-        ClusterDef("1cbs", num_sgs=0, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0),
-        ClusterDef("1sg_1cbs_1lgs", num_sgs=1, num_acs=0, num_cbs=1, num_lgs=1, num_lbs=0),
-        ClusterDef("1sg_1ac_1cbs_1lgs", num_sgs=1, num_acs=1, num_cbs=1, num_lgs=1, num_lbs=0),
+        ClusterDef("base_cc", num_sgs=1, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("base_di", num_sgs=1, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("ci_cc", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("ci_di", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("base_lb_cc", num_sgs=3, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("base_lb_di", num_sgs=3, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("ci_lb_cc", num_sgs=3, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("ci_lb_di", num_sgs=3, num_acs=3, num_cbs=3, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("2each_lb_cc", num_sgs=2, num_acs=0, num_cbs=2, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("2each_lb_di", num_sgs=2, num_acs=2, num_cbs=2, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("multiple_servers_cc", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("multiple_servers_di", num_sgs=1, num_acs=1, num_cbs=3, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("multiple_sg_accels_di", num_sgs=1, num_acs=3, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("multiple_sync_gateways_cc", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("multiple_sync_gateways_di", num_sgs=2, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("load_balancer_cc", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("load_balancer_di", num_sgs=2, num_acs=1, num_cbs=1, num_lgs=0, num_lbs=1, x509_certs=x509_certs),
+        ClusterDef("1sg", num_sgs=1, num_acs=0, num_cbs=0, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sgs", num_sgs=2, num_acs=0, num_cbs=0, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("1cbs", num_sgs=0, num_acs=0, num_cbs=1, num_lgs=0, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("1sg_1cbs_1lgs", num_sgs=1, num_acs=0, num_cbs=1, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("1sg_1ac_1cbs_1lgs", num_sgs=1, num_acs=1, num_cbs=1, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
         # 1 sync_gateway
-        ClusterDef("1sg_1ac_3cbs_1lgs", num_sgs=1, num_acs=1, num_cbs=3, num_lgs=1, num_lbs=0),
-        ClusterDef("1sg_2ac_3cbs_1lgs", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=1, num_lbs=0),
-        ClusterDef("1sg_3cbs_1lgs", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=1, num_lbs=0),
+        ClusterDef("1sg_1ac_3cbs_1lgs", num_sgs=1, num_acs=1, num_cbs=3, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("1sg_2ac_3cbs_1lgs", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("1sg_3cbs_1lgs", num_sgs=1, num_acs=0, num_cbs=3, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
         # 2 sync_gateways
-        ClusterDef("2sg_1cbs_1lgs", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=1, num_lbs=0),
-        ClusterDef("2sg_3cbs_2lgs", num_sgs=2, num_acs=0, num_cbs=3, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_6cbs_2lgs", num_sgs=2, num_acs=0, num_cbs=6, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_2ac_3cbs_1lgs", num_sgs=2, num_acs=2, num_cbs=3, num_lgs=1, num_lbs=0),
-        ClusterDef("2sg_2ac_3cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=3, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_2ac_6cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=6, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_4ac_3cbs_2lgs", num_sgs=2, num_acs=4, num_cbs=3, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_8ac_3cbs_2lgs", num_sgs=2, num_acs=8, num_cbs=3, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_2ac_6cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=6, num_lgs=2, num_lbs=0),
-        ClusterDef("2sg_8ac_6cbs_2lgs", num_sgs=2, num_acs=8, num_cbs=6, num_lgs=2, num_lbs=0),
+        ClusterDef("2sg_1cbs_1lgs", num_sgs=2, num_acs=0, num_cbs=1, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_3cbs_2lgs", num_sgs=2, num_acs=0, num_cbs=3, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_6cbs_2lgs", num_sgs=2, num_acs=0, num_cbs=6, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_2ac_3cbs_1lgs", num_sgs=2, num_acs=2, num_cbs=3, num_lgs=1, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_2ac_3cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=3, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_2ac_6cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=6, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_4ac_3cbs_2lgs", num_sgs=2, num_acs=4, num_cbs=3, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_8ac_3cbs_2lgs", num_sgs=2, num_acs=8, num_cbs=3, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_2ac_6cbs_2lgs", num_sgs=2, num_acs=2, num_cbs=6, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("2sg_8ac_6cbs_2lgs", num_sgs=2, num_acs=8, num_cbs=6, num_lgs=2, num_lbs=0, x509_certs=x509_certs),
         # 4 sync_gateways
-        ClusterDef("4sg_2ac_3cbs_4lgs", num_sgs=4, num_acs=2, num_cbs=3, num_lgs=4, num_lbs=0),
-        ClusterDef("4sg_2ac_6cbs_4lgs", num_sgs=4, num_acs=2, num_cbs=6, num_lgs=4, num_lbs=0),
-        ClusterDef("4sg_4ac_3cbs_4lgs", num_sgs=4, num_acs=4, num_cbs=3, num_lgs=4, num_lbs=0),
-        ClusterDef("4sg_4ac_6cbs_4lgs", num_sgs=4, num_acs=4, num_cbs=6, num_lgs=4, num_lbs=0),
-        ClusterDef("4sg_8ac_3cbs_4lgs", num_sgs=4, num_acs=8, num_cbs=3, num_lgs=4, num_lbs=0),
-        ClusterDef("4sg_8ac_6cbs_4lgs", num_sgs=4, num_acs=8, num_cbs=6, num_lgs=4, num_lbs=0),
+        ClusterDef("4sg_2ac_3cbs_4lgs", num_sgs=4, num_acs=2, num_cbs=3, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("4sg_2ac_6cbs_4lgs", num_sgs=4, num_acs=2, num_cbs=6, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("4sg_4ac_3cbs_4lgs", num_sgs=4, num_acs=4, num_cbs=3, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("4sg_4ac_6cbs_4lgs", num_sgs=4, num_acs=4, num_cbs=6, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("4sg_8ac_3cbs_4lgs", num_sgs=4, num_acs=8, num_cbs=3, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("4sg_8ac_6cbs_4lgs", num_sgs=4, num_acs=8, num_cbs=6, num_lgs=4, num_lbs=0, x509_certs=x509_certs),
         # 8 sync_gateways
-        ClusterDef("8sg_4ac_3cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=3, num_lgs=8, num_lbs=0),
-        ClusterDef("8sg_4ac_6cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=6, num_lgs=8, num_lbs=0),
-        ClusterDef("8sg_4ac_12cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=12, num_lgs=8, num_lbs=0),
-        ClusterDef("8sg_8ac_3cbs_8lgs", num_sgs=8, num_acs=8, num_cbs=3, num_lgs=8, num_lbs=0),
-        ClusterDef("8sg_8ac_6cbs_8lgs", num_sgs=8, num_acs=8, num_cbs=6, num_lgs=8, num_lbs=0),
-        ClusterDef("8sg_12ac_3cbs_8lgs", num_sgs=8, num_acs=12, num_cbs=3, num_lgs=8, num_lbs=0),
+        ClusterDef("8sg_4ac_3cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=3, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("8sg_4ac_6cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=6, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("8sg_4ac_12cbs_8lgs", num_sgs=8, num_acs=4, num_cbs=12, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("8sg_8ac_3cbs_8lgs", num_sgs=8, num_acs=8, num_cbs=3, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("8sg_8ac_6cbs_8lgs", num_sgs=8, num_acs=8, num_cbs=6, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("8sg_12ac_3cbs_8lgs", num_sgs=8, num_acs=12, num_cbs=3, num_lgs=8, num_lbs=0, x509_certs=x509_certs),
         # 12 sync_gateways
-        ClusterDef("12sg_4ac_6cbs_12lgs", num_sgs=12, num_acs=4, num_cbs=6, num_lgs=12, num_lbs=0),
-        ClusterDef("12sg_4ac_12cbs_12lgs", num_sgs=12, num_acs=4, num_cbs=12, num_lgs=12, num_lbs=0),
-        ClusterDef("12sg_8ac_6cbs_12lgs", num_sgs=12, num_acs=8, num_cbs=6, num_lgs=12, num_lbs=0),
-        ClusterDef("12sg_8ac_12cbs_12lgs", num_sgs=12, num_acs=8, num_cbs=12, num_lgs=12, num_lbs=0),
+        ClusterDef("12sg_4ac_6cbs_12lgs", num_sgs=12, num_acs=4, num_cbs=6, num_lgs=12, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("12sg_4ac_12cbs_12lgs", num_sgs=12, num_acs=4, num_cbs=12, num_lgs=12, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("12sg_8ac_6cbs_12lgs", num_sgs=12, num_acs=8, num_cbs=6, num_lgs=12, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("12sg_8ac_12cbs_12lgs", num_sgs=12, num_acs=8, num_cbs=12, num_lgs=12, num_lbs=0, x509_certs=x509_certs),
         # 16 sync_gateways
-        ClusterDef("16sg_4ac_3cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=3, num_lgs=16, num_lbs=0),
-        ClusterDef("16sg_4ac_6cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=6, num_lgs=16, num_lbs=0),
-        ClusterDef("16sg_4ac_12cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=12, num_lgs=16, num_lbs=0),
-        ClusterDef("16sg_8ac_3cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=3, num_lgs=16, num_lbs=0),
-        ClusterDef("16sg_8ac_6cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=6, num_lgs=16, num_lbs=0),
-        ClusterDef("16sg_8ac_12cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=12, num_lgs=16, num_lbs=0),
+        ClusterDef("16sg_4ac_3cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=3, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("16sg_4ac_6cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=6, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("16sg_4ac_12cbs_16lgs", num_sgs=16, num_acs=4, num_cbs=12, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("16sg_8ac_3cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=3, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("16sg_8ac_6cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=6, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
+        ClusterDef("16sg_8ac_12cbs_16lgs", num_sgs=16, num_acs=8, num_cbs=12, num_lgs=16, num_lbs=0, x509_certs=x509_certs),
         # 32 sync_gateways
-        ClusterDef("32sg_16ac_16cbs_32lgs", num_sgs=32, num_acs=16, num_cbs=16, num_lgs=32, num_lbs=0),
+        ClusterDef("32sg_16ac_16cbs_32lgs", num_sgs=32, num_acs=16, num_cbs=16, num_lgs=32, num_lbs=0, x509_certs=x509_certs),
         # End Perf Mini Matrix
 
         # Test Fest
-        ClusterDef("1sg_2ac_3cbs", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=0, num_lbs=0)
+        ClusterDef("1sg_2ac_3cbs", num_sgs=1, num_acs=2, num_cbs=3, num_lgs=0, num_lbs=0, x509_certs=x509_certs)
         # End Test Fest
     ]
 
@@ -504,7 +507,7 @@ def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False, s
 
     print("Generating 'resources/cluster_configs/'. Using docker: {}".format(use_docker))
     for cluster_conf in cluster_confs:
-        write_config(cluster_conf, pool_file, use_docker, sg_windows, sg_accel_windows)
+        write_config(cluster_conf, pool_file, use_docker, sg_windows, sg_accel_windows, x509_certs)
 
 
 if __name__ == "__main__":
@@ -526,8 +529,10 @@ if __name__ == "__main__":
 
     parser.add_option("--sg-accel-windows", action="store_true", dest="sg_accel_windows", default=False, help="Use Windows Sync Gateway Accelerator")
 
+    parser.add_option("--x509-certs", action="store_true", default=False, help="Enable x509_certs authentication")
+
     arg_parameters = sys.argv[1:]
 
     (opts, args) = parser.parse_args(arg_parameters)
 
-    generate_clusters_from_pool(opts.pool_file, opts.use_docker, opts.sg_windows, opts.sg_accel_windows)
+    generate_clusters_from_pool(opts.pool_file, opts.use_docker, opts.sg_windows, opts.sg_accel_windows, opts.x509_certs)

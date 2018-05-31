@@ -17,6 +17,7 @@
     sslcert:
     sslkey:
     sg_cert_path:
+    x509_auth:
 
   tasks:
     - include: tasks/stop-sync-gateway.yml

@@ -9,7 +9,8 @@ from keywords.exceptions import ProvisioningError
 from keywords.utils import log_info, log_warn, add_cbs_to_sg_config_server_field
 from libraries.provision.ansible_runner import AnsibleRunner
 from libraries.testkit.config import Config
-from utilities.cluster_config_utils import is_cbs_ssl_enabled, is_xattrs_enabled, no_conflicts_enabled
+from utilities.cluster_config_utils import is_cbs_ssl_enabled, is_xattrs_enabled, no_conflicts_enabled,\
+    is_x509_auth, generate_x509_certs
 from utilities.cluster_config_utils import sg_ssl_enabled, get_revs_limit, get_sg_version, get_sg_replicas, get_sg_use_views
 from keywords.constants import SYNC_GATEWAY_CERT
 
@@ -96,27 +97,35 @@ def install_sync_gateway(cluster_config, sync_gateway_config, sg_ce=False, sg_pl
     if sync_gateway_config.build_flags != "":
         log_warn("\n\n!!! WARNING: You are building with flags: {} !!!\n\n".format(sync_gateway_config.build_flags))
 
+    bucket_names = get_buckets_from_sync_gateway_config(sync_gateway_config.config_path)
     ansible_runner = AnsibleRunner(cluster_config)
     config_path = os.path.abspath(sync_gateway_config.config_path)
     sg_cert_path = os.path.abspath(SYNC_GATEWAY_CERT)
+    cbs_cert_path = os.path.join(os.getcwd(), "certs")
     couchbase_server_primary_node = add_cbs_to_sg_config_server_field(cluster_config)
     # Create buckets unless the user explicitly asked to skip this step
     if not sync_gateway_config.skip_bucketcreation:
         create_server_buckets(cluster_config, sync_gateway_config)
 
-    server_port = 8091
+    server_port = ':8091'
     server_scheme = "http"
 
     if is_cbs_ssl_enabled(cluster_config):
-        server_port = 18091
+        server_port = ':18091'
         server_scheme = "https"
 
     # Shared vars
     playbook_vars = {
         "sync_gateway_config_filepath": config_path,
+        "username": "",
+        "password": "",
+        "certpath": "",
+        "keypath": "",
+        "cacertpath": "",
         "sg_cert_path": sg_cert_path,
         "server_port": server_port,
         "server_scheme": server_scheme,
+        "x509_certs_dir": cbs_cert_path,
         "autoimport": "",
         "xattrs": "",
         "no_conflicts": "",
@@ -125,6 +134,7 @@ def install_sync_gateway(cluster_config, sync_gateway_config, sg_ce=False, sg_pl
         "num_index_replicas": "",
         "num_index_replicas_housekeeping": "",
         "sg_use_views": "",
+        "x509_auth": False,
         "couchbase_server_primary_node": couchbase_server_primary_node
     }
 
@@ -135,6 +145,21 @@ def install_sync_gateway(cluster_config, sync_gateway_config, sg_ce=False, sg_pl
 
         if get_sg_use_views(cluster_config):
             playbook_vars["sg_use_views"] = '"use_views": true,'
+
+        if is_x509_auth(cluster_config):
+            playbook_vars["certpath"] = '"certpath": "/home/sync_gateway/certs/chain.pem",'
+            playbook_vars["keypath"] = '"keypath": "/home/sync_gateway/certs/pkey.key",'
+            playbook_vars["cacertpath"] = '"cacertpath": "/home/sync_gateway/certs/ca.pem",'
+            playbook_vars["server_scheme"] = "couchbases"
+            playbook_vars["server_port"] = ""
+            playbook_vars["x509_auth"] = True
+            generate_x509_certs(cluster_config, bucket_names)
+        else:
+            playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+            playbook_vars["password"] = '"password": "password",'
+    else:
+        playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+        playbook_vars["password"] = '"password": "password",'
 
     if is_xattrs_enabled(cluster_config):
         playbook_vars["autoimport"] = '"import_docs": "continuous",'
@@ -232,7 +257,7 @@ def create_server_buckets(cluster_config, sync_gateway_config):
     bucket_names = get_buckets_from_sync_gateway_config(sync_gateway_config.config_path)
 
     # create couchbase server buckets
-    cb_server.create_buckets(bucket_names)
+    cb_server.create_buckets(bucket_names, cluster_config)
 
 
 def get_buckets_from_sync_gateway_config(sync_gateway_config_path):

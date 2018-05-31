@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import re
 
 from requests.exceptions import ConnectionError
 
@@ -15,6 +16,7 @@ from libraries.testkit.sgaccel import SgAccel
 from libraries.testkit.syncgateway import SyncGateway
 from utilities.cluster_config_utils import is_load_balancer_enabled, get_revs_limit
 from utilities.cluster_config_utils import get_load_balancer_ip, no_conflicts_enabled
+from utilities.cluster_config_utils import generate_x509_certs, is_x509_auth
 from keywords.constants import SYNC_GATEWAY_CERT
 from utilities.cluster_config_utils import get_sg_replicas, get_sg_use_views, get_sg_version
 
@@ -114,14 +116,15 @@ class Cluster:
         sg_cert_path = os.path.abspath(SYNC_GATEWAY_CERT)
 
         self.sync_gateway_config = config
-
+        cbs_cert_path = os.path.join(os.getcwd(), "certs")
+        bucket_names = get_buckets_from_sync_gateway_config(sg_config_path)
         is_valid, reason = validate_cluster(self.sync_gateways, self.sg_accels, config)
         if not is_valid:
             raise ProvisioningError(reason)
 
         log_info(">>> Creating buckets on: {}".format(self.servers[0].url))
         log_info(">>> Creating buckets {}".format(bucket_name_set))
-        self.servers[0].create_buckets(bucket_name_set)
+        self.servers[0].create_buckets(bucket_name_set, self._cluster_config)
 
         # Wait for server to be in a warmup state to work around
         # https://github.com/couchbase/sync_gateway/issues/1745
@@ -130,28 +133,35 @@ class Cluster:
 
         log_info(">>> Starting sync_gateway with configuration: {}".format(config_path_full))
 
-        server_port = 8091
+        server_port = ':8091'
         server_scheme = "http"
         couchbase_server_primary_node = add_cbs_to_sg_config_server_field(self._cluster_config)
         if self.cbs_ssl:
-            server_port = 18091
+            server_port = ':18091'
             server_scheme = "https"
 
         # Start sync-gateway
         playbook_vars = {
             "sync_gateway_config_filepath": config_path_full,
+            "username": "",
+            "password": "",
+            "certpath": "",
+            "keypath": "",
+            "cacertpath": "",
             "sg_cert_path": sg_cert_path,
             "server_port": server_port,
             "server_scheme": server_scheme,
+            "x509_certs_dir": cbs_cert_path,
             "autoimport": "",
+            "revs_limit": "",
             "xattrs": "",
             "no_conflicts": "",
-            "revs_limit": "",
             "sslcert": "",
             "sslkey": "",
             "num_index_replicas": "",
             "num_index_replicas_housekeeping": "",
             "sg_use_views": "",
+            "x509_auth": False,
             "couchbase_server_primary_node": couchbase_server_primary_node
         }
 
@@ -162,6 +172,21 @@ class Cluster:
 
             if get_sg_use_views(self._cluster_config):
                 playbook_vars["sg_use_views"] = '"use_views": true,'
+
+            if is_x509_auth(self._cluster_config):
+                playbook_vars["certpath"] = '"certpath": "/home/sync_gateway/certs/chain.pem",'
+                playbook_vars["keypath"] = '"keypath": "/home/sync_gateway/certs/pkey.key",'
+                playbook_vars["cacertpath"] = '"cacertpath": "/home/sync_gateway/certs/ca.pem",'
+                playbook_vars["server_scheme"] = "couchbases"
+                playbook_vars["server_port"] = ""
+                playbook_vars["x509_auth"] = True
+                generate_x509_certs(self._cluster_config, bucket_names)
+            else:
+                playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+                playbook_vars["password"] = '"password": "password",'
+        else:
+            playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+            playbook_vars["password"] = '"password": "password",'
 
         # Add configuration to run with xattrs
         if self.xattrs:
@@ -377,3 +402,42 @@ def validate_cluster(sync_gateways, sg_accels, config):
         return False, "INVALID CONFIG: Running in Distributed Index mode but no sg_accels are defined."
 
     return True, ""
+
+
+def get_buckets_from_sync_gateway_config(sync_gateway_config_path):
+    # Remove the sync function before trying to extract the bucket names
+
+    with open(sync_gateway_config_path) as fp:
+        conf_data = fp.read()
+
+    fp.close()
+    temp_config_path = ""
+    temp_config = ""
+
+    # Check if a sync function id defined between ` `
+    if re.search('`', conf_data):
+        log_info("Ignoring the sync function to extract bucket names")
+        conf = re.split('`', conf_data)
+        split_len = len(conf)
+
+        # Replace the sync function with a string "function"
+        for i in range(0, split_len, 2):
+            if i == split_len - 1:
+                temp_config += conf[i]
+            else:
+                temp_config += conf[i] + " \"function\" "
+
+        temp_config_path = "/".join(sync_gateway_config_path.split('/')[:-2]) + '/temp_conf.json'
+
+        with open(temp_config_path, 'w') as fp:
+            fp.write(temp_config)
+
+        config_path_full = os.path.abspath(temp_config_path)
+    else:
+        config_path_full = os.path.abspath(sync_gateway_config_path)
+
+    config = Config(config_path_full)
+    bucket_name_set = config.get_bucket_name_set()
+    if os.path.exists(temp_config_path):
+        os.remove(temp_config_path)
+    return bucket_name_set

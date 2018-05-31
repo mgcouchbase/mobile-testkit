@@ -11,7 +11,8 @@ from keywords.utils import log_r
 from keywords.utils import version_and_build
 from keywords.utils import hostname_for_url
 from keywords.utils import log_info
-from utilities.cluster_config_utils import get_revs_limit
+from utilities.cluster_config_utils import get_revs_limit, is_x509_auth, generate_x509_certs
+from libraries.testkit.cluster import get_buckets_from_sync_gateway_config
 
 from keywords.exceptions import ProvisioningError
 
@@ -186,7 +187,7 @@ class SyncGateway:
 
     def __init__(self):
         self._session = Session()
-        self.server_port = 8091
+        self.server_port = ':8091'
         self.server_scheme = "http"
 
     def install_sync_gateway(self, cluster_config, sync_gateway_version, sync_gateway_config):
@@ -228,23 +229,36 @@ class SyncGateway:
         ansible_runner = AnsibleRunner(cluster_config)
         config_path = os.path.abspath(config)
         sg_cert_path = os.path.abspath(SYNC_GATEWAY_CERT)
+        cbs_cert_path = os.path.join(os.getcwd(), "certs")
         couchbase_server_primary_node = add_cbs_to_sg_config_server_field(cluster_config)
+        bucket_names = get_buckets_from_sync_gateway_config(config_path)
         if is_cbs_ssl_enabled(cluster_config):
-            self.server_port = 18091
+            self.server_port = ":18091"
             self.server_scheme = "https"
+        if is_x509_auth(cluster_config):
+            self.server_port = ""
+            self.server_scheme = "couchbases"
 
         playbook_vars = {
             "sync_gateway_config_filepath": config_path,
+            "username": "",
+            "password": "",
+            "certpath": "",
+            "keypath": "",
+            "cacertpath": "",
             "sg_cert_path": sg_cert_path,
             "server_port": self.server_port,
             "server_scheme": self.server_scheme,
+            "x509_certs_dir": cbs_cert_path,
             "autoimport": "",
             "xattrs": "",
             "no_conflicts": "",
-            "revs_limit": "",
-            "sg_use_views": "",
+            "sslcert": "",
+            "sslkey": "",
             "num_index_replicas": "",
             "num_index_replicas_housekeeping": "",
+            "sg_use_views": "",
+            "x509_auth": False,
             "couchbase_server_primary_node": couchbase_server_primary_node
         }
 
@@ -254,6 +268,24 @@ class SyncGateway:
             playbook_vars["num_index_replicas_housekeeping"] = '"num_index_replicas_housekeeping": {},'.format(num_replicas)
             if get_sg_use_views(cluster_config):
                 playbook_vars["sg_use_views"] = '"use_views": true,'
+
+            if get_sg_use_views(cluster_config):
+                playbook_vars["sg_use_views"] = '"use_views": true,'
+
+            if is_x509_auth(cluster_config):
+                playbook_vars["certpath"] = '"certpath": "/home/sync_gateway/certs/chain.pem",'
+                playbook_vars["keypath"] = '"keypath": "/home/sync_gateway/certs/pkey.key",'
+                playbook_vars["cacertpath"] = '"cacertpath": "/home/sync_gateway/certs/ca.pem",'
+                playbook_vars["server_scheme"] = "couchbases"
+                playbook_vars["server_port"] = ""
+                playbook_vars["x509_auth"] = True
+                generate_x509_certs(cluster_config, bucket_names)
+            else:
+                playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+                playbook_vars["password"] = '"password": "password",'
+        else:
+            playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
+            playbook_vars["password"] = '"password": "password",'
 
         if is_xattrs_enabled(cluster_config):
             playbook_vars["autoimport"] = '"import_docs": "continuous",'
