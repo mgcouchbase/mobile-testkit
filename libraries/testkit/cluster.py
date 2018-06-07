@@ -13,8 +13,8 @@ from libraries.testkit.admin import Admin
 from libraries.testkit.config import Config
 from libraries.testkit.sgaccel import SgAccel
 from libraries.testkit.syncgateway import SyncGateway
-from utilities.cluster_config_utils import is_load_balancer_enabled, get_revs_limit,\
-    is_ipv6
+from utilities.cluster_config_utils import is_load_balancer_enabled,\
+    get_revs_limit, is_ipv6
 from utilities.cluster_config_utils import get_load_balancer_ip, no_conflicts_enabled
 from keywords.constants import SYNC_GATEWAY_CERT
 from utilities.cluster_config_utils import get_sg_replicas, get_sg_use_views, get_sg_version
@@ -32,7 +32,7 @@ class Cluster:
 
         self._cluster_config = config
         sgs = []
-        cbs_urls =[]
+        cbs_urls = []
         acs = []
 
         if not os.path.isfile(self._cluster_config):

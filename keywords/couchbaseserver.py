@@ -73,7 +73,7 @@ class CouchbaseServer:
         self.cbs_ssl = False
 
         # Strip http prefix and port to store host\
-        
+
         if "https" in self.url:
             host = self.url.replace("https://", "")
             host = host.replace(":18091", "")
@@ -391,12 +391,11 @@ class CouchbaseServer:
         start = time.time()
         time.sleep(5)
         while True:
- 
             if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
                 raise Exception("TIMEOUT while trying to create server buckets.")
             try:
                 if ipv6:
-                    connection_url ="couchbase://{}/{}?ipv6=allow".format(self.host, name)
+                    connection_url = "couchbase://{}/{}?ipv6=allow".format(self.host, name)
                 else:
                     connection_url = "couchbase://{}/{}".format(self.host, name)
                 bucket = Bucket(connection_url, password='password')
@@ -408,9 +407,7 @@ class CouchbaseServer:
                 log_info("Error from server: {}, Retrying ...". format(e))
                 time.sleep(1)
                 continue
- 
         self.wait_for_ready_state()
-
         return name
 
     def delete_couchbase_server_cached_rev_bodies(self, bucket):

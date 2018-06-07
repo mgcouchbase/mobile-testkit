@@ -65,7 +65,6 @@ class SgAccel:
             "couchbase_server_primary_node": couchbase_server_primary_node
         }
 
-
         if get_sg_version(self.cluster_config) >= "2.1.0":
             num_replicas = get_sg_replicas(self.cluster_config)
             playbook_vars["num_index_replicas"] = '"num_index_replicas": {},'.format(num_replicas)

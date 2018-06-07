@@ -13,6 +13,7 @@ from libraries.testkit.cluster import Cluster
 from utilities.cluster_config_utils import is_cbs_ssl_enabled, is_xattrs_enabled, no_conflicts_enabled, get_revs_limit, get_sg_version, get_sg_replicas, get_sg_use_views, sg_ssl_enabled, is_ipv6
 from keywords.constants import SYNC_GATEWAY_CERT
 
+
 class SyncGatewayConfig:
     def __init__(self,
                  commit,

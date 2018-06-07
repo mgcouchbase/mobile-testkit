@@ -97,10 +97,9 @@ class ClusterKeywords:
             for sg in cluster["sync_gateways"]:
                 if cluster["environment"]["ipv6_enabled"]:
                     sg["ip"] = "[{}]".format(sg["ip"])
-                public = "{}://{}:4984".format(sg_scheme,sg["ip"] )
+                public = "{}://{}:4984".format(sg_scheme, sg["ip"])
                 admin = "{}://{}:4985".format(sg_scheme, sg["ip"])
                 sg_urls.append({"public": public, "admin": admin})
-
 
         for sga in cluster["sg_accels"]:
             if cluster["environment"]["ipv6_enabled"]:
