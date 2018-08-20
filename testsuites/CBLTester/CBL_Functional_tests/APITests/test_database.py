@@ -1,5 +1,4 @@
 import pytest
-import os
 from keywords.utils import random_string, log_info
 
 
@@ -215,11 +214,11 @@ class TestDatabase(object):
         db = self.db_obj.create(db_name)
         path = self.db_obj.getPath(db).rstrip('/\\')
         log_info("path for db is {}".format(path))
-        if '\\' in  path:
+        if '\\' in path:
             path = '\\'.join(path.split('\\')[:-1])
         else:
             path = '/'.join(path.split('/')[:-1])
-        print path
+        log_info("Path is -{}".format(path))
         assert self.db_obj.exists(db_name, path)
         assert self.db_obj.deleteDB(db) == -1
         assert not self.db_obj.exists(db_name, path)
