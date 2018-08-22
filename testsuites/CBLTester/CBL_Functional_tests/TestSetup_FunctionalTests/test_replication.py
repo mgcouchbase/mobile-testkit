@@ -1254,6 +1254,7 @@ def test_replication_wrong_blip(params_from_base_test_setup):
     sg_config = params_from_base_test_setup["sg_config"]
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
+    liteserv_platform = params_from_base_test_setup["liteserv_platform"]
 
     num_of_docs = 10
     username = "autotest"
@@ -1263,6 +1264,8 @@ def test_replication_wrong_blip(params_from_base_test_setup):
     sg_client = MobileRestClient()
     authenticator = Authenticator(base_url)
     replicator = Replication(base_url)
+    if liteserv_platform == "ios" or liteserv_platform == "xamarin-ios":
+        pytest.skip("Issue in ios App. Hence skipping it for now.")
 
     # Modify sync-gateway config to use no-conflicts config
     c = cluster.Cluster(config=cluster_config)
