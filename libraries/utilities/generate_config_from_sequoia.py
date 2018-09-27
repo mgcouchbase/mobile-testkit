@@ -99,7 +99,7 @@ def generate_config_from_sequoia(host_file, topology, ipv6):
         f.write('cbs_ssl_enabled={}\n'.format(host_json['environment']['cbs_ssl_enabled']))
         f.write('xattrs_enabled={}\n'.format(host_json['environment']['xattrs_enabled']))
         f.write('sg_lb_enabled={}\n'.format(host_json['environment']['sg_lb_enabled']))
-        f.write("ipv6_enabled={}\n".format(ipv6))
+        f.write("ipv6_enabled={}\n".format(host_json['environment']['ipv6_enabled']))
 
 
 if __name__ == "__main__":
