@@ -113,6 +113,6 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description='Cluster config generator form sequoia host file')
     PARSER.add_argument('--host-file', help='Path to host file generated from sequoia', required=True)
     PARSER.add_argument('--topology', help='Topology to target for tests. Ex. base_cc', required=True)
-    PARSER.add_argument("--ipv6", action="store_true", default=False, help="IPv6 addresses", required=True)
+    PARSER.add_argument("--ipv6", action="store_true", default=False, help="IPv6 addresses")
     ARGS = PARSER.parse_args()
     generate_config_from_sequoia(ARGS.host_file, ARGS.topology, ARGS.ipv6)
