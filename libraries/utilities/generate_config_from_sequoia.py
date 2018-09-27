@@ -69,6 +69,7 @@ def generate_config_from_sequoia(host_file, topology, ipv6):
 
     cluster_config_path = 'resources/cluster_configs/{}'.format(topology)
     log_info('Writing cluster config: {}'.format(cluster_config_path))
+    log_info('ipv6 value is : {}'.format(ipv6))
 
     with open(cluster_config_path, 'w') as f:
 
@@ -99,7 +100,12 @@ def generate_config_from_sequoia(host_file, topology, ipv6):
         f.write('cbs_ssl_enabled={}\n'.format(host_json['environment']['cbs_ssl_enabled']))
         f.write('xattrs_enabled={}\n'.format(host_json['environment']['xattrs_enabled']))
         f.write('sg_lb_enabled={}\n'.format(host_json['environment']['sg_lb_enabled']))
-        f.write("ipv6_enabled={}\n".ipv6)
+        f.write("ipv6_enabled={}\n".format(ipv6))
+
+    with open(cluster_config_path) as f:
+        config_file = json.loads(f.read())
+
+    log_info("config file is ".format(config_file))
 
 
 if __name__ == "__main__":
