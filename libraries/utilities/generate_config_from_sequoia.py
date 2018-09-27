@@ -99,7 +99,7 @@ def generate_config_from_sequoia(host_file, topology, ipv6):
         f.write('cbs_ssl_enabled={}\n'.format(host_json['environment']['cbs_ssl_enabled']))
         f.write('xattrs_enabled={}\n'.format(host_json['environment']['xattrs_enabled']))
         f.write('sg_lb_enabled={}\n'.format(host_json['environment']['sg_lb_enabled']))
-        f.write("ipv6_enabled={}\n".format(host_json['environment']['ipv6_enabled']))
+        f.write("ipv6_enabled={}\n".ipv6)
 
 
 if __name__ == "__main__":
@@ -107,6 +107,6 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description='Cluster config generator form sequoia host file')
     PARSER.add_argument('--host-file', help='Path to host file generated from sequoia', required=True)
     PARSER.add_argument('--topology', help='Topology to target for tests. Ex. base_cc', required=True)
-    PARSER.add_argument("--ipv6", action="store_true", default=False, help="IPv6 addresses")
+    PARSER.add_argument("--ipv6", action="store_true", default=False, help="IPv6 addresses", required=True)
     ARGS = PARSER.parse_args()
     generate_config_from_sequoia(ARGS.host_file, ARGS.topology, ARGS.ipv6)
