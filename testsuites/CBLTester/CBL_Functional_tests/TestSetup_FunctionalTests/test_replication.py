@@ -2109,11 +2109,9 @@ def test_CBL_push_pull_with_sg_down(params_from_base_test_setup):
         @summary:
         1. Have SG
         2. Create docs in CBL.
-        3. push replication to SG
-        4. update docs in SG.
-        5. Restart sg in one thread
-        6. do replication with pull in other thread to cbl
-        7. Verify all docs replicated successfully to cbl
+        3. push_pull replication with continuous True in one thread 
+        4. Restart sg in another  thread
+        7. Verify all docs replicated successfully to cbl and SGW
     """
     sg_db = "db"
     sg_url = params_from_base_test_setup["sg_url"]
@@ -3103,7 +3101,7 @@ def setup_sg_cbl_docs(params_from_base_test_setup, sg_db, base_url, db, cbl_db, 
                       sg_admin_url, sg_blip_url, replication_type=None, document_ids=None,
                       channels=None, replicator_authenticator_type=None, headers=None,
                       cbl_id_prefix="cbl", sg_id_prefix="sg_doc",
-                      num_cbl_docs=5, num_sg_docs=10):
+                      num_cbl_docs=5, num_sg_docs=10, continuous=False):
 
     sg_client = MobileRestClient()
 
@@ -3126,7 +3124,7 @@ def setup_sg_cbl_docs(params_from_base_test_setup, sg_db, base_url, db, cbl_db, 
     else:
         replicator_authenticator = None
     log_info("Configuring replicator")
-    repl_config = replicator.configure(cbl_db, target_url=sg_blip_url, replication_type=replication_type, continuous=False,
+    repl_config = replicator.configure(cbl_db, target_url=sg_blip_url, replication_type=replication_type, continuous=continuous,
                                        documentIDs=document_ids, channels=channels, replicator_authenticator=replicator_authenticator, headers=headers)
     repl = replicator.create(repl_config)
     log_info("Starting replicator")
@@ -3136,3 +3134,97 @@ def setup_sg_cbl_docs(params_from_base_test_setup, sg_db, base_url, db, cbl_db, 
     replicator.stop(repl)
 
     return sg_added_ids, cbl_added_doc_ids, auth_session
+
+
+@pytest.mark.sanity
+@pytest.mark.listener
+@pytest.mark.replication
+def test_replication_configuration_with_push_pull_sequence_replication(params_from_base_test_setup):
+    """
+        @summary:
+        1. Create docs in SGW.
+        2. Create docs in CBL.
+        3. Start push replication with continuous
+        4. Start pull replication with continuous without using any time delay or sleep time with previous step 3
+        5. Verify replication completes on both 
+
+    """
+    sg_db = "db"
+    authenticator_type = "session"
+
+    sg_url = params_from_base_test_setup["sg_url"]
+    sg_admin_url = params_from_base_test_setup["sg_admin_url"]
+    sg_blip_url = params_from_base_test_setup["target_url"]
+    sg_mode = params_from_base_test_setup["mode"]
+    base_url = params_from_base_test_setup["base_url"]
+    cluster_config = params_from_base_test_setup["cluster_config"]
+    sg_config = params_from_base_test_setup["sg_config"]
+    db = params_from_base_test_setup["db"]
+    cbl_db = params_from_base_test_setup["source_db"]
+    sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+
+    if sync_gateway_version < "2.0.0":
+        pytest.skip('This test cannnot run with sg version below 2.0')
+
+    channels = ["ABC"]
+    c = cluster.Cluster(config=cluster_config)
+    c.reset(sg_config_path=sg_config)
+
+    sg_client = MobileRestClient()
+
+    # Add 5 docs to CBL
+    # Add 10 docs to SG
+    num_cbl_docs = 5
+    num_sg_docs = 10
+    cbl_id_prefix = "cbl_push_pull_sequence"
+    sg_id_prefix = "sg_push_pull_sequence"
+    sg_client = MobileRestClient()
+
+    db.create_bulk_docs(number=num_cbl_docs, id_prefix=cbl_id_prefix, db=cbl_db, channels=channels)
+    # Add docs in SG
+    sg_client.create_user(sg_admin_url, sg_db, "autotest", password="password", channels=channels)
+    cookie, session = sg_client.create_session(sg_admin_url, sg_db, "autotest")
+    auth_session = cookie, session
+    sg_added_docs = sg_client.add_docs(url=sg_url, db=sg_db, number=num_sg_docs, id_prefix=sg_id_prefix, channels=channels, auth=auth_session)
+
+    # Start and stop continuous replication
+    replicator = Replication(base_url)
+    authenticator = Authenticator(base_url)
+    replicator_authenticator = authenticator.authentication(session, cookie, authentication_type="session")
+    # push replication
+    repl_config1 = replicator.configure(source_db=cbl_db, target_url=sg_blip_url, continuous=True,
+                                        replication_type="push", channels=channels, replicator_authenticator=replicator_authenticator)
+    repl1 = replicator.create(repl_config1)
+    
+    # pull replication
+    repl_config2 = replicator.configure(source_db=cbl_db, target_url=sg_blip_url, continuous=True,
+                                        replication_type="pull", channels=channels, replicator_authenticator=replicator_authenticator)
+    repl2 = replicator.create(repl_config2)
+
+    # Start push replication first and immediately start pull replication 
+    replicator.start(repl1)
+    replicator.start(repl2)
+
+    replicator.wait_until_replicator_idle(repl1)
+    replicator.wait_until_replicator_idle(repl2)
+    replicator.stop(repl1)
+    replicator.stop(repl2)
+
+    sg_docs = sg_client.get_all_docs(url=sg_admin_url, db=sg_db)
+    cbl_doc_count = db.getCount(cbl_db)
+    cbl_doc_ids = db.getDocIds(cbl_db)
+
+    print "cbl doc ids are ", cbl_doc_ids
+    print "sg docs are ", sg_docs
+
+    assert len(sg_docs["rows"]) == 15, "Number of sg docs is not total number of docs of SGW and CBL"
+    assert cbl_doc_count == 15, "Did not get expected number of cbl docs"
+
+    # Check that CBL docs are not pushed to SG as it is just a pull
+    sg_ids = [row["id"] for row in sg_docs["rows"]]
+    for doc in cbl_doc_ids:
+        assert doc in sg_ids
+
+    # Verify SG docs are pulled to CBL
+    for id in sg_ids:
+        assert id in cbl_doc_ids
