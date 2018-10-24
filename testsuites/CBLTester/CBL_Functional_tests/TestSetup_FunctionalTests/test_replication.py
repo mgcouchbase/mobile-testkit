@@ -262,8 +262,8 @@ def test_replication_configuration_with_push_replication(params_from_base_test_s
 @pytest.mark.listener
 @pytest.mark.replication
 @pytest.mark.parametrize("authenticator_type", [
-    # ('session'),
-    ('basic')
+    ('session'),
+#     ('basic')
 ])
 def test_replication_configuration_with_push_and_pull_replication(params_from_base_test_setup, authenticator_type):
     """
@@ -287,6 +287,8 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
     sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+    num_cbl_docs = 5
+    cbl_id_prefix = "test_doc"
 
     if sync_gateway_version < "2.0.0":
         pytest.skip('This test cannnot run with sg version below 2.0')
@@ -297,7 +299,10 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     channels = ["ABC"]
 
     sg_client = MobileRestClient()
+    sg_client.create_user(sg_admin_url, sg_db, "autotest", password="password", channels=channels)
     cookie, session = sg_client.create_session(sg_admin_url, sg_db, "autotest")
+
+    db.create_bulk_docs(number=num_cbl_docs, id_prefix=cbl_id_prefix, db=cbl_db, channels=channels)
 
     replicator = Replication(base_url)
     authenticator = Authenticator(base_url)
@@ -317,6 +322,7 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     replicator.start(repl_push)
     log_info("Waiting for replicator to go idle")
     replicator.wait_until_replicator_idle(repl_push)
+    replicator.stop(repl_push)
     push_complete = replicator.getCompleted(repl_push)
     push_total = replicator.getTotal(repl_push)
     assert push_complete == push_total
@@ -330,7 +336,13 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     assert cbl_doc_count == 5, "Did not get expected number of cbl docs"
 
     doc_to_delete = random.choice(cbl_doc_ids)
-    db.delete(database=cbl_db, document=doc_to_delete)
+    doc = db.getDocument(database=cbl_db, doc_id=doc_to_delete)
+    db.delete(database=cbl_db, document=doc)
+
+    # Verify database doc counts
+    cbl_doc_count = db.getCount(cbl_db)
+    cbl_doc_ids = db.getDocIds(cbl_db)
+    sg_docs = sg_client.get_all_docs(url=sg_admin_url, db=sg_db)
 
     assert len(sg_docs["rows"]) == 5, "Number of sg docs is not equal to total number of cbl docs and sg docs"
     assert cbl_doc_count == 4, "Did not get expected number of cbl docs"
@@ -343,12 +355,21 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     replicator.start(repl_pull)
     log_info("Waiting for replicator to go idle")
     replicator.wait_until_replicator_idle(repl_pull)
+    replicator.stop(repl_pull)
     pull_complete = replicator.getCompleted(repl_pull)
     pull_total = replicator.getTotal(repl_pull)
 
     assert pull_complete == pull_total
-    assert push_complete == pull_complete
-    assert push_total == pull_total
+
+    # Verify database doc counts
+    cbl_doc_count = db.getCount(cbl_db)
+    cbl_doc_ids = db.getDocIds(cbl_db)
+    sg_docs = sg_client.get_all_docs(url=sg_admin_url, db=sg_db)
+
+    assert len(sg_docs["rows"]) == 5, "Number of sg docs is not equal to total number of cbl docs and sg docs"
+    assert cbl_doc_count == 4, "Did not get expected number of cbl docs"
+#     assert push_complete == pull_complete
+#     assert push_total == pull_total
 
 
 @pytest.mark.listener
