@@ -329,7 +329,7 @@ def params_from_base_suite_setup(request):
 
     # Stop all sync_gateway and sg_accels as test finished
     c = cluster.Cluster(cluster_config)
-    c.stop_sg_and_accel()
+#     c.stop_sg_and_accel()
 
     # Delete png files under resources/data
     clear_resources_pngs()
@@ -361,7 +361,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         for test in skip_tests:
             if test in test_name:
                 pytest.skip("Skipping online/offline tests with load balancer")
-    if is_x509_auth and mode == "di":
+    if is_x509_auth(cluster_config) and mode == "di":
         pytest.skip("x509 certificate authentication is not supoorted in DI mode")
 
     # Certain test are diabled for certain modes
