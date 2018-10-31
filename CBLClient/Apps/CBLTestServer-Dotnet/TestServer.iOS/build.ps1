@@ -131,14 +131,15 @@ try {
 
     Pop-Location
     & msbuild /t:Restore
-    & msbuild /p:Configuration=Release /p:Platform=iPhone /p:BuildIpa=true /t:Rebuild
+    & msbuild /p:Configuration=Release /p:Platform=iPhone /t:Rebuild
     if($LASTEXITCODE -ne 0) {
         Write-Error "Build failed for TestServer.iOS"
         exit 1
     }
 
     Push-Location "bin/iPhone/Release"
-    Copy-Item TestServer.iOS.ipa $ZipPath/TestServer.iOS.ipa
+    mv TestServer.iOS.app TestServer.iOS-Device.app
+    zip -r $ZipPath/TestServer.iOS.zip TestServer.iOS-Device.app
     Pop-Location
 } finally {
     Pop-Location
