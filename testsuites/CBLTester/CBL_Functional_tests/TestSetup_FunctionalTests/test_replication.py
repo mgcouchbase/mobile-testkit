@@ -263,7 +263,7 @@ def test_replication_configuration_with_push_replication(params_from_base_test_s
 @pytest.mark.replication
 @pytest.mark.parametrize("authenticator_type", [
     ('session'),
-#     ('basic')
+    ('basic')
 ])
 def test_replication_configuration_with_push_and_pull_replication(params_from_base_test_setup, authenticator_type):
     """
@@ -278,7 +278,6 @@ def test_replication_configuration_with_push_and_pull_replication(params_from_ba
     """
     sg_db = "db"
 
-    sg_url = params_from_base_test_setup["sg_url"]
     sg_admin_url = params_from_base_test_setup["sg_admin_url"]
     sg_blip_url = params_from_base_test_setup["target_url"]
     base_url = params_from_base_test_setup["base_url"]
