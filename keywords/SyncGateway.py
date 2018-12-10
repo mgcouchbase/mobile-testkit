@@ -514,6 +514,7 @@ class SyncGateway(object):
         """
         ansible_runner = AnsibleRunner(cluster_config)
 
+        
         from libraries.provision.install_sync_gateway import SyncGatewayConfig
         version, build = version_and_build(sync_gateway_version)
         sg_config = SyncGatewayConfig(
@@ -526,14 +527,36 @@ class SyncGateway(object):
         )
         sg_conf = os.path.abspath(sg_config.config_path)
         sg_cert_path = os.path.abspath(SYNC_GATEWAY_CERT)
+        config_path = os.path.abspath(sg_conf)
+        bucket_names = get_buckets_from_sync_gateway_config(config_path)
+        cbs_cert_path = os.path.join(os.getcwd(), "certs")
         couchbase_server_primary_node = add_cbs_to_sg_config_server_field(cluster_config)
 
         if is_ipv6(cluster_config):
             couchbase_server_primary_node = "[{}]".format(couchbase_server_primary_node)
 
+        username = '"username": "{}",'.format(bucket_names[0])
+        password = '"password": "password",'
         # Shared vars
         playbook_vars = {
             "sync_gateway_config_filepath": sg_conf,
+            "sg_cert_path": sg_cert_path,
+            "server_port": self.server_port,
+            "server_scheme": self.server_scheme,
+            "autoimport": "",
+            "xattrs": "",
+            "no_conflicts": "",
+            "revs_limit": "",
+            "sg_use_views": "",
+            "num_index_replicas": "",
+            "couchbase_server_primary_node": couchbase_server_primary_node,
+            "username": username,
+            "password": password,
+            "certpath": "",
+            "keypath": "",
+            "cacertpath": "",
+            "x509_certs_dir": cbs_cert_path,
+            "x509_auth": False,
             "sg_cert_path": sg_cert_path,
             "server_port": self.server_port,
             "server_scheme": self.server_scheme,
@@ -552,7 +575,7 @@ class SyncGateway(object):
         playbook_vars["couchbase_sync_gateway_package"] = sync_gateway_package_name
         playbook_vars["couchbase_sg_accel_package"] = sg_accel_package_name
 
-        if version >= "2.1.0":
+        if get_sg_version(cluster_config) >= "2.1.0":
             logging_config = '"logging": {"debug": {"enabled": true}'
             try:
                 redact_level = get_redact_level(cluster_config)
@@ -566,8 +589,27 @@ class SyncGateway(object):
             else:
                 num_replicas = get_sg_replicas(cluster_config)
                 playbook_vars["num_index_replicas"] = '"num_index_replicas": {},'.format(num_replicas)
+
+            if is_x509_auth(cluster_config):
+                playbook_vars[
+                    "certpath"] = '"certpath": "/home/sync_gateway/certs/chain.pem",'
+                playbook_vars[
+                    "keypath"] = '"keypath": "/home/sync_gateway/certs/pkey.key",'
+                playbook_vars[
+                    "cacertpath"] = '"cacertpath": "/home/sync_gateway/certs/ca.pem",'
+                playbook_vars["server_scheme"] = "couchbases"
+                playbook_vars["server_port"] = ""
+                playbook_vars["x509_auth"] = True
+                generate_x509_certs(cluster_config, bucket_names)
+            else:
+                playbook_vars["username"] = '"username": "{}",'.format(
+                    bucket_names[0])
+                playbook_vars["password"] = '"password": "password",'
         else:
             playbook_vars["logging"] = '"log": ["*"],'
+            playbook_vars["username"] = '"username": "{}",'.format(
+                bucket_names[0])
+            playbook_vars["password"] = '"password": "password",'
 
         if is_xattrs_enabled(cluster_config):
             playbook_vars["autoimport"] = '"import_docs": "continuous",'
