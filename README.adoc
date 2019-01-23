@@ -2,6 +2,8 @@
 :toc: left
 :toclevels: 3
 
+== Source Code and Repo Structure
+
 This repository contains Mobile QE Functional / Integration tests. 
 
 ```
@@ -9,20 +11,22 @@ $ git clone https://github.com/couchbaselabs/mobile-testkit.git
 $ cd mobile-testkit/
 ```
 
-== Repo Structure
-
 The repo structure is the following:
 
-* libraries
+ * CBLClient (sample mobile clients for iOS/Android/.NET)
  * keywords (new devopement, will be renamed to testkit in the near future)
- * provision
- * testkit (legacy)
- * utilities
-
-* testsuites
- * listener
- * syncgateway
-
+ * libraries
+    - provision
+    - testkit (legacy)
+ * mobile_testkit_tests
+ * resources
+ * testsuites
+    - CBLTester
+    - listener
+    - syncgateway
+ * utilities 
+ * vagrant
+ 
 == Mobile Testkit Dependencies
 
 === Setup Controller on OSX
@@ -109,18 +113,12 @@ source setup.sh
 
 If you plan on doing development, it may be helpful to add the PYTHONPATH env variables to your .bashrc file so that you do not have to run this setup everytime you open a new shell.
 
-
-== Development Environment
-
-=== VSCode
-https://code.visualstudio.com/download
-
 == Running Mobile-Testkit Framework Unit Tests
 
 Below is an example on how to run mobile testkit framework unit tests
 
 ```
-pytest libraries/provision/test_install_sync_gateway.py
+pytest mobile-testkit_tests/test_install_sync_gateway.py
 ```
 
 == Sync Gateway Tests
@@ -231,7 +229,7 @@ NOTE: This has only been tested on Mac OSX
 
 . https://www.virtualbox.org/wiki/Downloads[Install VirtualBox]
 . https://www.vagrantup.com/downloads.html[Install Vagrant]
-. `cd` into `vagrant/private_network` (or `vagrant/public_network` if you need VM's exposed to LAN, for example when testing against actual mobile devices)
+. `cd` into `vagrant/private_network` (or `vagrant/public_network` if you need VM's exposed to LAN, for example when testing against actual mobile devices), verify the memory size is properly set in Vagrantfile
 . Create the cluster.
 +
 ----
@@ -442,7 +440,11 @@ $ python libraries/utilities/fetch_sg_logs.py
 <<<<<<< HEAD
 If you plan on doing development, it may be helpful to add the PYTHONPATH env variables to your .bashrc file so that you do not have to run this setup everytime you open a new shell.
 
-== Development Environment
+== Development Environments
+
+=== VSCode
+
+https://code.visualstudio.com/download
 
 === PyCharm
 
@@ -472,6 +474,13 @@ Now PyCharm should recognize the custom libraries and provide intellisense.
 -- Lint the code : Analyze -> Inspect code
 --- https://developer.android.com/studio/write/lint.html
 -- Code styles and format code : Code -> Reformat Code
+
+=== iOS
+- Open Xcode (on Mac)
+- Open the code of mobile-testkit/CBLClient/Apps/CBLTestServer-iOS/CBLTestServer-iOS.xcodeproj
+- Download the latest Couchbase Lite libraries
+- Build the app
+- Run the app 
 
 == Listener Tests
 
