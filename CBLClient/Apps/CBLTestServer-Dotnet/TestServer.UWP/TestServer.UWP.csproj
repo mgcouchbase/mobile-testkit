@@ -115,6 +115,9 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Databases\PrebuiltDB.cblite2\db.sqlite3" />
+    <Content Include="Assets\Databases\PrebuiltDB.cblite2\db.sqlite3-shm" />
+    <Content Include="Assets\Databases\PrebuiltDB.cblite2\db.sqlite3-wal" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -128,7 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Couchbase.Lite.Enterprise.Support.UWP">
-      <Version>2.1.0-b0134</Version>
+      <Version>2.5.0-b0144</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.0.4</Version>

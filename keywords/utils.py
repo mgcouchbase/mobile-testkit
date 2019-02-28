@@ -1,8 +1,9 @@
 import logging
 import json
+import os
 import random
 import string
-import os
+import re
 
 from keywords.exceptions import FeatureSupportedError
 from keywords.constants import DATA_DIR
@@ -74,8 +75,10 @@ def version_is_binary(version):
 
 def version_and_build(full_version):
     version_parts = full_version.split("-")
-    assert len(version_parts) == 2
-    return version_parts[0], version_parts[1]
+    if len(version_parts) == 2:
+        return version_parts[0], version_parts[1]
+    else:
+        return version_parts[0], None
 
 
 def host_for_url(url):
@@ -88,7 +91,7 @@ def host_for_url(url):
     else:
         host = url.replace("http://", "")
 
-    host = host.split(":")[0]
+    host = host.rsplit(":", 1)[0]
     log_info("Extracted host ({}) from url ({})".format(host, url))
 
     return host
@@ -109,6 +112,8 @@ def hostname_for_url(cluster_config, url):
     url = url.replace(":4984", "")
     url = url.replace(":4985", "")
     url = url.replace(":8091", "")
+    url = url.replace("[", "")
+    url = url.replace("]", "")
 
     endpoints = cluster["sg_accels"]
     endpoints.extend(cluster["sync_gateways"])
@@ -236,3 +241,39 @@ def clear_resources_pngs():
                 os.unlink(file_path)
         except Exception as e:
             print(e)
+
+
+def get_event_changes(event_changes):
+    """
+    @summary:
+    A method to filter out the events.
+    @return:
+    a dict containing doc_id as key and error status and replication as value,
+    for a particular Replication event
+    """
+    event_dict = {}
+    pattern = ".*?doc_id: ([a-zA-Z0-9_]+), error_code: (.*?), error_domain: ([a-zA-Z0-9_]+)," \
+              " push: ([a-zA-Z0-9_]+), flags: (.*?)'.*?"
+    events = re.findall(pattern, string=str(event_changes))
+    for event in events:
+        doc_id = event[0].strip()
+        error_code = event[1].strip()
+        error_domain = event[2].strip()
+        is_push = True if ("true" in event[3] or "True" in event[3]) else False
+        flags = event[4] if event[4] != '[]' else None
+        if error_code == '0' or error_code == 'nil':
+            error_code = None
+        if error_domain == '0' or error_domain == 'nil':
+            error_domain = None
+        event_dict[doc_id] = {"push": is_push,
+                              "error_code": error_code,
+                              "error_domain": error_domain,
+                              "flags": flags}
+    return event_dict
+
+
+def add_new_fields_to_doc(doc_body):
+    doc_body["new_field_1"] = random.choice([True, False])
+    doc_body["new_field_2"] = random_string(length=60)
+    doc_body["new_field_3"] = random_string(length=90)
+    return doc_body

@@ -95,6 +95,15 @@ def pytest_addoption(parser):
     parser.addoption("--debug-mode", action="store_true",
                      help="Enable debug mode for the app ", default=False)
 
+    parser.addoption("--use-views",
+                     action="store_true",
+                     help="If set, uses views instead of GSI - SG 2.1 and above only")
+
+    parser.addoption("--number-replicas",
+                     action="store",
+                     help="Number of replicas for the indexer node - SG 2.1 and above only",
+                     default=0)
+
 
 # This will get called once before the first test that
 # runs with this as input parameters in this file
@@ -121,6 +130,8 @@ def params_from_base_suite_setup(request):
     sg_ssl = request.config.getoption("--sg-ssl")
     flush_memory_per_test = request.config.getoption("--flush-memory-per-test")
     debug_mode = request.config.getoption("--debug-mode")
+    use_views = request.config.getoption("--use-views")
+    number_replicas = request.config.getoption("--number-replicas")
 
     testserver = TestServerFactory.create(platform=liteserv_platform,
                                           version_build=liteserv_version,
@@ -195,6 +206,18 @@ def params_from_base_suite_setup(request):
         log_info("Running with allow conflicts")
         persist_cluster_config_environment_prop(cluster_config, 'no_conflicts_enabled', False)
 
+    if use_views:
+        log_info("Running SG tests using views")
+        # Enable sg views in cluster configs
+        persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', True)
+    else:
+        log_info("Running tests with cbs <-> sg ssl disabled")
+        # Disable sg views in cluster configs
+        persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', False)
+
+    # Write the number of replicas to cluster config
+    persist_cluster_config_environment_prop(cluster_config, 'number_replicas', number_replicas)
+
     sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", mode)
     cluster_utils = ClusterKeywords(cluster_config)
     cluster_topology = cluster_utils.get_cluster_topology(cluster_config)
@@ -256,7 +279,7 @@ def params_from_base_suite_setup(request):
             time.sleep(5)
         log_info("Loading sample bucket {}".format(enable_sample_bucket))
         server.load_sample_bucket(enable_sample_bucket)
-        server._create_internal_rbac_bucket_user(enable_sample_bucket)
+        server._create_internal_rbac_bucket_user(enable_sample_bucket, cluster_config=cluster_config)
 
         # Restart SG after the bucket deletion
         sync_gateways = cluster_topology["sync_gateways"]
@@ -309,7 +332,8 @@ def params_from_base_suite_setup(request):
         "sg_config": sg_config,
         "testserver": testserver,
         "device_enabled": device_enabled,
-        "flush_memory_per_test": flush_memory_per_test
+        "flush_memory_per_test": flush_memory_per_test,
+        "sg_ssl": sg_ssl
     }
     if create_db_per_suite:
         # Delete CBL database
@@ -353,6 +377,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     testserver = params_from_base_suite_setup["testserver"]
     device_enabled = params_from_base_suite_setup["device_enabled"]
     flush_memory_per_test = params_from_base_suite_setup["flush_memory_per_test"]
+    sg_ssl = params_from_base_suite_setup["sg_ssl"]
     source_db = None
     cbl_db = None
     db_config = None
@@ -418,7 +443,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "db": db,
         "device_enabled": device_enabled,
         "testserver": testserver,
-        "db_config": db_config
+        "db_config": db_config,
+        "sg_ssl": sg_ssl
     }
 
     log_info("Tearing down test")

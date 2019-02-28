@@ -14,6 +14,7 @@ from keywords.remoteexecutor import RemoteExecutor
 from keywords.exceptions import CBServerError, ProvisioningError, TimeoutError, RBACUserCreationError, RBACUserDeletionError
 from keywords.utils import log_r, log_info, log_debug, log_error, hostname_for_url
 from keywords import types
+from utilities.cluster_config_utils import is_x509_auth
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -71,8 +72,10 @@ class CouchbaseServer:
     def __init__(self, url):
         self.url = url
         self.cbs_ssl = False
+        self.max_retries = 5
 
         # Strip http prefix and port to store host
+
         if "https" in self.url:
             host = self.url.replace("https://", "")
             host = host.replace(":18091", "")
@@ -96,11 +99,9 @@ class CouchbaseServer:
         bucket_names = []
 
         error_count = 0
-        max_retries = 5
-
         # Retry to avoid intermittent Connection issues when getting buckets
         while True:
-            if error_count == max_retries:
+            if error_count == self.max_retries:
                 raise CBServerError("Error! Could not get buckets after retries.")
             try:
                 resp = self._session.get("{}/pools/default/buckets".format(self.url))
@@ -218,10 +219,12 @@ class CouchbaseServer:
             # All nodes are heathy if it made it to here
             break
 
-    def _create_internal_rbac_bucket_user(self, bucketname):
+    def _create_internal_rbac_bucket_user(self, bucketname, cluster_config):
         # Create user with username=bucketname and assign role
         # bucket_admin and cluster_admin
         roles = "ro_admin,bucket_full_access[{}]".format(bucketname)
+        if is_x509_auth(cluster_config):
+            roles = "admin"
         password = 'password'
 
         data_user_params = {
@@ -235,13 +238,22 @@ class CouchbaseServer:
         rbac_url = "{}/settings/rbac/users/local/{}".format(self.url, bucketname)
 
         resp = None
-        try:
-            resp = self._session.put(rbac_url, data=data_user_params, auth=('Administrator', 'password'))
-            log_r(resp)
-            resp.raise_for_status()
-        except HTTPError as h:
-            log_info("resp code: {}; error: {}".format(resp, h))
-            raise RBACUserCreationError(h)
+        error_count = 0
+        while True:
+            if error_count == self.max_retries:
+                log_info("Error! Could not create RBAC user after retries. ")
+                raise RBACUserCreationError("Error! Could not create RBAC user after retries. ")
+            try:
+                resp = self._session.put(rbac_url, data=data_user_params, auth=('Administrator', 'password'))
+                log_r(resp)
+                resp.raise_for_status()
+                # If request does not throw, exit retry loop
+                break
+            except HTTPError as h:
+                log_info("Hit a ConnectionError while trying to create RBAC user. Retrying ...")
+                log_info("resp code: {}; error: {}".format(resp, h))
+                error_count += 1
+                time.sleep(1)
 
     def _delete_internal_rbac_bucket_user(self, bucketname):
         # Delete user with username=bucketname
@@ -326,7 +338,7 @@ class CouchbaseServer:
         ram_per_bucket_mb = int(effective_ram_mb / num_buckets)
         return ram_per_bucket_mb
 
-    def create_buckets(self, bucket_names):
+    def create_buckets(self, bucket_names, cluster_config, ipv6=False):
         """
         # Figure out what total ram available is
         # Divide by number of buckets
@@ -341,9 +353,9 @@ class CouchbaseServer:
         per_bucket_ram_mb = self.get_ram_per_bucket(len(bucket_names))
 
         for bucket_name in bucket_names:
-            self.create_bucket(bucket_name, per_bucket_ram_mb)
+            self.create_bucket(cluster_config, bucket_name, per_bucket_ram_mb, ipv6)
 
-    def create_bucket(self, name, ram_quota_mb=1024):
+    def create_bucket(self, cluster_config, name, ram_quota_mb=1024, ipv6=False):
         """
         1. Create CBS bucket via REST
         2. Create client connection and poll until bucket is available
@@ -384,16 +396,24 @@ class CouchbaseServer:
 
         # Create a user with username=bucketname
         if server_major_version >= 5:
-            self._create_internal_rbac_bucket_user(name)
+            self._create_internal_rbac_bucket_user(name, cluster_config=cluster_config)
 
         # Create client an retry until KeyNotFound error is thrown
         start = time.time()
+        time.sleep(5)
         while True:
-
             if time.time() - start > keywords.constants.CLIENT_REQUEST_TIMEOUT:
                 raise Exception("TIMEOUT while trying to create server buckets.")
             try:
-                bucket = Bucket("couchbase://{}/{}".format(self.host, name), password='password')
+                if self.cbs_ssl and ipv6:
+                    connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(self.host, name)
+                elif self.cbs_ssl and not ipv6:
+                    connection_url = "couchbases://{}/{}?ssl=no_verify".format(self.host, name)
+                elif not self.cbs_ssl and ipv6:
+                    connection_url = "couchbase://{}/{}?ipv6=allow".format(self.host, name)
+                else:
+                    connection_url = "couchbase://{}/{}".format(self.host, name)
+                bucket = Bucket(connection_url, password='password')
                 bucket.get('foo')
             except NotFoundError:
                 log_info("Key not found error: Bucket is ready!")
@@ -402,18 +422,23 @@ class CouchbaseServer:
                 log_info("Error from server: {}, Retrying ...". format(e))
                 time.sleep(1)
                 continue
-
         self.wait_for_ready_state()
-
         return name
 
-    def delete_couchbase_server_cached_rev_bodies(self, bucket):
+    def delete_couchbase_server_cached_rev_bodies(self, bucket, ipv6=False):
         """
         Deletes docs that follow the below format
         _sync:rev:att_doc:34:1-e7fa9a5e6bb25f7a40f36297247ca93e
         """
-
-        b = Bucket("couchbase://{}/{}".format(self.host, bucket), password='password')
+        if self.cbs_ssl and ipv6:
+            connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(self.host, bucket)
+        elif self.cbs_ssl and not ipv6:
+            connection_url = "couchbases://{}/{}?ssl=no_verify".format(self.host, bucket)
+        elif not self.cbs_ssl and ipv6:
+            connection_url = "couchbase://{}/{}?ipv6=allow".format(self.host, bucket)
+        else:
+            connection_url = "couchbase://{}/{}".format(self.host, bucket)
+        b = Bucket(connection_url, password='password')
         b_manager = b.bucket_manager()
         b_manager.n1ql_index_create_primary(ignore_exists=True)
         cached_rev_doc_ids = []
@@ -426,12 +451,20 @@ class CouchbaseServer:
             log_debug("Removing: {}".format(doc_id))
             b.remove(doc_id)
 
-    def get_server_docs_with_prefix(self, bucket, prefix):
+    def get_server_docs_with_prefix(self, bucket, prefix, ipv6=False):
         """
         Returns server doc ids matching a prefix (ex. '_sync:rev:')
         """
 
-        b = Bucket("couchbase://{}/{}".format(self.host, bucket), password='password')
+        if self.cbs_ssl and ipv6:
+            connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(self.host, bucket)
+        elif self.cbs_ssl and not ipv6:
+            connection_url = "couchbases://{}/{}?ssl=no_verify".format(self.host, bucket)
+        elif not self.cbs_ssl and ipv6:
+            connection_url = "couchbase://{}/{}?ipv6=allow".format(self.host, bucket)
+        else:
+            connection_url = "couchbase://{}/{}".format(self.host, bucket)
+        b = Bucket(connection_url, password='password')
         b_manager = b.bucket_manager()
         b_manager.n1ql_index_create_primary(ignore_exists=True)
         found_ids = []
@@ -720,22 +753,33 @@ class CouchbaseServer:
 
     def get_sdk_bucket(self, bucket_name):
         """ Gets an SDK bucket object """
-        connection_str = "couchbase://{}/{}".format(self.host, bucket_name)
+        if self.cbs_ssl:
+            connection_str = "couchbases://{}/{}?ssl=no_verify".format(self.host, bucket_name)
+        else:
+            connection_str = "couchbase://{}/{}".format(self.host, bucket_name)
         return Bucket(connection_str, password='password')
 
     def get_package_name(self, version, build_number, cbs_platform="centos7"):
         """
-         Given:
-         version - the version without any build number information, eg 4.5.0
-         build_number - the build number associated with this major version release, eg, 2601 (or None)
-         Return the filename portion of the package download URL
-         """
-        if version.startswith("3.1.6"):
-            return "couchbase-server-enterprise-{}-{}.x86_64.rpm".format(version, cbs_platform)
-        elif version.startswith("3.1"):
-            return "couchbase-server-enterprise_{}_x86_64_{}-{}-rel.rpm".format(cbs_platform, version, build_number)
-        else:
-            return "couchbase-server-enterprise-{}-{}-{}.x86_64.rpm".format(version, build_number, cbs_platform)
+        Given:
+        version - the version without any build number information, eg 4.5.0
+        build_number - the build number associated with this major version release, eg, 2601 (or None)
+        Return the filename portion of the package download URL
+        """
+        if "ubuntu" in cbs_platform:
+            if version.startswith("3.1.6"):
+                return "couchbase-server-enterprise-{}-{}.x86_64.deb".format(version, cbs_platform)
+            elif version.startswith("3.1"):
+                return "couchbase-server-enterprise_{}_x86_64_{}-{}-rel.deb".format(cbs_platform, version, build_number)
+            else:
+                return "couchbase-server-enterprise_{}-{}-{}_amd64.deb".format(version, build_number, cbs_platform)
+        elif "centos" in cbs_platform:
+            if version.startswith("3.1.6"):
+                return "couchbase-server-enterprise-{}-{}.x86_64.rpm".format(version, cbs_platform)
+            elif version.startswith("3.1"):
+                return "couchbase-server-enterprise_{}_x86_64_{}-{}-rel.rpm".format(cbs_platform, version, build_number)
+            else:
+                return "couchbase-server-enterprise-{}-{}-{}.x86_64.rpm".format(version, build_number, cbs_platform)
 
     def resolve_cb_nas_url(self, version, build_number, cbs_platform="centos7"):
         """
@@ -758,6 +802,10 @@ class CouchbaseServer:
             base_url = "{}/spock/{}".format(cbnas_base_url, build_number)
         elif version.startswith("5.5"):
             base_url = "{}/vulcan/{}".format(cbnas_base_url, build_number)
+        elif version.startswith("6.0"):
+            base_url = "{}/alice/{}".format(cbnas_base_url, build_number)
+        elif version.startswith("6.5"):
+            base_url = "{}/mad-hatter/{}".format(cbnas_base_url, build_number)
         else:
             raise Exception(
                 "Unexpected couchbase server version: {}".format(version))
@@ -778,6 +826,7 @@ class CouchbaseServer:
         Return the base_url of the package download URL (everything except the filename)
         """
         released_versions = {
+            "5.5.0": "2958",
             "5.1.0": "5552",
             "5.0.1": "5003",
             "5.0.0": "3519",

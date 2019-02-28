@@ -1095,8 +1095,8 @@ def test_initial_pull_replication_background_apprun(params_from_base_test_setup,
     c.reset(sg_config_path=sg_config)
 
     # No command to push the app to background on device, so avoid test to run on ios device and no app for .net
-    if(liteserv_platform.lower() == "net-msft" and device_enabled):
-        pytest.skip('This test cannot run on .net')
+    if liteserv_platform.lower() == "net-msft" or liteserv_platform.lower() == "net-uwp" or ((liteserv_platform.lower() != "ios" or liteserv_platform.lower() != "xamarin-ios") and device_enabled):
+        pytest.skip('This test cannot run either it is .Net or ios with device enabled ')
 
     client = MobileRestClient()
     client.create_user(sg_admin_url, sg_db, "testuser", password="password", channels=["ABC", "NBC"])
@@ -1141,6 +1141,7 @@ def test_initial_pull_replication_background_apprun(params_from_base_test_setup,
     testserver.close_app()
     time.sleep(10)  # wait until all replication is done
     testserver.open_app()
+    replicator.wait_until_replicator_idle(repl)
     # Verify docs replicated to client
     cbl_doc_ids = db.getDocIds(cbl_db)
     assert len(cbl_doc_ids) == len(bulk_docs_resp)
@@ -1188,8 +1189,8 @@ def test_push_replication_with_backgroundApp(params_from_base_test_setup, num_do
     c.reset(sg_config_path=sg_config)
 
     # No command to push the app to background on device, so avoid test to run on ios device and no app for .net
-    if(liteserv_platform.lower() == "net-msft" or device_enabled):
-        pytest.skip('This test cannot run on .net')
+    if liteserv_platform.lower() == "net-msft" or liteserv_platform.lower() == "net-uwp" or ((liteserv_platform.lower() != "ios" or liteserv_platform.lower() != "xamarin-ios") and device_enabled):
+        pytest.skip('This test cannot run either it is .Net or ios with device enabled ')
 
     client = MobileRestClient()
     client.create_user(sg_admin_url, sg_db, "testuser", password="password", channels=channels)
@@ -1254,6 +1255,7 @@ def test_replication_wrong_blip(params_from_base_test_setup):
     sg_config = params_from_base_test_setup["sg_config"]
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
+    liteserv_platform = params_from_base_test_setup["liteserv_platform"]
 
     num_of_docs = 10
     username = "autotest"
@@ -1277,8 +1279,12 @@ def test_replication_wrong_blip(params_from_base_test_setup):
     replicator_authenticator = authenticator.authentication(session_id, cookie, authentication_type="session")
     with pytest.raises(Exception) as ex:
         replicator.configure(cbl_db, sg_blip_url, continuous=True, channels=channels, replicator_authenticator=replicator_authenticator)
-    assert ex.value.message.startswith('400 Client Error: Bad Request for url:')
-    assert "unsupported" in ex.value.message or "Invalid" in ex.value.message
+    if liteserv_platform == "ios":
+        assert "Invalid scheme for URLEndpoint url (ht2tp" in ex.value.message
+        assert "must be either ws or wss" in ex.value.message
+    else:
+        assert ex.value.message.startswith('400 Client Error: Bad Request for url:')
+        assert "unsupported" in ex.value.message or "Invalid" in ex.value.message
     assert "ws" in ex.value.message and "wss" in ex.value.message
 
 
@@ -1299,7 +1305,8 @@ def test_default_conflict_scenario_delete_wins(params_from_base_test_setup, dele
         2. Replicate docs to SG with push_pull and continous False
         3. Wait until replication is done and stop replication
         4. update doc in Sg and delete doc in CBL/ delete doc in Sg and update doc in CBL
-        5. Verify delete wins
+        5. Start the replication with same configuration as step 2
+        6. Verify delete wins
     """
     sg_db = "db"
     sg_url = params_from_base_test_setup["sg_url"]
@@ -1489,7 +1496,7 @@ def test_default_conflict_scenario_highRevGeneration_wins(params_from_base_test_
     # Di mode has delay for one shot replication, so need another replication only for DI mode
     repl = None
     if sg_mode == "di":
-        repl = replicator.configure_and_replicate(source_db=cbl_db, replicator_authenticator=replicator_authenticator, target_url=sg_blip_url, continuous=True,
+        repl = replicator.configure_and_replicate(source_db=cbl_db, replicator_authenticator=replicator_authenticator, target_url=sg_blip_url, continuous=False,
                                                   channels=channels)
     cbl_doc_ids = db.getDocIds(cbl_db)
     cbl_docs = db.getDocuments(cbl_db, cbl_doc_ids)
@@ -2807,6 +2814,9 @@ def test_resetCheckpointWithPurge(params_from_base_test_setup, replication_type,
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
     db_config = params_from_base_test_setup["db_config"]
+    liteserv_version = params_from_base_test_setup["liteserv_version"]
+    if liteserv_version < "2.1":
+        pytest.skip('database encryption feature not available with version < 2.1')
 
     # Reset cluster to ensure no data in system
     c = cluster.Cluster(config=cluster_config)
@@ -2867,10 +2877,6 @@ def test_resetCheckpointWithPurge(params_from_base_test_setup, replication_type,
     # Reset checkpoint and do replication again from sg to cbl
     # Verify all docs are back
     replicator.resetCheckPoint(repl)
-    if replication_type == "one_way":
-        replicator.setReplicatorType(repl_config, "pull")
-        repl = replicator.create(repl_config)
-
     print "replicator after checkpoint...."
     replicator.start(repl)
     replicator.wait_until_replicator_idle(repl)
@@ -2897,6 +2903,9 @@ def test_resetCheckpointFailure(params_from_base_test_setup):
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
     liteserv_platform = params_from_base_test_setup["liteserv_platform"]
+    liteserv_version = params_from_base_test_setup["liteserv_version"]
+    if liteserv_version < "2.1":
+        pytest.skip('database encryption feature not available with version < 2.1')
 
     if(liteserv_platform.lower() == "ios"):
         pytest.skip('ResetCheckPoint API does not throw exception in iOS if replicator is not stopped, so skipping test')
@@ -2965,6 +2974,9 @@ def test_resetCheckpointWithUpdate(params_from_base_test_setup, replication_type
     db = params_from_base_test_setup["db"]
     cbl_db = params_from_base_test_setup["source_db"]
     db_config = params_from_base_test_setup["db_config"]
+    liteserv_version = params_from_base_test_setup["liteserv_version"]
+    if liteserv_version < "2.1":
+        pytest.skip('database encryption feature not available with version < 2.1')
 
     # Reset cluster to ensure no data in system
     c = cluster.Cluster(config=cluster_config)
@@ -3011,6 +3023,196 @@ def test_resetCheckpointWithUpdate(params_from_base_test_setup, replication_type
     assert db.getCount(cbl_db) == num_of_docs, "Docs in cbl is lost"
     update_and_resetCheckPoint(db, cbl_db, replicator, repl, replication_type, repl_config, 1)
     update_and_resetCheckPoint(db, cbl_db, replicator, repl, replication_type, repl_config, 2)
+
+
+@pytest.mark.listener
+@pytest.mark.replication
+@pytest.mark.parametrize("sg_conf_name, delete_doc_type", [
+    ('sync_gateway_rev_cache_size5', "purge")
+])
+def test_CBL_SG_replication_with_rev_messages(params_from_base_test_setup, sg_conf_name, delete_doc_type):
+    """
+        @summary:
+        reference : https://github.com/couchbase/sync_gateway/issues/3738#issuecomment-422107759
+        1. Set up SGW with xattrs enabled.
+        2. Create doc in CBL
+        3. push replication to SG with continuous
+        4. Purge doc in SGW.
+        5. Create 5 docs in CBL and push to SGW. This will flush doc-1's rev out of the SG's revision cache (size = 5) which set up sg config.
+        6. Delete database and create same database again and pull replication from SGW.
+        7. wait for replication to finish.
+        8. Verify total and completed are same once replication is completed.
+        9. Verify all docs from SGW replicated successfully.
+
+    """
+    sg_db = "db"
+    sg_url = params_from_base_test_setup["sg_url"]
+    sg_admin_url = params_from_base_test_setup["sg_admin_url"]
+    sg_mode = params_from_base_test_setup["mode"]
+    cluster_config = params_from_base_test_setup["cluster_config"]
+    sg_blip_url = params_from_base_test_setup["target_url"]
+    base_url = params_from_base_test_setup["base_url"]
+    sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+    sg_config = params_from_base_test_setup["sg_config"]
+    db = params_from_base_test_setup["db"]
+    xattrs_enabled = params_from_base_test_setup["xattrs_enabled"]
+    num_of_docs = 5
+    username = "autotest"
+    password = "password"
+
+    if sync_gateway_version < "2.1.1":
+        pytest.skip('--no-conflicts is enabled and does not work with sg < 2.1.1 , so skipping the test')
+
+    if not xattrs_enabled:
+        pytest.skip('--xattrs is not enabled , so skipping the test')
+    channels = ["Replication"]
+    sg_client = MobileRestClient()
+
+    # Reset sg config with config which is required
+    # 1. Set up SGW with xattrs enabled.
+    sg_config = sync_gateway_config_path_for_mode(sg_conf_name, sg_mode)
+    cl = cluster.Cluster(config=cluster_config)
+    cl.reset(sg_config_path=sg_config)
+
+    # 2. Create doc in CBL
+    cbl_db_name = "cbl_db1" + str(time.time())
+    db_config = db.configure()
+    cbl_db1 = db.create(cbl_db_name, db_config)
+    db.create_bulk_docs(number=1, id_prefix="rev_messages_prev", db=cbl_db1, channels=channels)
+    cbl_added_doc_ids = db.getDocIds(cbl_db1)
+
+    # 3. push replication to SG with continuous
+    # Start and stop continuous replication
+    sg_client.create_user(sg_admin_url, sg_db, username, password=password, channels=channels)
+    auth_session = sg_client.create_session(sg_admin_url, sg_db, username)
+
+    replicator = Replication(base_url)
+    authenticator = Authenticator(base_url)
+    replicator_authenticator = authenticator.authentication(username=username, password=password, authentication_type="basic")
+    repl_config = replicator.configure(cbl_db1, target_url=sg_blip_url, replication_type="push", continuous=True,
+                                       channels=channels, replicator_authenticator=replicator_authenticator)
+    repl = replicator.create(repl_config)
+    replicator.start(repl)
+    replicator.wait_until_replicator_idle(repl)
+
+    sg_docs, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=cbl_added_doc_ids, auth=auth_session)
+    for doc in sg_docs:
+        sg_client.purge_doc(url=sg_admin_url, db=sg_db, doc=doc)
+
+    # 5. Create docs in CBL and push to SGW. This will flush doc-1's rev out of the SG's revision cache (size = 1000) which set up sg config.
+    db.create_bulk_docs(number=num_of_docs, id_prefix="rev_messages", db=cbl_db1, channels=channels)
+    replicator.wait_until_replicator_idle(repl)
+    replicator.stop(repl)
+
+    # 6. Delete database and create same database again and pull replication from SGW.
+    db.deleteDB(cbl_db1)
+    db_config1 = db.configure()
+    cbl_db2 = db.create(cbl_db_name, db_config1)
+
+    repl_config = replicator.configure(cbl_db2, target_url=sg_blip_url, replication_type="pull", continuous=True,
+                                       channels=channels, replicator_authenticator=replicator_authenticator)
+    repl = replicator.create(repl_config)
+    replicator.start(repl)
+    replicator.wait_until_replicator_idle(repl)
+    replicator.stop(repl)
+
+    cbl_doc_ids = db.getDocIds(cbl_db2)
+    assert len(cbl_doc_ids) == num_of_docs, "number of doc ids which got replicated for SGW"
+    assert replicator.getCompleted(repl) == replicator.getTotal(repl), "Replication total and completed are not same"
+
+
+@pytest.mark.listener
+@pytest.mark.replication
+@pytest.mark.parametrize(
+    'replicator_authenticator',
+    [
+        ('basic'),
+        ('session')
+    ]
+)
+def test_replication_push_replication_guest_enabled(params_from_base_test_setup, replicator_authenticator):
+    """
+        @summary:
+        1.Enable guest user in sync-gateway
+        2. login as invalid login on cbl
+        3. verify user can login successfully in cbl
+        4. Also verify user with valid credentials should be able to login successfully
+
+    """
+    sg_db = "db"
+    sg_url = params_from_base_test_setup["sg_url"]
+    sg_admin_url = params_from_base_test_setup["sg_admin_url"]
+    sg_blip_url = params_from_base_test_setup["target_url"]
+    base_url = params_from_base_test_setup["base_url"]
+    cluster_config = params_from_base_test_setup["cluster_config"]
+    sg_config = params_from_base_test_setup["sg_config"]
+    cluster_config = params_from_base_test_setup["cluster_config"]
+    sg_config = params_from_base_test_setup["sg_config"]
+    db = params_from_base_test_setup["db"]
+    cbl_db = params_from_base_test_setup["source_db"]
+    mode = params_from_base_test_setup["mode"]
+    sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+
+    """
+    TODO : https://github.com/couchbase/sync_gateway/issues/3830
+    # Enable this commented code once 3830 is fixed.It should be fixed by june 2019
+    invalid_username = "invalid_username"
+    invalid_password = "invalid_password"
+    invalid_session = "invalid_session"
+    """
+    valid_username = "autotest"
+    valid_password = "password"
+    num_docs = 5
+
+    if sync_gateway_version < "2.0.0":
+        pytest.skip('This test cannnot run with sg version below 2.0')
+
+    sg_config = sync_gateway_config_path_for_mode("sync_gateway_guest_enabled", mode)
+    c = cluster.Cluster(config=cluster_config)
+    c.reset(sg_config_path=sg_config)
+
+    channels = ["ABC"]
+    sg_client = MobileRestClient()
+    authenticator = Authenticator(base_url)
+    replicator = Replication(base_url)
+
+    db.create_bulk_docs(num_docs, "cbl", db=cbl_db, channels=channels)
+    sg_client.create_user(sg_admin_url, sg_db, valid_username, password=valid_password, channels=channels)
+    cookie, session = sg_client.create_session(sg_admin_url, sg_db, valid_username)
+
+    """
+    TODO : https://github.com/couchbase/sync_gateway/issues/3830
+    # Enable this commented code once 3830 is fixed.It should be fixed by june 2019
+    # login as invalid user on cbl and verify user can login successfully and docs got replicated successfully
+
+    if replicator_authenticator == "session":
+        replicator_authenticator = authenticator.authentication(invalid_session, cookie, authentication_type="session")
+    elif replicator_authenticator == "basic":
+        replicator_authenticator = authenticator.authentication(username=invalid_username, password=invalid_password, authentication_type="basic")
+    repl_config = replicator.configure(cbl_db, target_url=sg_blip_url, continuous=True, replication_type="push", replicator_authenticator=replicator_authenticator)
+
+    repl = replicator.create(repl_config)
+    replicator.start(repl)
+    replicator.wait_until_replicator_idle(repl)
+    error = replicator.getError(repl)
+    assert "401" in error, "did not throw 401 error for invalid authentication"
+
+    replicator.stop(repl)
+    """
+    # Also verify user with valid credentials should be able to login successfully
+    db.create_bulk_docs(num_docs, "cbl2", db=cbl_db, channels=channels)
+    if replicator_authenticator == "session":
+        replicator_authenticator = authenticator.authentication(session, cookie, authentication_type=replicator_authenticator)
+    elif replicator_authenticator == "basic":
+        replicator_authenticator = authenticator.authentication(username=valid_username, password=valid_password, authentication_type=replicator_authenticator)
+    repl_config = replicator.configure(cbl_db, target_url=sg_blip_url, continuous=True, replication_type="push", replicator_authenticator=replicator_authenticator)
+
+    repl = replicator.create(repl_config)
+    replicator.start(repl)
+    replicator.wait_until_replicator_idle(repl)
+    sg_docs = sg_client.get_all_docs(url=sg_url, db=sg_db)
+    assert len(sg_docs["rows"]) == num_docs * 2, "Number of sg docs is not equal to total number of cbl docs and sg docs"
+    replicator.stop(repl)
 
 
 def update_and_resetCheckPoint(db, cbl_db, replicator, repl, replication_type, repl_config, num_of_updates):

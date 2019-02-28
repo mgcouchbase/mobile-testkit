@@ -31,7 +31,7 @@ class TestServerNetMsft(TestServerBase):
             "[windows:vars]",
             "ansible_user={}".format(os.environ["LITESERV_MSFT_HOST_USER"]),
             "ansible_password={}".format(os.environ["LITESERV_MSFT_HOST_PASSWORD"]),
-            "ansible_port=5986",
+            "ansible_port=5985",
             "ansible_connection=winrm",
             "# The following is necessary for Python 2.7.9+ when using default WinRM self-signed certificates:",
             "ansible_winrm_server_cert_validation=ignore",
@@ -132,7 +132,7 @@ class TestServerNetMsft(TestServerBase):
             log_full_path = "{}/{}".format(os.getcwd(), self.logfile)
             log_info("Pulling logs to {} ...".format(log_full_path))
             status = self.ansible_runner.run_ansible_playbook(
-                "stop-TestServer-windows.yml",
+                "stop-testserver-windows.yml",
                 extra_vars={
                     "log_full_path": log_full_path
                 }

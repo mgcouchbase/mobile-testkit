@@ -19,6 +19,7 @@
     sslcert:
     sslkey:
     logging:
+    x509_auth:
 
   tasks:
     - include: tasks/stop-sync-gateway.yml

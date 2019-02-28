@@ -1,6 +1,9 @@
 package com.couchbase.CouchbaseLiteServ.server;
 
 
+import android.content.Context;
+
+import com.couchbase.CouchbaseLiteServ.MainActivity;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.ArrayRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.BasicAuthenticatorRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.CollatorRequestHandler;
@@ -18,6 +21,7 @@ import com.couchbase.CouchbaseLiteServ.server.RequestHandler.ReplicatorRequestHa
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.ResultRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.SelectResultRequestHandler;
 import com.couchbase.CouchbaseLiteServ.server.RequestHandler.SessionAuthenticatorRequestHandler;
+import com.couchbase.CouchbaseLiteServ.server.RequestHandler.PeerToPeerRequestHandler;
 import com.couchbase.lite.Database;
 
 import com.couchbase.lite.LogDomain;
@@ -34,6 +38,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +69,6 @@ public class Server extends NanoHTTPD {
 
     public Server(String ip, int port) throws IOException {
         super(port);
-        Database.setLogLevel(LogDomain.ALL, LogLevel.DEBUG);
         System.out.print("Running! Point your Mobile browser to http://" + ip + ":" + port + "/\n");
     }
 
@@ -72,6 +76,8 @@ public class Server extends NanoHTTPD {
     public Response handle(IHTTPSession session) {
         String path = session.getUri();
         String method = (path.startsWith("/") ? path.substring(1) : path);
+        Database.log.getConsole().setLevel(LogLevel.DEBUG);
+        Database.log.getConsole().setDomains(EnumSet.of(LogDomain.ALL));
         // Get args from query string.
         Map<String, String> rawArgs = new HashMap<>();
 
@@ -171,6 +177,10 @@ public class Server extends NanoHTTPD {
                     case "array":
                         target = ArrayRequestHandler.class.getMethod(method_to_call, Args.class);
                         requestHandler = new ArrayRequestHandler();
+                        break;
+                    case "peerToPeer":
+                        target = PeerToPeerRequestHandler.class.getMethod(method_to_call, Args.class);
+                        requestHandler = new PeerToPeerRequestHandler();
                         break;
                     default:
                         throw new IllegalArgumentException("Handler not implemented for this call");

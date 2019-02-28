@@ -10,7 +10,7 @@ botocore==1.4.5
 cffi==1.10.0
 colorama==0.3.3
 configparser==3.5.0
-couchbase==2.2.4
+couchbase==2.2.6
 cryptography==1.8.1
 docker==2.2.1
 docker-pycreds==0.2.1
@@ -30,7 +30,7 @@ mccabe==0.6.1
 netifaces==0.10.4
 olefile==0.44
 packaging==16.8
-paramiko==2.1.2
+paramiko==2.1.5
 Pillow==4.0.0
 py==1.4.31
 pyasn1==0.2.3
@@ -59,3 +59,4 @@ troposphere==1.5.0
 websocket-client==0.40.0
 wrapt==1.10.8
 xmltodict==0.10.2
+numpy==1.14.0

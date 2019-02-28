@@ -16,15 +16,12 @@
 		2907D176200E860A00CE56EB /* BasicAuthenticatorRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2907D175200E860A00CE56EB /* BasicAuthenticatorRequestHandler.swift */; };
 		2909B0731F9FFA8900B4E0E4 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2909B0721F9FFA8900B4E0E4 /* Server.swift */; };
 		2909B0761FA3B7B400B4E0E4 /* Args.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2909B0751FA3B7B400B4E0E4 /* Args.swift */; };
-		292047A0204E05F900B21067 /* sg_cert.cer in Resources */ = {isa = PBXBuildFile; fileRef = 2920479F204E05C700B21067 /* sg_cert.cer */; };
 		293F38381FFD792E00497870 /* DataTypesInitiatorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 293F38371FFD792E00497870 /* DataTypesInitiatorHandler.swift */; };
 		294FB2081FEAF51F00DD0C23 /* QueryRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294FB2071FEAF51F00DD0C23 /* QueryRequestHandler.swift */; };
 		294FB20A1FEAF9E800DD0C23 /* ReplicatorRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294FB2091FEAF9E800DD0C23 /* ReplicatorRequestHandler.swift */; };
 		294FB20C1FEAFD9000DD0C23 /* DatabaseRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294FB20B1FEAFD9000DD0C23 /* DatabaseRequestHandler.swift */; };
 		294FB20E1FEB0E1800DD0C23 /* DocumentRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294FB20D1FEB0E1800DD0C23 /* DocumentRequestHandler.swift */; };
 		2961A91D2001C65B00636422 /* ReplicatorConfigurationRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2961A91C2001C65B00636422 /* ReplicatorConfigurationRequestHandler.swift */; };
-		2986ED55206EBC27009B8020 /* CouchbaseLiteSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4173ED8D206CC62600978148 /* CouchbaseLiteSwift.framework */; };
-		2986ED56206EBC27009B8020 /* CouchbaseLiteSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4173ED8D206CC62600978148 /* CouchbaseLiteSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		29917D981FA92F82006C7675 /* DictionaryRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29917D971FA92F82006C7675 /* DictionaryRequestHandler.swift */; };
 		299692A51FF30B1A0040CC32 /* ArrayRequesthandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299692A41FF30B1A0040CC32 /* ArrayRequesthandler.swift */; };
 		299692A71FF31A590040CC32 /* SessionAuthenticatorRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299692A61FF31A590040CC32 /* SessionAuthenticatorRequestHandler.swift */; };
@@ -52,8 +49,19 @@
 		29F7869B1F9FC4180035178F /* GCDWebServerErrorResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 29F7868C1F9FC4180035178F /* GCDWebServerErrorResponse.m */; };
 		29F7869C1F9FC4180035178F /* GCDWebServerFileResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 29F7868E1F9FC4180035178F /* GCDWebServerFileResponse.m */; };
 		29F7869D1F9FC4180035178F /* GCDWebServerStreamedResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = 29F786901F9FC4180035178F /* GCDWebServerStreamedResponse.m */; };
-		4173ED8E206CC62600978148 /* CouchbaseLiteSwift.framework.dSYM in Resources */ = {isa = PBXBuildFile; fileRef = 4173ED8C206CC62600978148 /* CouchbaseLiteSwift.framework.dSYM */; };
+		41CFFB4B2202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework.dSYM in Resources */ = {isa = PBXBuildFile; fileRef = 41CFFB492202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework.dSYM */; };
+		41CFFB4C2202DA0200D0E1A8 /* CouchbaseLiteSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41CFFB482202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework */; };
+		41CFFB4D2202DA0200D0E1A8 /* CouchbaseLiteSwift.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 41CFFB482202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		FB5934DA219CB5150000C958 /* sg_cert.cer in Resources */ = {isa = PBXBuildFile; fileRef = 2920479F204E05C700B21067 /* sg_cert.cer */; };
+		FB5934E0219CB6220000C958 /* Databases in Resources */ = {isa = PBXBuildFile; fileRef = FB5934DF219CB6220000C958 /* Databases */; };
+		FB5A6A5521123A9A00937927 /* ReplicatorTcpConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5A6A5421123A9A00937927 /* ReplicatorTcpConnection.swift */; };
 		FB5A86762017E672008127FC /* DatabaseConfigurationRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5A86752017E672008127FC /* DatabaseConfigurationRequestHandler.swift */; };
+		FB60EBD421069D5A005052B6 /* PeerToPeerRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB60EBD321069D5A005052B6 /* PeerToPeerRequestHandler.swift */; };
+		FB60EBD621069D8D005052B6 /* ReplicatorTcpListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB60EBD521069D8D005052B6 /* ReplicatorTcpListener.swift */; };
+		FB60EBD821069DB9005052B6 /* ReplicatorTcpServerConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB60EBD721069DB9005052B6 /* ReplicatorTcpServerConnection.swift */; };
+		FB60EBDA21093383005052B6 /* ReplicatorTcpClientConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB60EBD921093383005052B6 /* ReplicatorTcpClientConnection.swift */; };
+		FB72EEA321504FC800B306DF /* TryCatch.m in Sources */ = {isa = PBXBuildFile; fileRef = FB72EEA221504FC800B306DF /* TryCatch.m */; };
+		FB72EEA52150513100B306DF /* TryCatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB72EEA42150513100B306DF /* TryCatch.swift */; };
 		FB7B1E731FDB60ED00A912BF /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB7B1E721FDB60ED00A912BF /* Extensions.swift */; };
 /* End PBXBuildFile section */
 
@@ -75,13 +83,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2986ED57206EBC27009B8020 /* Embed Frameworks */ = {
+		41CFFB502202FBA900D0E1A8 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				2986ED56206EBC27009B8020 /* CouchbaseLiteSwift.framework in Embed Frameworks */,
+				41CFFB4D2202DA0200D0E1A8 /* CouchbaseLiteSwift.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -154,9 +162,18 @@
 		29F7868E1F9FC4180035178F /* GCDWebServerFileResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebServerFileResponse.m; sourceTree = "<group>"; };
 		29F7868F1F9FC4180035178F /* GCDWebServerStreamedResponse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebServerStreamedResponse.h; sourceTree = "<group>"; };
 		29F786901F9FC4180035178F /* GCDWebServerStreamedResponse.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebServerStreamedResponse.m; sourceTree = "<group>"; };
-		4173ED8C206CC62600978148 /* CouchbaseLiteSwift.framework.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; name = CouchbaseLiteSwift.framework.dSYM; path = Frameworks/CouchbaseLiteSwift.framework.dSYM; sourceTree = "<group>"; };
-		4173ED8D206CC62600978148 /* CouchbaseLiteSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CouchbaseLiteSwift.framework; path = Frameworks/CouchbaseLiteSwift.framework; sourceTree = "<group>"; };
+		41CFFB482202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CouchbaseLiteSwift.framework; path = Frameworks/CouchbaseLiteSwift.framework; sourceTree = "<group>"; };
+		41CFFB492202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; name = CouchbaseLiteSwift.framework.dSYM; path = Frameworks/CouchbaseLiteSwift.framework.dSYM; sourceTree = "<group>"; };
+		FB5934DF219CB6220000C958 /* Databases */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Databases; sourceTree = SOURCE_ROOT; };
+		FB5A6A5421123A9A00937927 /* ReplicatorTcpConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplicatorTcpConnection.swift; sourceTree = "<group>"; };
 		FB5A86752017E672008127FC /* DatabaseConfigurationRequestHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseConfigurationRequestHandler.swift; sourceTree = "<group>"; };
+		FB60EBD321069D5A005052B6 /* PeerToPeerRequestHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerToPeerRequestHandler.swift; sourceTree = "<group>"; };
+		FB60EBD521069D8D005052B6 /* ReplicatorTcpListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplicatorTcpListener.swift; sourceTree = "<group>"; };
+		FB60EBD721069DB9005052B6 /* ReplicatorTcpServerConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplicatorTcpServerConnection.swift; sourceTree = "<group>"; };
+		FB60EBD921093383005052B6 /* ReplicatorTcpClientConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplicatorTcpClientConnection.swift; sourceTree = "<group>"; };
+		FB72EEA121504FC800B306DF /* TryCatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TryCatch.h; sourceTree = "<group>"; };
+		FB72EEA221504FC800B306DF /* TryCatch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TryCatch.m; sourceTree = "<group>"; };
+		FB72EEA42150513100B306DF /* TryCatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TryCatch.swift; sourceTree = "<group>"; };
 		FB7B1E721FDB60ED00A912BF /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -165,7 +182,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2986ED55206EBC27009B8020 /* CouchbaseLiteSwift.framework in Frameworks */,
+				41CFFB4C2202DA0200D0E1A8 /* CouchbaseLiteSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,6 +230,14 @@
 				2907D173200E7FCE00CE56EB /* ResultRequestHandler.swift */,
 				2907D175200E860A00CE56EB /* BasicAuthenticatorRequestHandler.swift */,
 				FB5A86752017E672008127FC /* DatabaseConfigurationRequestHandler.swift */,
+				FB60EBD321069D5A005052B6 /* PeerToPeerRequestHandler.swift */,
+				FB60EBD521069D8D005052B6 /* ReplicatorTcpListener.swift */,
+				FB60EBD721069DB9005052B6 /* ReplicatorTcpServerConnection.swift */,
+				FB60EBD921093383005052B6 /* ReplicatorTcpClientConnection.swift */,
+				FB5A6A5421123A9A00937927 /* ReplicatorTcpConnection.swift */,
+				FB72EEA121504FC800B306DF /* TryCatch.h */,
+				FB72EEA221504FC800B306DF /* TryCatch.m */,
+				FB72EEA42150513100B306DF /* TryCatch.swift */,
 			);
 			path = Server;
 			sourceTree = "<group>";
@@ -246,6 +271,7 @@
 				29F77F261F9FC18D0035178F /* AppDelegate.swift */,
 				29F77F281F9FC18D0035178F /* ViewController.swift */,
 				29F77F2D1F9FC18D0035178F /* Assets.xcassets */,
+				FB5934DF219CB6220000C958 /* Databases */,
 				29F7866C1F9FC3F30035178F /* CBLTestServer-iOS-Bridging-Header.h */,
 				29F77F321F9FC18D0035178F /* Info.plist */,
 				2920479F204E05C700B21067 /* sg_cert.cer */,
@@ -344,8 +370,8 @@
 		29F7869E1F9FC4850035178F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				4173ED8D206CC62600978148 /* CouchbaseLiteSwift.framework */,
-				4173ED8C206CC62600978148 /* CouchbaseLiteSwift.framework.dSYM */,
+				41CFFB482202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework */,
+				41CFFB492202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework.dSYM */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -360,7 +386,7 @@
 				29F77F1F1F9FC18D0035178F /* Sources */,
 				29F77F201F9FC18D0035178F /* Frameworks */,
 				29F77F211F9FC18D0035178F /* Resources */,
-				2986ED57206EBC27009B8020 /* Embed Frameworks */,
+				41CFFB502202FBA900D0E1A8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -414,7 +440,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0830;
-				LastUpgradeCheck = 0920;
+				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Raghu Sarangapani";
 				TargetAttributes = {
 					29F77F221F9FC18D0035178F = {
@@ -464,11 +490,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				292047A0204E05F900B21067 /* sg_cert.cer in Resources */,
+				41CFFB4B2202D9FB00D0E1A8 /* CouchbaseLiteSwift.framework.dSYM in Resources */,
 				29F77F311F9FC18D0035178F /* LaunchScreen.storyboard in Resources */,
-				4173ED8E206CC62600978148 /* CouchbaseLiteSwift.framework.dSYM in Resources */,
 				29F77F2E1F9FC18D0035178F /* Assets.xcassets in Resources */,
+				FB5934DA219CB5150000C958 /* sg_cert.cer in Resources */,
 				29F77F2C1F9FC18D0035178F /* Main.storyboard in Resources */,
+				FB5934E0219CB6220000C958 /* Databases in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -504,6 +531,7 @@
 				299692B11FF35B630040CC32 /* BlobRequestHandler.swift in Sources */,
 				294FB20A1FEAF9E800DD0C23 /* ReplicatorRequestHandler.swift in Sources */,
 				29F7869C1F9FC4180035178F /* GCDWebServerFileResponse.m in Sources */,
+				FB60EBD421069D5A005052B6 /* PeerToPeerRequestHandler.swift in Sources */,
 				294FB2081FEAF51F00DD0C23 /* QueryRequestHandler.swift in Sources */,
 				FB5A86762017E672008127FC /* DatabaseConfigurationRequestHandler.swift in Sources */,
 				2907D176200E860A00CE56EB /* BasicAuthenticatorRequestHandler.swift in Sources */,
@@ -513,14 +541,17 @@
 				29F786991F9FC4180035178F /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				FB7B1E731FDB60ED00A912BF /* Extensions.swift in Sources */,
 				2907D16C200E7BE400CE56EB /* CollationRequestHandler.swift in Sources */,
+				FB72EEA52150513100B306DF /* TryCatch.swift in Sources */,
 				2907D16A200E79C800CE56EB /* ExpressionRequestHandler.swift in Sources */,
 				294FB20E1FEB0E1800DD0C23 /* DocumentRequestHandler.swift in Sources */,
 				29D15BA11FA7DCFA005DAAA3 /* ValueSerializer.swift in Sources */,
+				FB5A6A5521123A9A00937927 /* ReplicatorTcpConnection.swift in Sources */,
 				29F786921F9FC4180035178F /* GCDWebServerConnection.m in Sources */,
 				293F38381FFD792E00497870 /* DataTypesInitiatorHandler.swift in Sources */,
 				29F786971F9FC4180035178F /* GCDWebServerFileRequest.m in Sources */,
 				294FB20C1FEAFD9000DD0C23 /* DatabaseRequestHandler.swift in Sources */,
 				2907D16E200E7C7F00CE56EB /* DataSourceRequestHandler.swift in Sources */,
+				FB60EBDA21093383005052B6 /* ReplicatorTcpClientConnection.swift in Sources */,
 				29F786951F9FC4180035178F /* GCDWebServerResponse.m in Sources */,
 				29F786941F9FC4180035178F /* GCDWebServerRequest.m in Sources */,
 				2907D172200E7F4100CE56EB /* SelectResultRequestHandler.swift in Sources */,
@@ -530,8 +561,11 @@
 				29F7869A1F9FC4180035178F /* GCDWebServerDataResponse.m in Sources */,
 				29F786911F9FC4180035178F /* GCDWebServer.m in Sources */,
 				2909B0731F9FFA8900B4E0E4 /* Server.swift in Sources */,
+				FB72EEA321504FC800B306DF /* TryCatch.m in Sources */,
 				2909B0761FA3B7B400B4E0E4 /* Args.swift in Sources */,
 				29F786981F9FC4180035178F /* GCDWebServerMultiPartFormRequest.m in Sources */,
+				FB60EBD821069DB9005052B6 /* ReplicatorTcpServerConnection.swift in Sources */,
+				FB60EBD621069D8D005052B6 /* ReplicatorTcpListener.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -600,6 +634,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -607,6 +642,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -657,6 +693,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -664,6 +701,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -712,6 +750,7 @@
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 					"$(PROJECT_DIR)",
 				);
+				GCC_OPTIMIZATION_LEVEL = 1;
 				INFOPLIST_FILE = "CBLTestServer-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.CBLTestServer-iOS";
@@ -842,6 +881,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -849,6 +889,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -904,6 +945,7 @@
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
 					"$(PROJECT_DIR)",
 				);
+				GCC_OPTIMIZATION_LEVEL = 1;
 				INFOPLIST_FILE = "CBLTestServer-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				OTHER_SWIFT_FLAGS = "-DCOUCHBASE_ENTERPRISE";
@@ -971,6 +1013,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -978,6 +1021,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;

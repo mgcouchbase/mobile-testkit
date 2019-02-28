@@ -11,6 +11,7 @@ from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from keywords import couchbaseserver
 from keywords import document
 from keywords import attachment
+from libraries.testkit.cluster import Cluster
 
 
 @pytest.mark.syncgateway
@@ -106,11 +107,11 @@ def test_attachment_revpos_when_ancestor_unavailable_active_revision_doesnt_shar
     longer available.  Add a new revision that's not a child of the
     active revision, and validate that it's uploaded successfully.
     Example:
-       1. Document is created with no attachment at rev-1
-       2. Server adds revision with attachment at rev-2 {"hello.txt", revpos=2}
-       2. Document is updated multiple times on the server, goes to rev-4
-       3. Client attempts to add a new (conflicting) revision 3a, with ancestors rev-2a (with it's own attachment), rev-1.
-       4. When client attempts to push rev-3a with attachment stub {"hello.txt", revpos=2}.  Should throw an error, since the revpos
+       1. Document is created with no attachment at rev-1 via SGW
+       2. Add revision with attachment at rev-2 {"hello.txt", revpos=2}
+       3. Document is updated multiple times , goes to rev-4
+       4. Client attempts to add a new (conflicting) revision 3a, with ancestors rev-2a (with it's own attachment), rev-1.
+       5. When client attempts to push rev-3a with attachment stub {"hello.txt", revpos=2}.  Should throw an error, since the revpos
        of the attachment is later than the common ancestor (rev-1)
     """
 
@@ -119,7 +120,7 @@ def test_attachment_revpos_when_ancestor_unavailable_active_revision_doesnt_shar
     no_conflicts_enabled = params_from_base_test_setup["no_conflicts_enabled"]
 
     if no_conflicts_enabled:
-        pytest.skip('--no-conflicts is not enabled, so skipping the test')
+        pytest.skip('--no-conflicts is enabled, so skipping the test')
 
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
@@ -160,6 +161,7 @@ def test_attachment_revpos_when_ancestor_unavailable_active_revision_doesnt_shar
     parent_rev_list = ["2-foo2", doc_gen_1["rev"]]
 
     # Sync Gateway should error since it has no references attachment in its ancestors
+    # Add conflict will pull the existing doc(rev 4-) and reuse _attachment property when pushing 3-foo3
     with pytest.raises(HTTPError) as he:
         client.add_conflict(
             url=sg_url,
@@ -198,6 +200,7 @@ def test_writing_attachment_to_couchbase_server(params_from_base_test_setup, sg_
 
     cluster_helper = ClusterKeywords(cluster_config)
     cluster_helper.reset_cluster(cluster_config, sg_conf)
+    cluster = Cluster(config=cluster_config)
 
     topology = cluster_helper.get_cluster_topology(cluster_config)
 
@@ -235,6 +238,6 @@ def test_writing_attachment_to_couchbase_server(params_from_base_test_setup, sg_
     server = couchbaseserver.CouchbaseServer(cbs_url)
 
     # Assert that the attachment doc gets written to couchbase server
-    server_att_docs = server.get_server_docs_with_prefix(bucket=bucket, prefix="_sync:att:")
+    server_att_docs = server.get_server_docs_with_prefix(bucket=bucket, prefix="_sync:att:", ipv6=cluster.ipv6)
     num_att_docs = len(server_att_docs)
     assert num_att_docs == 1

@@ -92,7 +92,7 @@ def test_no_conflicts_enabled(params_from_base_test_setup):
 @pytest.mark.parametrize("sg_conf_name, num_of_docs, revs_limit", [
     ('sync_gateway_revs_conflict_configurable', 10, 1),
     ('sync_gateway_revs_conflict_configurable', 10, 10),
-    ('sync_gateway_revs_conflict_configurable', 100, 5)
+    ('sync_gateway_revs_conflict_configurable', 100, 25)
 ])
 def test_no_conflicts_enabled_with_revs_limit(params_from_base_test_setup, sg_conf_name, num_of_docs, revs_limit):
     """
@@ -119,7 +119,7 @@ def test_no_conflicts_enabled_with_revs_limit(params_from_base_test_setup, sg_co
     channels = ["no-conflicts-cbl"]
 
     if not no_conflicts_enabled or sync_gateway_version < "2.0":
-        pytest.skip('--no-conflicts is enabled and does not work with sg < 2.0 , so skipping the test')
+        pytest.skip('--no-conflicts is not enabled and does not work with sg < 2.0 , so skipping the test')
 
     # Reset cluster to ensure no data in system
     sg_config = sync_gateway_config_path_for_mode(sg_conf_name, mode)
@@ -370,7 +370,7 @@ def test_migrate_conflicts_to_noConflicts_CBL(params_from_base_test_setup, sg_co
     replicator = Replication(base_url)
     authenticator = Authenticator(base_url)
     replicator_authenticator = authenticator.authentication(session_id, cookie, authentication_type="session")
-    repl_config = replicator.configure(cbl_db, sg_blip_url, channels=channels, replicator_authenticator=replicator_authenticator)
+    repl_config = replicator.configure(cbl_db, sg_blip_url, continuous=True, channels=channels, replicator_authenticator=replicator_authenticator)
     repl = replicator.create(repl_config)
     replicator.start(repl)
     replicator.wait_until_replicator_idle(repl)
@@ -418,7 +418,7 @@ def test_migrate_conflicts_to_noConflicts_CBL(params_from_base_test_setup, sg_co
     for doc in sg_docs:
         num_of_revs = sg_client.get_revs_num_in_history(url=sg_url, db=sg_db, doc_id=doc["id"], auth=session)
         assert len(num_of_revs) == revs_limit, "Number of revisions in history is more than revs_limit set in sg config"
-
+    replicator.wait_until_replicator_idle(repl)
     replicator.stop(repl)
 
 
