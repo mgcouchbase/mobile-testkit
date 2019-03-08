@@ -45,34 +45,6 @@ class LiteServMacOSX(LiteServBase):
             log_info("Package already downloaded: {}".format(expected_binary))
             return
 
-<<<<<<< HEAD
-        version, build = version_and_build(self.version_build)
-        package_urls = []
-
-        if version == "1.2.0":
-            package_url = "{}/couchbase-lite-ios/release/{}/macosx/{}/{}".format(LATEST_BUILDS, version, self.version_build, package_name)
-            package_urls.append(package_url)
-        else:
-            package_url = "{}/couchbase-lite-ios/{}/macosx/{}/{}".format(LATEST_BUILDS, version, build, package_name)
-            release_url = "{}/{}/couchbase-lite/macosx/{}".format(LATEST_RELEASED_BUILDS, version, package_name)
-            package_urls.append(package_url)
-            package_urls.append(release_url)
-
-        # Download package to deps/binaries
-        for purl in package_urls:
-            try:
-                log_info("Downloading: {}".format(purl))
-                resp = requests.get(purl)
-                resp.raise_for_status()
-                with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
-                    f.write(resp.content)
-                break
-            except HTTPError as he:
-                if he.response.status_code == 404:
-                    log_info("Got 404 error for {}, retrying ...".format(purl))
-                else:
-                    raise
-=======
         if build is None:
             if build < "2.0":
                 package_url = "{}/{}/couchbase-lite/macosx/{}".format(RELEASED_BUILDS, version, package_name)
@@ -86,7 +58,6 @@ class LiteServMacOSX(LiteServBase):
         resp.raise_for_status()
         with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
             f.write(resp.content)
->>>>>>> origin/master
 
         # Unzip package
         directory_name = package_name.replace(".zip", "")

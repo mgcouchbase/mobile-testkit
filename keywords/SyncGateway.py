@@ -639,24 +639,16 @@ class SyncGateway(object):
         if status != 0:
             raise Exception("Could not upgrade sync_gateway/sg_accel")
 
-<<<<<<< HEAD
-    def enable_import_xattrs_views(self, cluster_config, sg_conf, url, enable_xattrs=False, enable_import=False, enable_views=False):
+    def enable_import_xattrs_views(self, cluster_config, sg_conf, url, enable_xattrs=False, sync_gateway_version, enable_import=False, enable_views=False):
         """ Deploy an SG config with xattrs, import and views enabled
-=======
-    def enable_import_xattrs(self, cluster_config, sg_conf, url, sync_gateway_version, enable_import=False):
-        """Deploy an SG config with xattrs enabled
->>>>>>> origin/master
             Will also enable import if enable_import is set to True
             It is used to enable xattrs and import in the SG config"""
         ansible_runner = AnsibleRunner(cluster_config)
         server_port = 8091
         server_scheme = "http"
         sg_cert_path = os.path.abspath(SYNC_GATEWAY_CERT)
-<<<<<<< HEAD
-=======
         bucket_names = get_buckets_from_sync_gateway_config(sg_conf)
         version, build = version_and_build(sync_gateway_version)
->>>>>>> origin/master
 
         if is_cbs_ssl_enabled(cluster_config):
             server_port = 18091
@@ -679,33 +671,21 @@ class SyncGateway(object):
             "sslcert": "",
             "num_index_replicas": "",
             "sg_use_views": "",
-<<<<<<< HEAD
-            "xattrs": "",
-            "no_conflicts": "",
-            "logging": "",
-            "sg_cert_path": sg_cert_path
-=======
-            "revs_limit": "",
-<<<<<<< HEAD
-            "xattrs": ""
->>>>>>> origin/master
-        }
-
-        if no_conflicts_enabled(cluster_config):
-            playbook_vars["no_conflicts"] = '"allow_conflicts": false,'
-
-        if get_sg_upgraded_version(cluster_config) >= "2.1.0":
-=======
             "xattrs": "",
             "no_conflicts": "",
             "delta_sync": ""
+            "logging": "",
+            "sg_cert_path": sg_cert_path
+            "revs_limit": "",
         }
 
         playbook_vars["username"] = '"username": "{}",'.format(bucket_names[0])
         playbook_vars["password"] = '"password": "password",'
 
-        if version >= "2.1.0":
->>>>>>> origin/master
+        if no_conflicts_enabled(cluster_config):
+            playbook_vars["no_conflicts"] = '"allow_conflicts": false,'
+
+        if get_sg_upgraded_version(cluster_config) >= "2.1.0":
             logging_config = '"logging": {"debug": {"enabled": true}'
             try:
                 redact_level = get_redact_level(cluster_config)
@@ -713,12 +693,7 @@ class SyncGateway(object):
             except KeyError as ex:
                 log_info("Keyerror in getting logging{}".format(ex.message))
                 playbook_vars["logging"] = '{} {},'.format(logging_config, "}")
-<<<<<<< HEAD
             if get_sg_use_views(cluster_config) or enable_views:
-=======
-
-            if get_sg_use_views(cluster_config):
->>>>>>> origin/master
                 playbook_vars["sg_use_views"] = '"use_views": true,'
             else:
                 num_replicas = get_sg_replicas(cluster_config)
