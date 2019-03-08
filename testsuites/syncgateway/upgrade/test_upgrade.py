@@ -169,34 +169,30 @@ def test_upgrade(params_from_base_test_setup):
                 toy_build=cbs_toy_build
             )
 
-        # log_info("Checking for docs present on the server after CBS upgrade")
-        # check_docs_on_server(initial_added_doc_ids, cluster_config)
+            if mode == "di":
+                ac_obj = SyncGateway()
+                for ac in sg_accels:
+                    ac_ip = host_for_url(ac)
+                    ac_obj.enable_import_xattrs(
+                        cluster_config=cluster_config,
+                        sg_conf=sg_conf,
+                        url=ac_ip,
+                        sync_gateway_version=sync_gateway_upgraded_version,
+                        enable_import=False
+                    )
 
-        # if xattrs_post_upgrade:
-        # Post upgrade tasks
-        # Enable xattrs on all SG/SGAccel nodes
-        # cc - Start 1 SG with import enabled, all with XATTRs enabled
-        # di - All SGs/SGAccels with xattrs enabled - this will also enable import on SGAccel
-        #    - Do not enable import in SG.
-        # Enable views or GSI
-        if use_views:
-            log_info("Upgrading SG to use views")
-            # Enable sg views in cluster configs
-            persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', True)
-        else:
-            log_info("Upgrading SG to use GSI")
-            # Disable sg views in cluster configs
-            persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', False)
-
-        if xattrs_post_upgrade:
-            log_info("Enabling xattrs for sync gateway version {}".format(sync_gateway_upgraded_version))
-            persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', True)
-        else:
-            persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', False)
-
-        post_upgrade_sync_gateway_migration(mode, cluster_config, sg_conf, use_views, xattrs_post_upgrade, sync_gateways, sg_accels)
-        # log_info("Checking for docs present on the server post SG migration")
-        # check_docs_on_server(initial_added_doc_ids, cluster_config)
+            sg_obj = SyncGateway()
+            for sg in sync_gateways:
+                sg_ip = host_for_url(sg["admin"])
+                sg_obj.enable_import_xattrs(
+                    cluster_config=cluster_config,
+                    sg_conf=sg_conf,
+                    url=sg_ip,
+                    sync_gateway_version=sync_gateway_upgraded_version,
+                    enable_import=enable_import
+                )
+                enable_import = False
+                # Check Import showing up on all nodes
 
         send_changes_termination_doc(
             auth=sg_session,
@@ -304,51 +300,6 @@ def check_docs_on_server(doc_ids, cluster_config):
 
         log_info("{} Doc IDs missing on CBS, retrying ...".format(len(missing_doc_ids)))
         time.sleep(5)
-
-
-def post_upgrade_sync_gateway_migration(mode, cluster_config, sg_conf, use_views, xattrs_post_upgrade, sync_gateways, sg_accels):
-    log_info('------------------------------------------')
-    log_info('START sync gateway post upgrade migration')
-    log_info('------------------------------------------')
-    if not xattrs_post_upgrade:
-        enable_import = False
-    else:
-        if mode == "cc":
-            enable_import = True
-        elif mode == "di":
-            enable_import = False
-
-    log_info("Migration SG to use_views: {}, xattrs_post_upgrade: {}, enable_import: {}".format(use_views, xattrs_post_upgrade, enable_import))
-    if mode == "di":
-        ac_obj = SyncGateway()
-        for ac in sg_accels:
-            ac_ip = host_for_url(ac)
-            ac_obj.enable_import_xattrs_views(
-                cluster_config=cluster_config,
-                sg_conf=sg_conf,
-                url=ac_ip,
-                enable_xattrs=xattrs_post_upgrade,
-                enable_import=False,
-                enable_views=use_views
-            )
-            ac_obj.restart_sync_gateways(cluster_config=cluster_config, url=ac_ip)
-
-    sg_obj = SyncGateway()
-    for sg in sync_gateways:
-        sg_ip = host_for_url(sg["admin"])
-        sg_obj.enable_import_xattrs_views(
-            cluster_config=cluster_config,
-            sg_conf=sg_conf,
-            url=sg_ip,
-            enable_xattrs=xattrs_post_upgrade,
-            enable_import=enable_import,
-            enable_views=use_views
-        )
-        enable_import = False
-        sg_obj.restart_sync_gateways(cluster_config=cluster_config, url=sg_ip)
-    log_info('------------------------------------------')
-    log_info('END sync gateway post upgrade migration')
-    log_info('------------------------------------------')
 
 
 def verify_sg_deleted_docs(url, db, deleted_docs):
