@@ -20,7 +20,8 @@ class Client(object):
             body = {}
 
             url = self.base_url + "/" + method
-
+            print "Client-invokeMethod-url"
+            print url
             if args:
                 for k, v in args:
                     val = ValueSerializer.serialize(v)
@@ -40,6 +41,8 @@ class Client(object):
                     log_info("Got response: {}".format(result))
                 return ValueSerializer.deserialize(result)
         except Exception as err:
+            print "Client-invokeMethod-err"
+            print str(err)
             if resp.content:
                 raise Exception(str(err) + resp.content)
             else:
