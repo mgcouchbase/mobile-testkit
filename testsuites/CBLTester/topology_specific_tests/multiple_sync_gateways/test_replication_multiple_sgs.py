@@ -269,6 +269,7 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     time.sleep(15)
     repl2_error = replicator.getError(repl2)
     print repl2_error
+    print liteserv_platform
     '''
     if liteserv_platform == "xamarin-ios" or liteserv_platform == "xamarin-android" or liteserv_platform == "net-msft" or liteserv_platform == "net-uwp":
         assert "POSIXDomain" in repl2_error
