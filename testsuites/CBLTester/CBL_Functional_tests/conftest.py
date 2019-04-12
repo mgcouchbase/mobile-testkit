@@ -398,7 +398,7 @@ def params_from_base_suite_setup(request):
         repl = repl_obj.create(repl_config)
         repl_obj.start(repl)
         repl_obj.wait_until_replicator_idle(repl)
-        time.sleep(30)
+        time.sleep(120)
         log_info("Stopping replication")
         repl_obj.stop(repl)
 
