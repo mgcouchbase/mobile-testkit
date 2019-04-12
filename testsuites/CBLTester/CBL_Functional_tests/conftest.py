@@ -397,7 +397,7 @@ def params_from_base_suite_setup(request):
                                          replicator_authenticator=authenticator)
         repl = repl_obj.create(repl_config)
         repl_obj.start(repl)
-        repl_obj.wait_until_replicator_idle(repl, max_times=600)
+        repl_obj.wait_until_replicator_idle(repl, max_times=3000)
         # time.sleep(120)
         log_info("Stopping replication")
         repl_obj.stop(repl)
