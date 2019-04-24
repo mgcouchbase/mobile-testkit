@@ -33,7 +33,7 @@ def load_sync_gateway_config(sync_gateway_config, mode, server_url, xattrs_enabl
         logging_prop = ""
 
         if get_sg_version(cluster_config) >= "2.1.0":
-            logging_prop = '"log": ["*"],'
+            logging_prop = '"logging": {"debug": {"enabled": true}},'
             if get_sg_use_views(cluster_config):
                 sg_use_views_prop = '"use_views": true,'
             else:

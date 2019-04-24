@@ -32,6 +32,13 @@ events {
 #       }
 
 http {
+    log_format timed_combined '$remote_addr - $remote_user [$time_local] '
+    '"$upstream_addr $request" $status $upstream_response_time $upstream_http_etag $body_bytes_sent '
+    '"$http_referer" "$http_user_agent" '
+    '$request_time $upstream_response_time $pipe';
+
+    access_log /var/log/nginx/access.log timed_combined;
+
     upstream sync_gateway {
        {{ upstream_sync_gatways }}
     }

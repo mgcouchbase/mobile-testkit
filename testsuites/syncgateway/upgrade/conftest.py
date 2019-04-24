@@ -52,7 +52,7 @@ def pytest_addoption(parser):
                      action="store_true",
                      help="If set, will enable SSL communication between server and Sync Gateway")
 
-    parser.addoption("--xattrs",
+    parser.addoption("--xattrs-pre-upgrade",
                      action="store_true",
                      help="Use xattrs for sync meta storage. Only works with Sync Gateway 2.0+ and Couchbase Server 5.0+")
 
@@ -134,6 +134,24 @@ def pytest_addoption(parser):
     parser.addoption("--delta-sync",
                      action="store_true",
                      help="delta-sync: Enable delta-sync for sync gateway")
+    parser.addoption("--xattrs-post-upgrade",
+                     action="store_true",
+                     help="Use xattrs for sync meta storage. Only works with Sync Gateway 2.0+ and Couchbase Server 5.0+")
+
+    parser.addoption("--server-upgrade-only",
+                     action="store_true",
+                     help="Only upgrade the CBS cluster, do not upgrade SG cluster",
+                     default=False)
+
+    parser.addoption("--sg-upgrade-only",
+                     action="store_true",
+                     help="Only upgrade the SG cluster, do not upgrade CBS cluster",
+                     default=False)
+
+    parser.addoption("--disable-doc-updates",
+                     action="store_true",
+                     help="Only upgrade the SG cluster, do not upgrade CBS cluster",
+                     default=False)
 
 
 # This will be called once for the at the beggining of the execution in the 'tests/' directory
@@ -155,12 +173,14 @@ def params_from_base_suite_setup(request):
     # use_sequoia = request.config.getoption("--sequoia")
     skip_provisioning = request.config.getoption("--skip-provisioning")
     cbs_ssl = request.config.getoption("--server-ssl")
-    xattrs_enabled = request.config.getoption("--xattrs")
+    xattrs_pre_upgrade = request.config.getoption("--xattrs-pre-upgrade")
+    xattrs_post_upgrade = request.config.getoption("--xattrs-post-upgrade")
     liteserv_host = request.config.getoption("--liteserv-host")
     liteserv_port = request.config.getoption("--liteserv-port")
     liteserv_version = request.config.getoption("--liteserv-version")
     liteserv_platform = request.config.getoption("--liteserv-platform")
     liteserv_storage_engine = request.config.getoption("--liteserv-storage-engine")
+    use_views = request.config.getoption("--use-views")
     num_docs = request.config.getoption("--num-docs")
     cbs_platform = request.config.getoption("--cbs-platform")
     cbs_toy_build = request.config.getoption("--cbs-upgrade-toybuild")
@@ -168,8 +188,11 @@ def params_from_base_suite_setup(request):
     use_views = request.config.getoption("--use-views")
     number_replicas = request.config.getoption("--number-replicas")
     delta_sync_enabled = request.config.getoption("--delta-sync")
+    server_upgrade_only = request.config.getoption("--server-upgrade-only")
+    sg_upgrade_only = request.config.getoption("--sg-upgrade-only")
+    disable_doc_updates = request.config.getoption("--disable-doc-updates")
 
-    if xattrs_enabled and version_is_binary(sync_gateway_version):
+    if xattrs_post_upgrade and version_is_binary(sync_gateway_version):
         check_xattr_support(server_upgraded_version, sync_gateway_upgraded_version)
 
     log_info("server_version: {}".format(server_version))
@@ -179,7 +202,8 @@ def params_from_base_suite_setup(request):
     log_info("mode: {}".format(mode))
     log_info("skip_provisioning: {}".format(skip_provisioning))
     log_info("cbs_ssl: {}".format(cbs_ssl))
-    log_info("xattrs_enabled: {}".format(xattrs_enabled))
+    log_info("xattrs_pre_upgrade: {}".format(xattrs_pre_upgrade))
+    log_info("xattrs_post_upgrade: {}".format(xattrs_post_upgrade))
     log_info("liteserv_host: {}".format(liteserv_host))
     log_info("liteserv_port: {}".format(liteserv_port))
     log_info("liteserv_version: {}".format(liteserv_version))
@@ -192,6 +216,9 @@ def params_from_base_suite_setup(request):
     log_info("use_views: {}".format(use_views))
     log_info("number_replicas: {}".format(number_replicas))
     log_info("delta_sync_enabled: {}".format(delta_sync_enabled))
+    log_info("server_upgrade_only: {}".format(server_upgrade_only))
+    log_info("sg_upgrade_only: {}".format(sg_upgrade_only))
+    log_info("disable_doc_updates: {}".format(disable_doc_updates))
 
     # Make sure mode for sync_gateway is supported ('cc' or 'di')
     validate_sync_gateway_mode(mode)
@@ -220,8 +247,21 @@ def params_from_base_suite_setup(request):
         log_info("Running test with sync_gateway version {}".format(sync_gateway_version))
         persist_cluster_config_environment_prop(cluster_config, 'sync_gateway_version', sync_gateway_version)
 
+    try:
+        sync_gateway_upgraded_version
+    except NameError:
+        persist_cluster_config_environment_prop(cluster_config, 'sync_gateway_upgraded_version', "")
+    else:
+        persist_cluster_config_environment_prop(cluster_config, 'sync_gateway_upgraded_version', sync_gateway_upgraded_version)
+
     # Only works with load balancer configs
     persist_cluster_config_environment_prop(cluster_config, 'sg_lb_enabled', True)
+
+    if xattrs_pre_upgrade:
+        log_info("Enabling xattrs for sync gateway version {}".format(sync_gateway_version))
+        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', True)
+    else:
+        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', False)
 
     if sg_ssl:
         log_info("Enabling SSL on sync gateway")
@@ -306,7 +346,7 @@ def params_from_base_suite_setup(request):
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
         "mode": mode,
-        "xattrs_enabled": xattrs_enabled,
+        "xattrs_post_upgrade": xattrs_post_upgrade,
         "server_version": server_version,
         "sync_gateway_version": sync_gateway_version,
         "server_upgraded_version": server_upgraded_version,
@@ -319,7 +359,11 @@ def params_from_base_suite_setup(request):
         "liteserv": liteserv,
         "num_docs": num_docs,
         "cbs_platform": cbs_platform,
-        "cbs_toy_build": cbs_toy_build
+        "cbs_toy_build": cbs_toy_build,
+        "use_views": use_views,
+        "server_upgrade_only": server_upgrade_only,
+        "sg_upgrade_only": sg_upgrade_only,
+        "disable_doc_updates": disable_doc_updates
     }
 
     log_info("Tearing down 'params_from_base_suite_setup' ...")
@@ -337,7 +381,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     cluster_config = params_from_base_suite_setup["cluster_config"]
     cluster_topology = params_from_base_suite_setup["cluster_topology"]
     mode = params_from_base_suite_setup["mode"]
-    xattrs_enabled = params_from_base_suite_setup["xattrs_enabled"]
+    xattrs_post_upgrade = params_from_base_suite_setup["xattrs_post_upgrade"]
     server_version = params_from_base_suite_setup["server_version"]
     sync_gateway_version = params_from_base_suite_setup["sync_gateway_version"]
     server_upgraded_version = params_from_base_suite_setup["server_upgraded_version"]
@@ -351,13 +395,17 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     num_docs = params_from_base_suite_setup["num_docs"]
     cbs_platform = params_from_base_suite_setup["cbs_platform"]
     cbs_toy_build = params_from_base_suite_setup["cbs_toy_build"]
+    use_views = params_from_base_suite_setup["use_views"]
+    server_upgrade_only = params_from_base_suite_setup["server_upgrade_only"]
+    sg_upgrade_only = params_from_base_suite_setup["sg_upgrade_only"]
+    disable_doc_updates = params_from_base_suite_setup["disable_doc_updates"]
 
     test_name = request.node.name
     log_info("Running test '{}'".format(test_name))
     log_info("cluster_config: {}".format(cluster_config))
     log_info("cluster_topology: {}".format(cluster_topology))
     log_info("mode: {}".format(mode))
-    log_info("xattrs_enabled: {}".format(xattrs_enabled))
+    log_info("xattrs_post_upgrade: {}".format(xattrs_post_upgrade))
 
     client = MobileRestClient()
 
@@ -370,19 +418,12 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     sg_url = cluster_hosts["sync_gateways"][0]["public"]
     sg_admin_url = cluster_hosts["sync_gateways"][0]["admin"]
 
-    if xattrs_enabled:
-        log_info("Running upgrade with xattrs for sync meta storage")
-        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', True)
-    else:
-        log_info("Using document storage for sync meta data")
-        persist_cluster_config_environment_prop(cluster_config, 'xattrs_enabled', False)
-
     # This dictionary is passed to each test
     yield {
         "cluster_config": cluster_config,
         "cluster_topology": cluster_topology,
         "mode": mode,
-        "xattrs_enabled": xattrs_enabled,
+        "xattrs_post_upgrade": xattrs_post_upgrade,
         "server_version": server_version,
         "sync_gateway_version": sync_gateway_version,
         "server_upgraded_version": server_upgraded_version,
@@ -397,7 +438,11 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "sg_admin_url": sg_admin_url,
         "num_docs": num_docs,
         "cbs_platform": cbs_platform,
-        "cbs_toy_build": cbs_toy_build
+        "cbs_toy_build": cbs_toy_build,
+        "use_views": use_views,
+        "server_upgrade_only": server_upgrade_only,
+        "sg_upgrade_only": sg_upgrade_only,
+        "disable_doc_updates": disable_doc_updates
     }
 
     client.delete_databases(ls_url)

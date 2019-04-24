@@ -18,6 +18,7 @@ def test_log_rotation_default_values(params_from_base_test_setup, sg_conf_name):
     """
     @summary
     Test to verify default values for rotation section:
+
     maxsize = 100 MB
     MaxAge = 0(do not limit the number of MaxAge)
     MaxBackups = 0(do not limit the number of backups)
@@ -26,6 +27,7 @@ def test_log_rotation_default_values(params_from_base_test_setup, sg_conf_name):
     mode = params_from_base_test_setup["mode"]
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
     cluster_helper = ClusterKeywords(cluster_conf)
+
     cluster_hosts = cluster_helper.get_cluster_topology(cluster_conf)
     sg_admin_url = cluster_hosts["sync_gateways"][0]["admin"]
     sg_ip = host_for_url(sg_admin_url)

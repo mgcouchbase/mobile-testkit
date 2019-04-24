@@ -142,6 +142,30 @@ def pytest_addoption(parser):
     parser.addoption("--delta-sync",
                      action="store_true",
                      help="delta-sync: Enable delta-sync for sync gateway")
+    parser.addoption("--testsource", action="store", default=None,
+                     help="File containing tests to run")
+
+
+# This is used to run a specified set of tests by modifying the items list
+# The set of tests is provided using the --testsource=<filename> argument above
+# Modifies the built-in 'selected' and 'deselected' variables
+def pytest_collection_modifyitems(config, items):
+    testsource = config.getoption("--testsource")
+    if not testsource:
+        return
+
+    my_tests = []
+    with open(testsource) as ts:
+        my_tests = list(map(lambda x: x.strip(), ts.readlines()))
+
+    selected = []
+    deselected = []
+    for item in items:
+        deselected.append(item) if item.name not in my_tests else selected.append(item)
+
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = selected
 
 
 # This will be called once for the at the beggining of the execution in the 'tests/' directory

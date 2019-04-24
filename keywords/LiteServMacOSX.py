@@ -5,12 +5,12 @@ from zipfile import ZipFile
 import requests
 
 from keywords.LiteServBase import LiteServBase
-from keywords.constants import LATEST_BUILDS
-from keywords.constants import RELEASED_BUILDS
+from keywords.constants import LATEST_BUILDS, LATEST_RELEASED_BUILDS
 from keywords.constants import BINARY_DIR
 from keywords.constants import RESULTS_DIR
 from keywords.constants import REGISTERED_CLIENT_DBS
 from keywords.exceptions import LiteServError
+from requests.exceptions import HTTPError
 from keywords.utils import version_and_build
 from keywords.utils import log_info
 
