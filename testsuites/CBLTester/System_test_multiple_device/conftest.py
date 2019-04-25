@@ -397,7 +397,7 @@ def params_from_base_test_setup(params_from_base_suite_setup):
         cbl_db_list = []
         db_obj_list = []
         for base_url, i in zip(base_url_list, range(len(base_url_list))):
-            """log_info("Starting TestServer...")
+            log_info("Starting TestServer...")
             test_name_cp = test_name.replace("/", "-")
             log_filename = "{}-{}/logs/{}-{}-{}.txt".format("testserver-",RESULTS_DIR,
              type(testserver).__name__, test_name_cp, datetime.datetime.now())
@@ -405,7 +405,7 @@ def params_from_base_test_setup(params_from_base_suite_setup):
                 testserver.start_device(log_filename)
             else:
                 testserver.start(log_filename)
-            """
+
             db_name = "{}_{}_{}".format(create_db_per_test, str(time.time()), i + 1)
             log_info("db name for {} is {}".format(base_url, db_name))
             db_name_list.append(db_name)
