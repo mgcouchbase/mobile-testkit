@@ -73,7 +73,7 @@ def test_peer_to_peer_replication_eventing_valid_values(params_from_base_test_se
                                          endPointType=endpoint_type)
     repl_listener = peer_to_peer_client.addReplicatorEventChangeListener(repl)
     peer_to_peer_client.client_start(repl)
-    replicator.wait_until_replicator_idle(repl, max_times=5000, err_check=False)
+    replicator.wait_until_replicator_idle(repl)
     total = replicator.getTotal(repl)
     completed = replicator.getCompleted(repl)
     event_changes = peer_to_peer_client.getReplicatorEventChanges(repl_listener)
