@@ -24,11 +24,17 @@ class Replication(object):
         self._client = Client(base_url)
         self.config = None
 
-    def configure(self, source_db, target_url=None, target_db=None, replication_type="push_pull", continuous=False,
-                  channels=None, documentIDs=None, replicator_authenticator=None, headers=None):
+    def configure(self, source_db, target_url=None, target_db=None,
+                  replication_type="push_pull", continuous=False,
+                  push_filter=False, pull_filter=False, channels=None,
+                  documentIDs=None, replicator_authenticator=None,
+                  headers=None, filter_callback_func=''):
         args = Args()
         args.setMemoryPointer("source_db", source_db)
         args.setBoolean("continuous", continuous)
+        args.setBoolean("push_filter", push_filter)
+        args.setBoolean("pull_filter", pull_filter)
+        args.setString("filter_callback_func", filter_callback_func)
         if channels is not None:
             args.setArray("channels", channels)
 
@@ -180,6 +186,27 @@ class Replication(object):
         args.setMemoryPointer("replicator", replicator)
         return self._client.invokeMethod("replicator_config", args)
 
+    def addReplicatorEventChangeListener(self, replicator):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        return self._client.invokeMethod("replicator_addReplicatorEventChangeListener", args)
+
+    def removeReplicatorEventListener(self, replicator, change_listener):
+        args = Args()
+        args.setMemoryPointer("replicator", replicator)
+        args.setMemoryPointer("changeListener", change_listener)
+        return self._client.invokeMethod("replicator_removeReplicatorEventListener", args)
+
+    def getReplicatorEventChanges(self, change_listener):
+        args = Args()
+        args.setMemoryPointer("changeListener", change_listener)
+        return self._client.invokeMethod("replicator_replicatorEventGetChanges", args)
+
+    def getReplicatorEventChangesCount(self, change_listener):
+        args = Args()
+        args.setMemoryPointer("changeListener", change_listener)
+        return self._client.invokeMethod("replicator_replicatorEventChangesCount", args)
+
     def addChangeListener(self, replicator):
         args = Args()
         args.setMemoryPointer("replicator", replicator)
@@ -262,23 +289,36 @@ class Replication(object):
         self.wait_until_replicator_idle(repl, err_check)
         return repl
 
-    def wait_until_replicator_idle(self, repl, err_check=True):
-        max_times = 10
+    def wait_until_replicator_idle(self, repl, err_check=True, max_times=150, sleep_time=2):
         count = 0
         # Sleep until replicator completely processed
         activity_level = self.getActivitylevel(repl)
-        while activity_level != "idle" and count < max_times:
+        while count < max_times:
             log_info("Activity level: {}".format(activity_level))
-            time.sleep(2)
-            if activity_level == "idle" or activity_level == "offline" or activity_level == "connecting":
+            time.sleep(sleep_time)
+            if activity_level == "offline" or activity_level == "connecting" or activity_level == "busy":
                 count += 1
-            if activity_level == "stopped":
-                break
+            else:
+                if activity_level == "idle":
+                    if (self.getCompleted(repl) < self.getTotal(repl)) and self.getTotal(repl) != 0:
+                        count += 1
+                    else:
+                        time.sleep(sleep_time)
+                        break
             if err_check:
                 err = self.getError(repl)
                 if err is not None and err != 'nil' and err != -1:
                     raise Exception("Error while replicating", err)
             activity_level = self.getActivitylevel(repl)
+            total = self.getTotal(repl)
+            completed = self.getCompleted(repl)
+            if activity_level == "stopped":
+                if completed < total:
+                    raise Exception("replication progress is not completed")
+                else:
+                    break
+            if total < completed and total <= 0:
+                raise Exception("total is less than completed")
 
     def create_session_configure_replicate(self, baseUrl, sg_admin_url, sg_db, username, password,
                                            channels, sg_client, cbl_db, sg_blip_url, replication_type=None, continuous=True):

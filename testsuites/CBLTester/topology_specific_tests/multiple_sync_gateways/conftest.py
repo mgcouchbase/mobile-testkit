@@ -12,8 +12,8 @@ from keywords.exceptions import ProvisioningError
 from keywords.tklogging import Logging
 
 from CBLClient.Database import Database
+from CBLClient.FileLogging import FileLogging
 from keywords.utils import host_for_url, clear_resources_pngs
-from libraries.testkit.cluster import Cluster
 from couchbase.bucket import Bucket
 from couchbase.n1ql import N1QLQuery
 
@@ -95,6 +95,19 @@ def pytest_addoption(parser):
     parser.addoption("--debug-mode", action="store_true",
                      help="Enable debug mode for the app ", default=False)
 
+    parser.addoption("--use-views",
+                     action="store_true",
+                     help="If set, uses views instead of GSI - SG 2.1 and above only")
+
+    parser.addoption("--enable-file-logging",
+                     action="store_true",
+                     help="If set, CBL file logging would enable. Supported only cbl2.5 onwards")
+
+    parser.addoption("--number-replicas",
+                     action="store",
+                     help="Number of replicas for the indexer node - SG 2.1 and above only",
+                     default=0)
+
 
 # This will get called once before the first test that
 # runs with this as input parameters in this file
@@ -121,6 +134,9 @@ def params_from_base_suite_setup(request):
     sg_ssl = request.config.getoption("--sg-ssl")
     flush_memory_per_test = request.config.getoption("--flush-memory-per-test")
     debug_mode = request.config.getoption("--debug-mode")
+    use_views = request.config.getoption("--use-views")
+    number_replicas = request.config.getoption("--number-replicas")
+    enable_file_logging = request.config.getoption("--enable-file-logging")
 
     testserver = TestServerFactory.create(platform=liteserv_platform,
                                           version_build=liteserv_version,
@@ -142,7 +158,6 @@ def params_from_base_suite_setup(request):
     base_url = "http://{}:{}".format(liteserv_host, liteserv_port)
     cluster_config = "{}/multiple_sync_gateways_{}".format(CLUSTER_CONFIGS_DIR, mode)
     no_conflicts_enabled = request.config.getoption("--no-conflicts")
-    sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", mode)
     cluster_utils = ClusterKeywords(cluster_config)
     cluster_topology = cluster_utils.get_cluster_topology(cluster_config)
 
@@ -195,10 +210,21 @@ def params_from_base_suite_setup(request):
         log_info("Running with allow conflicts")
         persist_cluster_config_environment_prop(cluster_config, 'no_conflicts_enabled', False)
 
+    if use_views:
+        log_info("Running SG tests using views")
+        # Enable sg views in cluster configs
+        persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', True)
+    else:
+        log_info("Running tests with cbs <-> sg ssl disabled")
+        # Disable sg views in cluster configs
+        persist_cluster_config_environment_prop(cluster_config, 'sg_use_views', False)
+
+    # Write the number of replicas to cluster config
+    persist_cluster_config_environment_prop(cluster_config, 'number_replicas', number_replicas)
+
     sg_config = sync_gateway_config_path_for_mode("listener_tests/multiple_sync_gateways", mode)
     cluster_utils = ClusterKeywords(cluster_config)
     cluster_topology = cluster_utils.get_cluster_topology(cluster_config)
-    cluster = Cluster(cluster_config)
 
     log_info("no conflicts enabled {}".format(no_conflicts_enabled))
 
@@ -220,8 +246,6 @@ def params_from_base_suite_setup(request):
             logging_helper.fetch_and_analyze_logs(cluster_config=cluster_config, test_name=request.node.name)
             raise
 
-    cluster.reset(sg_config)
-
     # Hit this intalled running services to verify the correct versions are installed
     cluster_utils.verify_cluster_versions(
         cluster_config,
@@ -235,6 +259,11 @@ def params_from_base_suite_setup(request):
     suite_source_db = None
     suite_cbl_db = None
     if create_db_per_suite:
+        if enable_file_logging and liteserv_version >= "2.5.0":
+            cbllog = FileLogging(base_url)
+            cbllog.configure(log_level="verbose", max_rotate_count=2,
+                             max_size=1000 * 512, plain_text=True)
+            log_info("Log files available at - {}".format(cbllog.get_directory()))
         # Create CBL database
         suite_cbl_db = create_db_per_suite
         suite_db = Database(base_url)
@@ -256,7 +285,7 @@ def params_from_base_suite_setup(request):
             time.sleep(5)
         log_info("Loading sample bucket {}".format(enable_sample_bucket))
         server.load_sample_bucket(enable_sample_bucket)
-        server._create_internal_rbac_bucket_user(enable_sample_bucket)
+        server._create_internal_rbac_bucket_user(enable_sample_bucket, cluster_config=cluster_config)
 
         # Restart SG after the bucket deletion
         sync_gateways = cluster_topology["sync_gateways"]
@@ -309,7 +338,9 @@ def params_from_base_suite_setup(request):
         "sg_config": sg_config,
         "testserver": testserver,
         "device_enabled": device_enabled,
-        "flush_memory_per_test": flush_memory_per_test
+        "flush_memory_per_test": flush_memory_per_test,
+        "sg_ssl": sg_ssl,
+        "enable_file_logging": enable_file_logging
     }
     if create_db_per_suite:
         # Delete CBL database
@@ -350,9 +381,12 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     sg_db = params_from_base_suite_setup["sg_db"]
     sg_config = params_from_base_suite_setup["sg_config"]
     liteserv_platform = params_from_base_suite_setup["liteserv_platform"]
+    liteserv_version = params_from_base_suite_setup["liteserv_version"]
     testserver = params_from_base_suite_setup["testserver"]
     device_enabled = params_from_base_suite_setup["device_enabled"]
     flush_memory_per_test = params_from_base_suite_setup["flush_memory_per_test"]
+    sg_ssl = params_from_base_suite_setup["sg_ssl"]
+    enable_file_logging = params_from_base_suite_setup["enable_file_logging"]
     source_db = None
     cbl_db = None
     db_config = None
@@ -381,6 +415,11 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     db_config = None
     db = None
     if create_db_per_test:
+        if enable_file_logging and liteserv_version >= "2.5.0":
+            cbllog = FileLogging(base_url)
+            cbllog.configure(log_level="verbose", max_rotate_count=2,
+                             max_size=1000 * 512, plain_text=True)
+            log_info("Log files available at - {}".format(cbllog.get_directory()))
         cbl_db = create_db_per_test + str(time.time())
         # Create CBL database
         db = Database(base_url)
@@ -418,7 +457,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "db": db,
         "device_enabled": device_enabled,
         "testserver": testserver,
-        "db_config": db_config
+        "db_config": db_config,
+        "sg_ssl": sg_ssl
     }
 
     log_info("Tearing down test")

@@ -1,8 +1,9 @@
 import logging
 import json
+import os
 import random
 import string
-import os
+import re
 
 from keywords.exceptions import FeatureSupportedError
 from keywords.constants import DATA_DIR
@@ -74,8 +75,10 @@ def version_is_binary(version):
 
 def version_and_build(full_version):
     version_parts = full_version.split("-")
-    assert len(version_parts) == 2
-    return version_parts[0], version_parts[1]
+    if len(version_parts) == 2:
+        return version_parts[0], version_parts[1]
+    else:
+        return version_parts[0], None
 
 
 def host_for_url(url):
@@ -88,7 +91,7 @@ def host_for_url(url):
     else:
         host = url.replace("http://", "")
 
-    host = host.split(":")[0]
+    host = host.rsplit(":", 1)[0]
     log_info("Extracted host ({}) from url ({})".format(host, url))
 
     return host
@@ -109,6 +112,8 @@ def hostname_for_url(cluster_config, url):
     url = url.replace(":4984", "")
     url = url.replace(":4985", "")
     url = url.replace(":8091", "")
+    url = url.replace("[", "")
+    url = url.replace("]", "")
 
     endpoints = cluster["sg_accels"]
     endpoints.extend(cluster["sync_gateways"])
@@ -236,3 +241,153 @@ def clear_resources_pngs():
                 os.unlink(file_path)
         except Exception as e:
             print(e)
+
+
+def get_event_changes(event_changes):
+    """
+    @summary:
+    A method to filter out the events.
+    @return:
+    a dict containing doc_id as key and error status and replication as value,
+    for a particular Replication event
+    """
+    event_dict = {}
+    pattern = ".*?doc_id: ([a-zA-Z0-9_]+), error_code: (.*?), error_domain: ([a-zA-Z0-9_]+)," \
+              " push: ([a-zA-Z0-9_]+), flags: (.*?)'.*?"
+    events = re.findall(pattern, string=str(event_changes))
+    for event in events:
+        doc_id = event[0].strip()
+        error_code = event[1].strip()
+        error_domain = event[2].strip()
+        is_push = True if ("true" in event[3] or "True" in event[3]) else False
+        flags = event[4] if event[4] != '[]' else None
+        if error_code == '0' or error_code == 'nil':
+            error_code = None
+        if error_domain == '0' or error_domain == 'nil':
+            error_domain = None
+        event_dict[doc_id] = {"push": is_push,
+                              "error_code": error_code,
+                              "error_domain": error_domain,
+                              "flags": flags}
+    return event_dict
+
+
+def add_new_fields_to_doc(doc_body):
+    doc_body["new_field_1"] = random.choice([True, False])
+    doc_body["new_field_2"] = random_string(length=60)
+    doc_body["new_field_3"] = random_string(length=90)
+    return doc_body
+
+
+def compare_docs(cbl_db, db, docs_dict):
+    doc_ids = db.getDocIds(cbl_db)
+    cbl_db_docs = db.getDocuments(cbl_db, doc_ids)
+    for doc in docs_dict:
+        try:
+            del doc["doc"]["_rev"]
+        except KeyError:
+            log_info("no _rev exists in the dict")
+        key = doc["doc"]["_id"]
+        del doc["doc"]["_id"]
+        try:
+            del cbl_db_docs[key]["_id"]
+        except KeyError:
+            log_info("Ignoring id verification")
+        assert deep_dict_compare(doc["doc"], cbl_db_docs[key]), "mismatch in the dictionary"
+
+
+def compare_generic_types(object1, object2):
+    if object1 is None and object2 is None:
+        return True
+    if isinstance(object1, str) and isinstance(object2, str):
+        return object1 == object2
+    elif isinstance(object1, unicode) and isinstance(object2, unicode):
+        return object1 == object2
+    elif isinstance(object1, bool) and isinstance(object2, bool):
+        return object1 == object2
+    elif isinstance(object1, int) and isinstance(object2, int):
+        return object1 == object2
+    elif isinstance(object1, long) and isinstance(object2, long):
+        return object1 == object2
+    elif isinstance(object1, float) and isinstance(object2, float):
+        return object1 == object2
+    elif isinstance(object1, float) and isinstance(object2, int):
+        return object1 == float(object2)
+    elif isinstance(object1, int) and isinstance(object2, float):
+        return object1 == int(float(object2))
+    elif isinstance(object1, long) and isinstance(object2, int):
+        return object1 == long(object2)
+    elif isinstance(object1, int) and isinstance(object2, long):
+        return object1 == int(object2)
+    elif isinstance(object1, float) and isinstance(object2, long):
+        return object1 == float(object2)
+    elif isinstance(object1, long) and isinstance(object2, float):
+        return object1 == long(float(object2))
+    elif isinstance(object1, str) and isinstance(object2, unicode):
+        return object1 == str(object2)
+    elif isinstance(object1, unicode) and isinstance(object2, str):
+        return str(object1) == object2
+    return False
+
+
+def deep_list_compare(object1, object2):
+    retval = True
+    count = len(object1)
+    object1 = sorted(object1)
+    object2 = sorted(object2)
+    for x in range(count):
+        if isinstance(object1[x], dict) and isinstance(object2[x], dict):
+            retval = deep_dict_compare(object1[x], object2[x])
+            if retval is False:
+                log_info("Unable to match element in dict {} and {}".format(object1, object2))
+                return False
+        elif isinstance(object1[x], list) and isinstance(object2[x], list):
+            retval = deep_list_compare(object1[x], object2[x])
+            if retval is False:
+                log_info("Unable to match element in list {} and {}".format(object1[x], object2[x]))
+                return False
+        else:
+            retval = compare_generic_types(object1[x], object2[x])
+            if retval is False:
+                log_info("Unable to match objects in generic {} and {}".format(object1[x], object2[x]))
+                return False
+
+    return retval
+
+
+def deep_dict_compare(object1, object2):
+    retval = True
+    if len(object1) != len(object2):
+        log_info("lengths of sgw object and cbl object are different {} --- {}".format(len(object1), len(object2)))
+        log_info("keys of object 1 and object2 {}\n---{}".format(object1.keys(), object2.keys()))
+        return False
+
+    for k in object1.iterkeys():
+        obj1 = object1[k]
+        obj2 = object2[k]
+        if isinstance(obj1, list) and isinstance(obj2, list):
+            retval = deep_list_compare(obj1, obj2)
+            if retval is False:
+                log_info("mismatch between sgw: {} and cbl lists :{}".format(obj1, obj2))
+                return False
+
+        elif isinstance(obj1, dict) and isinstance(obj2, dict):
+            retval = deep_dict_compare(obj1, obj2)
+            if retval is False:
+                log_info("mismatch between sgw: {} and cbl dict :{}".format(obj1, obj2))
+                return False
+        else:
+            retval = compare_generic_types(obj1, obj2)
+            if retval is False:
+                log_info("mismatch {} and {}".format(obj1, obj2))
+                return False
+
+    return retval
+
+
+def meet_supported_version(version_list, target_version):
+    for ver in version_list:
+        if ver < target_version:
+            return False
+
+    return True

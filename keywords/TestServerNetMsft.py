@@ -1,7 +1,7 @@
 import os
 
 from keywords.TestServerBase import TestServerBase
-from keywords.constants import LATEST_BUILDS
+from keywords.constants import LATEST_BUILDS, RELEASED_BUILDS
 from keywords.exceptions import LiteServError
 from keywords.utils import version_and_build
 from keywords.utils import log_info
@@ -31,7 +31,7 @@ class TestServerNetMsft(TestServerBase):
             "[windows:vars]",
             "ansible_user={}".format(os.environ["LITESERV_MSFT_HOST_USER"]),
             "ansible_password={}".format(os.environ["LITESERV_MSFT_HOST_PASSWORD"]),
-            "ansible_port=5986",
+            "ansible_port=5985",
             "ansible_connection=winrm",
             "# The following is necessary for Python 2.7.9+ when using default WinRM self-signed certificates:",
             "ansible_winrm_server_cert_validation=ignore",
@@ -48,14 +48,22 @@ class TestServerNetMsft(TestServerBase):
         self.version_build = version_build
         self.version, self.build = version_and_build(self.version_build)
 
+        if version_build <= "2.1.0":
+            raise Exception("No .net based app available to download for 2.1.0 or below at latestbuild. Use nuget package to create app.")
         if self.platform == "net-msft":
             self.binary_path = "TestServer-Net-{}\\TestServer.NetCore.dll".format(self.version_build)
-            self.download_url = "{}/couchbase-lite-net/{}/{}/TestServer.NetCore.zip".format(LATEST_BUILDS, self.version, self.build)
+            if self.build is None:
+                self.download_url = "{}/couchbase-lite-net/{}/TestServer.NetCore.zip".format(RELEASED_BUILDS, self.version)
+            else:
+                self.download_url = "{}/couchbase-lite-net/{}/{}/TestServer.NetCore.zip".format(LATEST_BUILDS, self.version, self.build)
             self.package_name = "TestServer.NetCore.zip"
             self.build_name = "TestServer-Net-{}".format(self.version_build)
         else:
             self.binary_path = "TestServer-UWP-{}\\run.ps1".format(self.version_build)
-            self.download_url = "{}/couchbase-lite-net/{}/{}/TestServer.UWP.zip".format(LATEST_BUILDS, self.version, self.build)
+            if self.build is None:
+                self.download_url = "{}/couchbase-lite-net/{}/TestServer.UWP.zip".format(RELEASED_BUILDS, self.version)
+            else:
+                self.download_url = "{}/couchbase-lite-net/{}/{}/TestServer.UWP.zip".format(LATEST_BUILDS, self.version, self.build)
             self.package_name = "TestServer.UWP.zip"
             self.stop_binary_path = "TestServer-UWP-{}\\stop.ps1".format(self.version_build)
             self.build_name = "TestServer-UWP-{}".format(self.version_build)
@@ -132,7 +140,7 @@ class TestServerNetMsft(TestServerBase):
             log_full_path = "{}/{}".format(os.getcwd(), self.logfile)
             log_info("Pulling logs to {} ...".format(log_full_path))
             status = self.ansible_runner.run_ansible_playbook(
-                "stop-TestServer-windows.yml",
+                "stop-testserver-windows.yml",
                 extra_vars={
                     "log_full_path": log_full_path
                 }

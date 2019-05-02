@@ -74,12 +74,7 @@ public class DatabaseRequestHandler {
         case "database_exists":
             let name: String = args.get(name:"name")!
             let directory: String? = args.get(name:"directory")!
-           
-            if let directory = directory {
-                return Database.exists(withName: name, inDirectory: directory)
-            } else {
-                return Database.exists(withName: name)
-            }
+            return Database.exists(withName: name, inDirectory: directory)
 
         case "database_deleteIndex":
             let database: Database = (args.get(name:"database"))!
@@ -266,11 +261,23 @@ public class DatabaseRequestHandler {
 
             for id in ids {
                 let document: Document = database.document(withID: id)!
-                documents[id] = document.toDictionary()
+                
+                var dict = document.toDictionary()
+                for (key, value) in dict {
+                    if let list = value as? Dictionary<String, Blob> {
+                        var item = Dictionary<String, Any>()
+                        for (k, v) in list {
+                            item[k] = v.properties
+                        }
+                        dict[key] = item
+                    }
+                }
+                documents[id] = dict
             }
 
             return documents
           
+        #if COUCHBASE_ENTERPRISE
         case "database_changeEncryptionKey":
             let database: Database = args.get(name:"database")!
             let password: String? = args.get(name:"password")!
@@ -287,6 +294,13 @@ public class DatabaseRequestHandler {
                 print("Got error setting encryption key \(error)")
                 return error.localizedDescription
             }
+        #endif
+        case "database_copy":
+            let dbName: String! = args.get(name: "dbName")
+            let dbConfig: DatabaseConfiguration? = args.get(name: "dbConfig")
+            let dbPath: NSString! = args.get(name: "dbPath")
+            let path: String! = Bundle(for: type(of:self)).path(forResource: dbPath.deletingPathExtension, ofType: dbPath.pathExtension)
+            try! Database.copy(fromPath: path, toDatabase: dbName, withConfig: dbConfig)
 
         case "database_queryAllDocuments":
             let database: Database = args.get(name:"database")!

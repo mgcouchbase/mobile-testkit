@@ -46,10 +46,13 @@ public class Server {
     let resultRequestHandler: ResultRequestHandler!
     let basicAuthenticatorRequestHandler: BasicAuthenticatorRequestHandler!
     let databaseConfigurationRequestHandler: DatabaseConfigurationRequestHandler!
+    let peerToPeerRequestHandler: PeerToPeerRequestHandler!
+    let predictiveQueryRequestHandler: PredictiveQueriesRequestHandler!
+    let fileLoggingRequestHandler: FileLoggingRequestHandler!
     let memory = Memory()
     
     public init() {
-        Database.setLogLevel(LogLevel.info, domain: LogDomain.all)
+        Database.log.console.level = .debug
         dictionaryRequestHandler = DictionaryRequestHandler()
         queryRequestHandler = QueryRequestHandler()
         databaseRequestHandler = DatabaseRequestHandler()
@@ -69,7 +72,11 @@ public class Server {
         resultRequestHandler = ResultRequestHandler()
         basicAuthenticatorRequestHandler = BasicAuthenticatorRequestHandler()
         databaseConfigurationRequestHandler = DatabaseConfigurationRequestHandler()
+        peerToPeerRequestHandler = PeerToPeerRequestHandler()
+        predictiveQueryRequestHandler = PredictiveQueriesRequestHandler()
+        fileLoggingRequestHandler = FileLoggingRequestHandler()
         server = GCDWebServer()
+        Database.log.console.level = LogLevel.verbose
         server.addDefaultHandler(forMethod: "POST", request: GCDWebServerDataRequest.self) {
             (request) -> GCDWebServerResponse? in
             
@@ -153,6 +160,12 @@ public class Server {
                         result = try self.resultRequestHandler.handleRequest(method: method, args: args)
                     } else if method.hasPrefix("basicAuthenticator") {
                         result = try self.basicAuthenticatorRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("peerToPeer") {
+                        result = try self.peerToPeerRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("predictiveQuery") {
+                        result = try self.predictiveQueryRequestHandler.handleRequest(method: method, args: args)
+                    } else if method.hasPrefix("logging") {
+                        result = try self.fileLoggingRequestHandler.handleRequest(method: method, args: args)
                     } else {
                         throw ServerError.MethodNotImplemented(method)
                     }
@@ -167,11 +180,24 @@ public class Server {
                     // Send 200 code and close
                     return GCDWebServerDataResponse(text: "I-1")
                 }
+            } catch let error as RequestHandlerError {
+                var reason = "Unknown Request Handler Error"
+                switch error {
+                case .InvalidArgument(let r):
+                    reason = r
+                case .IOException(let r):
+                    reason = r
+                case .MethodNotFound(let r):
+                    reason = r
+                }
+                let response = GCDWebServerDataResponse(text: reason)!
+                response.statusCode = 432
+                response.contentType = "text/plain"
+                return response
             } catch let error as NSError {
-                // Send 400 error code
                 let response = GCDWebServerDataResponse(text: error.localizedDescription)!
                 response.statusCode = error.code as Int
-                response.contentType = error.localizedDescription
+                response.contentType = "text/plain"
                 return response
             }
         }

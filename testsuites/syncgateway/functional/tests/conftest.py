@@ -11,7 +11,7 @@ from keywords.tklogging import Logging
 from keywords.utils import check_xattr_support, log_info, version_is_binary, compare_versions, clear_resources_pngs
 from libraries.NetworkUtils import NetworkUtils
 from libraries.testkit import cluster
-from utilities.cluster_config_utils import persist_cluster_config_environment_prop
+from utilities.cluster_config_utils import persist_cluster_config_environment_prop, is_x509_auth
 from utilities.cluster_config_utils import get_load_balancer_ip
 
 UNSUPPORTED_1_5_0_CC = {
@@ -85,6 +85,11 @@ def pytest_addoption(parser):
                      action="store_true",
                      help="If set, will enable SSL communication between server and Sync Gateway")
 
+    parser.addoption("--cbs-platform",
+                     action="store",
+                     help="Couchbase Server Platform binary to install (ex. centos or windows)",
+                     default="centos7")
+
     parser.addoption("--sg-platform",
                      action="store",
                      help="Sync Gateway Platform binary to install (ex. centos or windows)",
@@ -137,6 +142,10 @@ def pytest_addoption(parser):
     parser.addoption("--testsource", action="store", default=None,
                      help="File containing tests to run")
 
+    parser.addoption("--delta-sync",
+                     action="store_true",
+                     help="delta-sync: Enable delta-sync for sync gateway")
+
 
 # This is used to run a specified set of tests by modifying the items list
 # The set of tests is provided using the --testsource=<filename> argument above
@@ -178,6 +187,7 @@ def params_from_base_suite_setup(request):
     race_enabled = request.config.getoption("--race")
     cbs_ssl = request.config.getoption("--server-ssl")
     xattrs_enabled = request.config.getoption("--xattrs")
+    cbs_platform = request.config.getoption("--cbs-platform")
     sg_platform = request.config.getoption("--sg-platform")
     sg_installer_type = request.config.getoption("--sg-installer-type")
     sa_platform = request.config.getoption("--sa-platform")
@@ -189,6 +199,7 @@ def params_from_base_suite_setup(request):
     sg_ssl = request.config.getoption("--sg-ssl")
     use_views = request.config.getoption("--use-views")
     number_replicas = request.config.getoption("--number-replicas")
+    delta_sync_enabled = request.config.getoption("--delta-sync")
 
     if xattrs_enabled and version_is_binary(sync_gateway_version):
         check_xattr_support(server_version, sync_gateway_version)
@@ -209,6 +220,7 @@ def params_from_base_suite_setup(request):
     log_info("sg_lb: {}".format(sg_lb))
     log_info("sg_ce: {}".format(sg_ce))
     log_info("sg_ssl: {}".format(sg_ssl))
+    log_info("no conflicts enabled {}".format(no_conflicts_enabled))
     log_info("no_conflicts_enabled: {}".format(no_conflicts_enabled))
     log_info("use_views: {}".format(use_views))
     log_info("number_replicas: {}".format(number_replicas))
@@ -302,6 +314,13 @@ def params_from_base_suite_setup(request):
 
     sg_config = sync_gateway_config_path_for_mode("sync_gateway_default_functional_tests", mode)
 
+    if delta_sync_enabled:
+        log_info("Running with delta sync")
+        persist_cluster_config_environment_prop(cluster_config, 'delta_sync_enabled', True)
+    else:
+        log_info("Running without delta sync")
+        persist_cluster_config_environment_prop(cluster_config, 'delta_sync_enabled', False)
+
     # Skip provisioning if user specifies '--skip-provisoning' or '--sequoia'
     should_provision = True
     if skip_provisioning or use_sequoia:
@@ -316,6 +335,7 @@ def params_from_base_suite_setup(request):
                 sync_gateway_version=sync_gateway_version,
                 sync_gateway_config=sg_config,
                 race_enabled=race_enabled,
+                cbs_platform=cbs_platform,
                 sg_platform=sg_platform,
                 sg_installer_type=sg_installer_type,
                 sa_platform=sa_platform,
@@ -346,7 +366,8 @@ def params_from_base_suite_setup(request):
         "xattrs_enabled": xattrs_enabled,
         "sg_lb": sg_lb,
         "no_conflicts_enabled": no_conflicts_enabled,
-        "sg_platform": sg_platform
+        "sg_platform": sg_platform,
+        "ssl_enabled": cbs_ssl
     }
 
     log_info("Tearing down 'params_from_base_suite_setup' ...")
@@ -374,6 +395,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     xattrs_enabled = params_from_base_suite_setup["xattrs_enabled"]
     sg_lb = params_from_base_suite_setup["sg_lb"]
     no_conflicts_enabled = params_from_base_suite_setup["no_conflicts_enabled"]
+    cbs_ssl = params_from_base_suite_setup["ssl_enabled"]
     sync_gateway_version = params_from_base_suite_setup["sync_gateway_version"]
     sg_platform = params_from_base_suite_setup["sg_platform"]
 
@@ -385,6 +407,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         for test in skip_tests:
             if test in test_name:
                 pytest.skip("Skipping online/offline tests with load balancer")
+    if is_x509_auth(cluster_config) and mode == "di":
+        pytest.skip("x509 certificate authentication is not supoorted in DI mode")
 
     # Certain test are diabled for certain modes
     # Given the run conditions, check if the test needs to be skipped
@@ -409,7 +433,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "xattrs_enabled": xattrs_enabled,
         "no_conflicts_enabled": no_conflicts_enabled,
         "sync_gateway_version": sync_gateway_version,
-        "sg_platform": sg_platform
+        "sg_platform": sg_platform,
+        "ssl_enabled": cbs_ssl
     }
 
     # Code after the yield will execute when each test finishes

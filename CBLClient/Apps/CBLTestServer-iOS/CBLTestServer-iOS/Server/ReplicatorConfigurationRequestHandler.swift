@@ -54,6 +54,9 @@ public class ReplicatorConfigurationRequestHandler {
             let authenticator: Authenticator? = authValue as? Authenticator
             let headers: Dictionary<String, String>? = args.get(name: "headers")!
             let pinnedservercert: String? = args.get(name: "pinnedservercert")!
+            let pull_filter: Bool? = args.get(name: "pull_filter")!
+            let push_filter: Bool? = args.get(name: "push_filter")!
+            let filter_callback_func: String? = args.get(name: "filter_callback_func")
             
             var replicatorType = ReplicatorType.pushAndPull
             
@@ -66,15 +69,26 @@ public class ReplicatorConfigurationRequestHandler {
                     replicatorType = .pushAndPull
                 }
             }
-            var config: ReplicatorConfiguration!
-            
+            var config: ReplicatorConfiguration
             if (source_db == nil){
                 throw RequestHandlerError.InvalidArgument("No source db provided")
             }
-            
+
             var target: Endpoint?
             if (target_url != nil) {
-                target = URLEndpoint(url: URL(string: target_url!)!)
+                do {
+                    try tryCatch {
+                        target = URLEndpoint(url: URL(string: target_url!)!)
+                    }
+                } catch let error as NSError {
+                    if let exception = error.userInfo["exception"] as? NSException {
+                        if let reason = exception.reason {
+                            throw RequestHandlerError.InvalidArgument("\(reason)")
+                        } else {
+                            throw RequestHandlerError.InvalidArgument("Unknown CBL Exception")
+                        }
+                    }
+                }
             }
             
             #if COUCHBASE_ENTERPRISE
@@ -88,7 +102,6 @@ public class ReplicatorConfigurationRequestHandler {
             if (target == nil) {
                 throw RequestHandlerError.InvalidArgument("target url or database should be provided.")
             }
-            
             config = ReplicatorConfiguration(database: source_db!, target: target!)
             config.replicatorType = replicatorType
             if continuous != nil {
@@ -111,6 +124,28 @@ public class ReplicatorConfigurationRequestHandler {
                 let data = try! NSData(contentsOfFile: path!, options: [])
                 let certificate = SecCertificateCreateWithData(nil, data)
                 config.pinnedServerCertificate = certificate
+            }
+            if pull_filter != false {
+                if filter_callback_func == "boolean" {
+                    config.pullFilter = _replicatorBooleanFilterCallback;
+                } else if filter_callback_func == "deleted" {
+                    config.pullFilter = _replicatorDeletedFilterCallback;
+                } else if filter_callback_func == "access_revoked" {
+                    config.pullFilter = _replicatorAccessRevokedCallback;
+                } else {
+                    config.pullFilter = _defaultReplicatorFilterCallback;
+                }
+            }
+            if push_filter != false {
+                if filter_callback_func == "boolean" {
+                    config.pushFilter = _replicatorBooleanFilterCallback;
+                } else if filter_callback_func == "deleted" {
+                    config.pushFilter = _replicatorDeletedFilterCallback;
+                } else if filter_callback_func == "access_revoked" {
+                    config.pushFilter = _replicatorAccessRevokedCallback;
+                } else {
+                    config.pushFilter = _defaultReplicatorFilterCallback;
+                }
             }
             return config
         
@@ -191,5 +226,33 @@ public class ReplicatorConfigurationRequestHandler {
             throw RequestHandlerError.MethodNotFound(method)
         }
         return ReplicatorConfigurationRequestHandler.VOID
+    }
+
+
+    private func _replicatorBooleanFilterCallback(document: Document, flags: DocumentFlags) -> Bool {
+        let key:String = "new_field_1"
+        if document.contains(key){
+            let value:Bool = document.boolean(forKey: key)
+            return value;
+        }
+        return true
+    }
+    
+    private func _defaultReplicatorFilterCallback(document: Document, flags: DocumentFlags) -> Bool {
+        return true;
+    }
+    
+    private func _replicatorDeletedFilterCallback(document: Document, documentFlags: DocumentFlags) -> Bool {
+        if (documentFlags.rawValue == 1) {
+            return false
+        }
+        return true
+    }
+    
+    private func _replicatorAccessRevokedCallback(document: Document, documentFlags: DocumentFlags) -> Bool {
+        if (documentFlags.rawValue == 2) {
+            return false
+        }
+        return true
     }
 }

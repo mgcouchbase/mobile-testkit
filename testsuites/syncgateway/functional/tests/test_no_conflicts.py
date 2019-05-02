@@ -505,7 +505,10 @@ def test_concurrent_updates_no_conflicts(params_from_base_test_setup, sg_conf_na
     bucket_name = 'data-bucket'
     cbs_url = topology['couchbase_servers'][0]
     cbs_ip = host_for_url(cbs_url)
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password', timeout=SDK_TIMEOUT)
+    if c.ipv6:
+        sdk_client = Bucket('couchbase://{}/{}?ipv6=allow'.format(cbs_ip, bucket_name), password='password', timeout=SDK_TIMEOUT)
+    else:
+        sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password', timeout=SDK_TIMEOUT)
     sg_doc_ids = [doc['id'] for doc in sg_docs]
     sdk_docs_resp = sdk_client.get_multi(sg_doc_ids)
 
@@ -575,7 +578,7 @@ def test_migrate_conflicts_delete_last_rev(params_from_base_test_setup, sg_conf_
     5. Modify sg config by enabling allow_conflicts to false
     6. restart sg.
     7. Delete doc by revision of current active open revision
-    8. Verify all revisions in history exists in open revisions which got at step 4.
+    8. Verify tombstoned doc is identified as deleted in open revision ids
     """
 
     # Setup
@@ -607,7 +610,7 @@ def test_migrate_conflicts_delete_last_rev(params_from_base_test_setup, sg_conf_
 
     # 3. Update the docs few times
     prev_revs = []
-    for i in xrange(5):
+    for i in xrange(25):
         update_sg_docs = sg_client.update_docs(url=sg_url, db=sg_db, docs=sg_docs, number_updates=1, delay=None, auth=autouser_session, channels=channels)
         rev = update_sg_docs[0]['rev'].split('-')[1]
         prev_revs.append(rev)
@@ -617,12 +620,10 @@ def test_migrate_conflicts_delete_last_rev(params_from_base_test_setup, sg_conf_
         conflicted_rev = sg_client.add_conflict(url=sg_url, db=sg_db, doc_id=doc["id"], parent_revisions=doc["rev"], new_revision="2-foo",
                                                 auth=autouser_session)
         assert conflicted_rev["rev"] == "2-foo"
-    for doc in sg_docs:
-        num_of_open_revs = sg_client.get_open_revs_ids(url=sg_url, db=sg_db, doc_id=doc["id"], rev="2-foo", auth=autouser_session)
     time.sleep(5)
 
     # 5. Enable allow_conflicts = false in SG config and 6. restart sg
-    revs_limit = 2
+    revs_limit = 21
     temp_cluster_config = copy_to_temp_conf(cluster_config, mode)
     persist_cluster_config_environment_prop(temp_cluster_config, 'no_conflicts_enabled', "True", property_name_check=False)
     persist_cluster_config_environment_prop(temp_cluster_config, 'revs_limit', revs_limit, property_name_check=False)
@@ -631,15 +632,14 @@ def test_migrate_conflicts_delete_last_rev(params_from_base_test_setup, sg_conf_
     sg_client.update_docs(url=sg_url, db=sg_db, docs=sg_docs, number_updates=1, auth=autouser_session, channels=channels)
 
     # 6. Delete doc by revision of current active open revision
+    # 7.Verify tombstoned doc is identified as deleted in open revision ids
     for doc in sg_docs:
         num_of_revs = sg_client.get_doc(url=sg_url, db=sg_db, doc_id=doc["id"], auth=autouser_session)
-        sg_client.delete_doc(url=sg_url, db=sg_db, doc_id=doc["id"], rev=num_of_revs["_rev"], auth=autouser_session)
-
-    # 7.Verify all revisions in history exists in open revisions which got at step 4.
-    for doc in sg_docs:
+        deleted_doc = sg_client.delete_doc(url=sg_url, db=sg_db, doc_id=doc["id"], rev=num_of_revs["_rev"], auth=autouser_session)
         num_of_revs_history = sg_client.get_revs_num_in_history(url=sg_url, db=sg_db, doc_id=doc["id"], auth=autouser_session)
-        for rev in num_of_revs_history:
-            assert rev in num_of_open_revs, "Expected revision does not exist in revision history "
+        assert "foo" in num_of_revs_history, "conflicted revision does not exist in revision history"
+        deleted_open_rev_ids = sg_client.get_deleted_open_rev_ids(url=sg_url, db=sg_db, doc_id=doc["id"], auth=autouser_session)
+        assert deleted_doc["rev"] in deleted_open_rev_ids, "open rev ids list is not identified as deleted for tombstoned doc "
 
 
 @pytest.mark.syncgateway
@@ -673,7 +673,7 @@ def test_revs_cache_size(params_from_base_test_setup, sg_conf_name, num_of_docs)
     sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
 
     if sync_gateway_version < "2.0":
-        pytest.skip('It does not work with sg < 2.0 , so skipping the test')
+        pytest.skip('It is enabled and does not work with sg < 2.0 , so skipping the test')
 
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
     c = cluster.Cluster(cluster_config)
@@ -697,7 +697,11 @@ def test_revs_cache_size(params_from_base_test_setup, sg_conf_name, num_of_docs)
 
     # 4. Verify there are number of hits should be same as retrieved docs
     exp_vars = sg_client.get_expvars(url=sg_admin_url)
-    revision_cache_hits = exp_vars["syncGateway_stats"]["revisionCache_hits"]
-    revision_cache_misses = exp_vars["syncGateway_stats"]["revisionCache_misses"]
+    if sync_gateway_version < "2.5":
+        revision_cache_hits = exp_vars["syncGateway_stats"]["revisionCache_hits"]
+        revision_cache_misses = exp_vars["syncGateway_stats"]["revisionCache_misses"]
+    else:
+        revision_cache_hits = exp_vars["syncgateway"]["per_db"][sg_db]["cache"]["rev_cache_hits"]
+        revision_cache_misses = exp_vars["syncgateway"]["per_db"][sg_db]["cache"]["rev_cache_misses"]
     assert revision_cache_hits == retrieved_docs, "Revision Cache hits did not hit with expected number {}".format(num_of_docs)
     assert revision_cache_misses == 0, "Revision Cache misses is not 0"

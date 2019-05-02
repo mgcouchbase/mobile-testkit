@@ -1,4 +1,6 @@
-﻿using Foundation;
+﻿using System;
+using System.IO;
+using Foundation;
 using UIKit;
 
 namespace Couchbase.Lite.Testing.iOS
@@ -28,12 +30,20 @@ namespace Couchbase.Lite.Testing.iOS
             Window.MakeKeyAndVisible();
 
             Couchbase.Lite.Support.iOS.Activate();
-			Database.SetLogLevel(Logging.LogDomain.All, Logging.LogLevel.Debug);
-         
+            Database.Log.Console.Level = Logging.LogLevel.Verbose;
+
+            TestServer.FilePathResolver = ResolvePath;
             var listener = new TestServer();
             listener.Start();
 
             return true;
+        }
+
+        private string ResolvePath(string path)
+        {
+            var extension = Path.GetExtension(path);
+            var withoutExtension = path.Replace(extension, "");
+            return NSBundle.MainBundle.PathForResource(withoutExtension, extension.Substring(1));
         }
 
         public override void OnResignActivation(UIApplication application)

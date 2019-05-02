@@ -4,6 +4,8 @@ import android.content.Context;
 import android.util.Log;
 
 import com.couchbase.CouchbaseLiteServ.server.Args;
+import com.couchbase.CouchbaseLiteServ.server.util.ZipUtils;
+import com.couchbase.lite.Blob;
 import com.couchbase.lite.ConcurrencyControl;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DataSource;
@@ -25,8 +27,11 @@ import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.EncryptionKey;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +95,27 @@ public class DatabaseRequestHandler {
         for (String id : ids) {
             Document document = database.getDocument(id);
             if (document != null) {
-                documents.put(id, document.toMap());
+                Map<String, Object> doc = document.toMap();
+                // looping through the document, replace the Blob with its properties
+                for (Map.Entry<String, Object> entry : doc.entrySet()) {
+                   if(entry.getValue() != null && entry.getValue() instanceof Map<?, ?>){
+                        if(((Map) entry.getValue()).size() == 0){
+                            continue;
+                        }
+                        boolean isBlob = false;
+                        Map<?, ?> value = (Map<?, ?>)entry.getValue();
+                        Map<String, Object> newVal = new HashMap<>();
+                        for (Map.Entry<?, ?> item : value.entrySet()){
+                            if(item.getValue() != null && item.getValue() instanceof Blob){
+                                isBlob = true;
+                                Blob b = (Blob)item.getValue();
+                                newVal.put(item.getKey().toString(), b.getProperties());
+                            }
+                        }
+                        if(isBlob) doc.put(entry.getKey(), newVal);
+                    }
+                }
+                documents.put(id, doc);
             }
         }
         return documents;
@@ -98,9 +123,8 @@ public class DatabaseRequestHandler {
 
     public void updateDocument(Args args) throws CouchbaseLiteException {
         Database database = args.get("database");
-        MutableDocument document = args.get("document");
-        String id = document.getId();
-        Map<String, Object> data = (Map<String, Object>) document.getValue(id);
+        String id = args.get("id");
+        Map<String, Object> data = (Map<String, Object>) args.get("data");
         MutableDocument updateDoc = database.getDocument(id).toMutable();
         updateDoc.setData(data);
         database.save(updateDoc);
@@ -308,6 +332,24 @@ public class DatabaseRequestHandler {
     public List<String> changeGetDocumentId(Args args) {
         DatabaseChange change = args.get("change");
         return change.getDocumentIDs();
+    }
+
+    public void copy(Args args) throws CouchbaseLiteException, IOException {
+      String dbName = args.get("dbName");
+      String dbPath = args.get("dbPath");
+
+      Context context = MainActivity.getAppContext();
+      ZipUtils.unzip(getAsset(dbPath), context.getFilesDir());
+      String dbFileName = new File(dbPath).getName();
+      dbFileName = dbFileName.substring(0, dbFileName.lastIndexOf("."));
+
+      DatabaseConfiguration dbConfig = args.get("dbConfig");
+      File file = new File(context.getFilesDir().getAbsolutePath() + "/" + dbFileName);
+      Database.copy(file, dbName, dbConfig);
+    }
+
+    private InputStream getAsset(String name) {
+      return this.getClass().getResourceAsStream(name);
     }
 
 }

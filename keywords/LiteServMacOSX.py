@@ -5,7 +5,8 @@ from zipfile import ZipFile
 import requests
 
 from keywords.LiteServBase import LiteServBase
-from keywords.constants import LATEST_BUILDS, LATEST_RELEASED_BUILDS
+from keywords.constants import LATEST_BUILDS
+from keywords.constants import RELEASED_BUILDS
 from keywords.constants import BINARY_DIR
 from keywords.constants import RESULTS_DIR
 from keywords.constants import REGISTERED_CLIENT_DBS
@@ -23,9 +24,20 @@ class LiteServMacOSX(LiteServBase):
         2. Download the LiteServ package from latest builds to 'deps/binaries'
         3. Unzip the packages and make the binary executable
         """
-        if(version_build is not None):
+        self.released_version = {
+            "1.2.0": "112",
+            "1.2.1": "13",
+            "1.3.0": "61",
+            "1.3.1": "6",
+            "1.4.0": "3",
+        }
+        if version_build is not None:
             self.version_build = version_build
-        package_name = "couchbase-lite-macosx-enterprise_{}.zip".format(self.version_build)
+        version, build = version_and_build(self.version_build)
+        if build is None:
+            package_name = "couchbase-lite-macosx-enterprise_{}-{}.zip".format(version, self.released_version[version])
+        else:
+            package_name = "couchbase-lite-macosx-enterprise_{}.zip".format(self.version_build)
 
         # Skip download if packages is already downloaded
         expected_binary = "{}/couchbase-lite-macosx-enterprise_{}/LiteServ".format(BINARY_DIR, self.version_build)
@@ -33,32 +45,19 @@ class LiteServMacOSX(LiteServBase):
             log_info("Package already downloaded: {}".format(expected_binary))
             return
 
-        version, build = version_and_build(self.version_build)
-        package_urls = []
-
-        if version == "1.2.0":
-            package_url = "{}/couchbase-lite-ios/release/{}/macosx/{}/{}".format(LATEST_BUILDS, version, self.version_build, package_name)
-            package_urls.append(package_url)
+        if build is None:
+            if build < "2.0":
+                package_url = "{}/{}/couchbase-lite/macosx/{}".format(RELEASED_BUILDS, version, package_name)
+            else:
+                raise Exception("Test not valid for Mobile 2.0 onwards")
         else:
-            package_url = "{}/couchbase-lite-ios/{}/macosx/{}/{}".format(LATEST_BUILDS, version, build, package_name)
-            release_url = "{}/{}/couchbase-lite/macosx/{}".format(LATEST_RELEASED_BUILDS, version, package_name)
-            package_urls.append(package_url)
-            package_urls.append(release_url)
-
+            package_url = "{}/couchbase-lite-ios/{}/ios/{}/{}".format(LATEST_BUILDS, version, build, package_name)
         # Download package to deps/binaries
-        for purl in package_urls:
-            try:
-                log_info("Downloading: {}".format(purl))
-                resp = requests.get(purl)
-                resp.raise_for_status()
-                with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
-                    f.write(resp.content)
-                break
-            except HTTPError as he:
-                if he.response.status_code == 404:
-                    log_info("Got 404 error for {}, retrying ...".format(purl))
-                else:
-                    raise
+        log_info("Downloading: {}".format(package_url))
+        resp = requests.get(package_url, verify=False)
+        resp.raise_for_status()
+        with open("{}/{}".format(BINARY_DIR, package_name), "wb") as f:
+            f.write(resp.content)
 
         # Unzip package
         directory_name = package_name.replace(".zip", "")
@@ -98,7 +97,11 @@ class LiteServMacOSX(LiteServBase):
 
         self._verify_not_running()
 
-        binary_path = "{}/couchbase-lite-macosx-enterprise_{}/LiteServ".format(BINARY_DIR, self.version_build)
+        version, build = version_and_build(self.version_build)
+        if build is None:
+            binary_path = "{}/couchbase-lite-macosx-enterprise_{}-{}/LiteServ".format(BINARY_DIR, version, self.released_version[version])
+        else:
+            binary_path = "{}/couchbase-lite-macosx-enterprise_{}/LiteServ".format(BINARY_DIR, self.version_build)
         log_info("Launching: {}".format(binary_path))
 
         process_args = [
@@ -153,7 +156,10 @@ class LiteServMacOSX(LiteServBase):
             raise LiteServError("Unexpected LiteServ platform running!")
 
         version, build = version_and_build(self.version_build)
-        expected_version = "{} (build {})".format(version, build)
+        if build is None:
+            expected_version = "{} (build {})".format(version, self.released_version[version])
+        else:
+            expected_version = "{} (build {})".format(version, build)
         running_version = resp_obj["vendor"]["version"]
 
         if expected_version != running_version:

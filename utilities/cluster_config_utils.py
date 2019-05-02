@@ -1,7 +1,11 @@
 import ConfigParser
 import json
+import os
+import re
 from keywords.exceptions import ProvisioningError
-from shutil import copyfile
+from shutil import copyfile, rmtree, make_archive
+from subprocess import Popen, PIPE
+from distutils.dir_util import copy_tree
 
 
 class CustomConfigParser(ConfigParser.RawConfigParser):
@@ -43,8 +47,7 @@ def persist_cluster_config_environment_prop(cluster_config, property_name, value
     """
 
     if property_name_check is True:
-        valid_props = ["cbs_ssl_enabled", "xattrs_enabled", "sg_lb_enabled", "sync_gateway_version", "server_version", "no_conflicts_enabled", "sync_gateway_ssl", "sg_use_views", "number_replicas", "sync_gateway_upgraded_version"]
-
+        valid_props = ["cbs_ssl_enabled", "xattrs_enabled", "sg_lb_enabled", "sync_gateway_version", "server_version", "no_conflicts_enabled", "sync_gateway_ssl", "sg_use_views", "number_replicas", "delta_sync_enabled", "sync_gateway_upgraded_version"]
         if property_name not in valid_props:
             raise ProvisioningError("Make sure the property you are trying to change is one of: {}".format(valid_props))
 
@@ -66,6 +69,48 @@ def persist_cluster_config_environment_prop(cluster_config, property_name, value
         config.write(f)
 
 
+def generate_x509_certs(cluster_config, bucket_name):
+    ''' Generate and insert x509 certs for CBS and SG TLS Handshake'''
+    cluster = load_cluster_config_json(cluster_config)
+    for line in open("ansible.cfg"):
+        match = re.match('remote_user\s*=\s*(\w*)$', line)
+        if match:
+            username = match.groups()[0].strip()
+            break
+
+    curr_dir = os.getcwd()
+    certs_dir = os.path.join(curr_dir, "certs")
+    if os.path.exists(certs_dir):
+        rmtree(certs_dir)
+    os.mkdir(certs_dir)
+
+    # Copying files to generate certs
+    src = os.path.join(curr_dir, "resources/x509_cert_gen")
+    copy_tree(src, certs_dir)
+    os.chdir(certs_dir)
+    cbs_nodes = [node["ip"] for node in cluster["couchbase_servers"]]
+    with open("openssl-san.cnf", "a+") as f:
+        for item in range(len(cbs_nodes)):
+            f.write("IP.{} = {}\n".format(item + 1, cbs_nodes[item]))
+    cmd = ["./gen_keystore.sh", cbs_nodes[0], bucket_name[0]]
+    print " ".join(cmd)
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate()
+    print stdout, stderr
+
+    # zipping the certificates
+    os.chdir(curr_dir)
+    make_archive("certs", "zip", certs_dir)
+
+    for node in cluster["sync_gateways"]:
+        cmd = ["scp", "certs.zip", "{}@{}:/tmp".format(username, node["ip"])]
+        print " ".join(cmd)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+        if stdout or stderr:
+            print stdout, stderr
+
+
 def load_cluster_config_json(cluster_config):
     """ Load json version of cluster config """
 
@@ -83,6 +128,12 @@ def is_cbs_ssl_enabled(cluster_config):
 
     cluster = load_cluster_config_json(cluster_config)
     return cluster["environment"]["cbs_ssl_enabled"]
+
+
+def is_x509_auth(cluster_config):
+    ''' Load cluster config to see if auth should be done using x509 certs '''
+    cluster = load_cluster_config_json(cluster_config)
+    return cluster["environment"]["x509_certs"]
 
 
 def get_cbs_servers(cluster_config):
@@ -129,8 +180,14 @@ def get_sg_use_views(cluster_config):
     return cluster["environment"]["sg_use_views"]
 
 
+def is_ipv6(cluster_config):
+    """ Loads cluster config to get IPv6 status"""
+    cluster = load_cluster_config_json(cluster_config)
+    return cluster["environment"]["ipv6_enabled"]
+
+
 def get_sg_version(cluster_config):
-    """ Loads cluster config to get the sync gateway version"""
+    """ Loads cluster config to get sync gateway version"""
     cluster = load_cluster_config_json(cluster_config)
     return cluster["environment"]["sync_gateway_version"]
 
@@ -139,6 +196,12 @@ def get_sg_upgraded_version(cluster_config):
     """ Loads cluster config to gets the sync_gateway_upgraded_version"""
     cluster = load_cluster_config_json(cluster_config)
     return cluster["environment"]["sync_gateway_upgraded_version"]
+
+
+def get_cbs_version(cluster_config):
+    """ Loads cluster config to get the couchbase server version"""
+    cluster = load_cluster_config_json(cluster_config)
+    return cluster["environment"]["server_version"]
 
 
 def no_conflicts_enabled(cluster_config):
@@ -168,6 +231,16 @@ def get_revs_limit(cluster_config):
 def get_redact_level(cluster_config):
     cluster = load_cluster_config_json(cluster_config)
     return cluster["environment"]["redactlevel"]
+
+
+def is_delta_sync_enabled(cluster_config):
+    """ Loads cluster config to see if delta sync is enabled """
+
+    cluster = load_cluster_config_json(cluster_config)
+    try:
+        return cluster["environment"]["delta_sync_enabled"]
+    except KeyError:
+        return False
 
 
 def copy_to_temp_conf(cluster_config, mode):

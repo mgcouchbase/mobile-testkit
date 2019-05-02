@@ -169,6 +169,30 @@ def test_upgrade(params_from_base_test_setup):
                 toy_build=cbs_toy_build
             )
 
+            if mode == "di":
+                ac_obj = SyncGateway()
+                for ac in sg_accels:
+                    ac_ip = host_for_url(ac)
+                    ac_obj.redeploy_sync_gateway_config(
+                        cluster_config=cluster_config,
+                        sg_conf=sg_conf,
+                        url=ac_ip,
+                        sync_gateway_version=sync_gateway_upgraded_version,
+                        enable_import=False
+                    )
+
+            sg_obj = SyncGateway()
+            for sg in sync_gateways:
+                sg_ip = host_for_url(sg["admin"])
+                sg_obj.redeploy_sync_gateway_config(
+                    cluster_config=cluster_config,
+                    sg_conf=sg_conf,
+                    url=sg_ip,
+                    sync_gateway_version=sync_gateway_upgraded_version,
+                    enable_import=enable_import
+                )
+                enable_import = False
+
         # log_info("Checking for docs present on the server after CBS upgrade")
         # check_docs_on_server(initial_added_doc_ids, cluster_config)
 

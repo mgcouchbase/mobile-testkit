@@ -20,6 +20,9 @@ public class ValueSerializer {
         } else if (v is String) {
             let string = v as! String
             return "\"" + string + "\""
+        }  else if (v is Bool) {
+            let bool = v as! Bool
+            return (bool ? "true" : "false")
         } else if (v is Int){
             let number = v as! Int
             return "I" + String(number)
@@ -33,9 +36,6 @@ public class ValueSerializer {
         } else if (v is NSNumber){
             let number = v as! NSNumber
             return "#" + "\(number)"
-        } else if (v is Bool) {
-            let bool = v as! Bool
-            return (bool ? "true" : "false")
         } else if (v is Dictionary<String, Any>) {
             let map = v as! Dictionary<String, Any>
             var stringMap = [String: Any]()

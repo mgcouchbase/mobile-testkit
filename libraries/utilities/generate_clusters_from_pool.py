@@ -28,7 +28,8 @@ class ClusterDef:
         )
 
 
-def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
+def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows,
+                 ipv6=False, x509_certs=False):
 
     connection_string = ""
     if use_docker:
@@ -363,6 +364,9 @@ def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
         f.write("cbs_ssl_enabled=False\n")
         f.write("xattrs_enabled=False\n")
         f.write("sg_lb_enabled=False\n")
+        f.write("ipv6_enabled={}\n".format(ipv6))
+        f.write("x509_certs={}\n".format(x509_certs))
+        f.write("delta_sync_enabled=False\n")
 
         if sg_windows:
             f.write("\n\n[sync_gateways:vars]\n")
@@ -393,7 +397,10 @@ def write_config(config, pool_file, use_docker, sg_windows, sg_accel_windows):
             "environment": {
                 "cbs_ssl_enabled": False,
                 "xattrs_enabled": False,
-                "sg_lb_enabled": False
+                "sg_lb_enabled": False,
+                "ipv6_enabled": ipv6,
+                "x509_certs": x509_certs,
+                "delta_sync_enabled": False
             }
         }
 
@@ -418,7 +425,9 @@ def get_hosts(pool_file="resources/pool.json"):
     return ips, ip_to_node_type
 
 
-def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False, sg_accel_windows=False):
+def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False,
+                                sg_accel_windows=False, ipv6=False,
+                                x509_certs=False):
 
     cluster_confs = [
 
@@ -504,7 +513,8 @@ def generate_clusters_from_pool(pool_file, use_docker=False, sg_windows=False, s
 
     print("Generating 'resources/cluster_configs/'. Using docker: {}".format(use_docker))
     for cluster_conf in cluster_confs:
-        write_config(cluster_conf, pool_file, use_docker, sg_windows, sg_accel_windows)
+        write_config(cluster_conf, pool_file, use_docker, sg_windows,
+                     sg_accel_windows, ipv6=ipv6, x509_certs=x509_certs)
 
 
 if __name__ == "__main__":
@@ -526,8 +536,15 @@ if __name__ == "__main__":
 
     parser.add_option("--sg-accel-windows", action="store_true", dest="sg_accel_windows", default=False, help="Use Windows Sync Gateway Accelerator")
 
+    parser.add_option("--ipv6", action="store_true", default=False, help="IPv6 addresses")
+
+    parser.add_option("--x509-certs", action="store_true", default=False,
+                      help="Enable x509_certs authentication")
+
     arg_parameters = sys.argv[1:]
 
     (opts, args) = parser.parse_args(arg_parameters)
 
-    generate_clusters_from_pool(opts.pool_file, opts.use_docker, opts.sg_windows, opts.sg_accel_windows)
+    generate_clusters_from_pool(opts.pool_file, opts.use_docker, opts.sg_windows,
+                                opts.sg_accel_windows, opts.ipv6,
+                                opts.x509_certs)

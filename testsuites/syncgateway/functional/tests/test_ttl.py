@@ -11,6 +11,8 @@ from keywords.MobileRestClient import MobileRestClient
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
 from keywords.timeutils import Time
 from keywords.utils import host_for_url, log_info
+from libraries.testkit.cluster import Cluster
+from utilities.cluster_config_utils import get_sg_version
 
 
 """
@@ -54,7 +56,9 @@ Test suite for Sync Gateway's expiry feature.
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_numeric_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     """
@@ -68,7 +72,21 @@ def test_numeric_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot using couchbases protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -95,7 +113,15 @@ def test_numeric_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -140,7 +166,9 @@ def test_numeric_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_string_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     """
@@ -154,7 +182,21 @@ def test_string_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbases protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -181,8 +223,15 @@ def test_string_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -227,7 +276,9 @@ def test_string_expiry_as_ttl(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_numeric_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     """
@@ -242,7 +293,21 @@ def test_numeric_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -269,8 +334,15 @@ def test_numeric_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -318,7 +390,9 @@ def test_numeric_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_string_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     """
@@ -333,7 +407,21 @@ def test_string_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -360,8 +448,15 @@ def test_string_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -413,7 +508,9 @@ def test_string_expiry_as_unix_date(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_string_expiry_as_iso_8601_date(params_from_base_test_setup, sg_conf_name):
     """
@@ -428,7 +525,21 @@ def test_string_expiry_as_iso_8601_date(params_from_base_test_setup, sg_conf_nam
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -455,8 +566,15 @@ def test_string_expiry_as_iso_8601_date(params_from_base_test_setup, sg_conf_nam
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -504,7 +622,9 @@ def test_string_expiry_as_iso_8601_date(params_from_base_test_setup, sg_conf_nam
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_removing_expiry(params_from_base_test_setup, sg_conf_name):
     """
@@ -515,6 +635,19 @@ def test_removing_expiry(params_from_base_test_setup, sg_conf_name):
 
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
+
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
 
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
@@ -547,11 +680,11 @@ def test_removing_expiry(params_from_base_test_setup, sg_conf_name):
 
     doc_exp_3_body = document.create_doc(doc_id="exp_3", expiry=3, channels=sg_user_channels)
     doc_exp_10_body = document.create_doc(doc_id="exp_10", expiry=10, channels=sg_user_channels)
-
     doc_exp_3 = client.add_doc(url=sg_url, db=sg_db, doc=doc_exp_3_body, auth=sg_user_session)
     doc_exp_10 = client.add_doc(url=sg_url, db=sg_db, doc=doc_exp_10_body, auth=sg_user_session)
 
-    doc_exp_3_updated = client.update_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3["id"], number_updates=10, auth=sg_user_session)
+    doc_exp_3_updated = client.update_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3["id"], number_updates=10, auth=sg_user_session, remove_expiry=True)
+    doc_exp_3_updated_result = client.get_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3_updated["id"], auth=sg_user_session)
 
     # Sleep should allow an expiry to happen on doc_exp_3 if it had not been removed.
     # Expected behavior is that the doc_exp_3 will still be around due to the removal of the expiry
@@ -571,7 +704,9 @@ def test_removing_expiry(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_rolling_ttl_expires(params_from_base_test_setup, sg_conf_name):
     """
@@ -584,7 +719,21 @@ def test_rolling_ttl_expires(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -611,8 +760,15 @@ def test_rolling_ttl_expires(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -660,7 +816,9 @@ def test_rolling_ttl_expires(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.session
 @pytest.mark.channel
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_rolling_ttl_remove_expirary(params_from_base_test_setup, sg_conf_name):
     """
@@ -673,7 +831,21 @@ def test_rolling_ttl_remove_expirary(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -700,8 +872,15 @@ def test_rolling_ttl_remove_expirary(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)
@@ -714,7 +893,7 @@ def test_rolling_ttl_remove_expirary(params_from_base_test_setup, sg_conf_name):
     doc_exp_10 = client.add_doc(url=sg_url, db=sg_db, doc=doc_exp_10_body, auth=sg_user_session)
 
     client.update_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3["id"], number_updates=10, expiry=3, delay=1, auth=sg_user_session)
-    client.update_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3["id"], number_updates=1, auth=sg_user_session)
+    client.update_doc(url=sg_url, db=sg_db, doc_id=doc_exp_3["id"], number_updates=1, auth=sg_user_session, remove_expiry=True)
 
     # If expiry was not removed in the last update, this would expire doc_exp_3
     time.sleep(5)
@@ -750,7 +929,9 @@ def test_rolling_ttl_remove_expirary(params_from_base_test_setup, sg_conf_name):
 @pytest.mark.channel
 @pytest.mark.bulkops
 @pytest.mark.parametrize("sg_conf_name", [
-    "sync_gateway_default_functional_tests"
+    "sync_gateway_default_functional_tests",
+    "sync_gateway_default_functional_tests_no_port",
+    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
 ])
 def test_setting_expiry_in_bulk_docs(params_from_base_test_setup, sg_conf_name):
     """
@@ -762,7 +943,21 @@ def test_setting_expiry_in_bulk_docs(params_from_base_test_setup, sg_conf_name):
     cluster_config = params_from_base_test_setup["cluster_config"]
     mode = params_from_base_test_setup["mode"]
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
+    ssl_enabled = params_from_base_test_setup["ssl_enabled"]
 
+    # Skip the test if ssl disabled as it cannot run without port using http protocol
+    if ("sync_gateway_default_functional_tests_no_port" in sg_conf_name) and get_sg_version(cluster_config) < "1.5.0":
+        pytest.skip('couchbase/couchbases ports do not support for versions below 1.5')
+    if "sync_gateway_default_functional_tests_no_port" in sg_conf_name and not ssl_enabled:
+        pytest.skip('ssl disabled so cannot run without port')
+
+    # Skip the test if ssl enabled as it cannot run using couchbase protocol
+    # TODO : https://github.com/couchbaselabs/sync-gateway-accel/issues/227
+    # Remove DI condiiton once above bug is fixed
+    if "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210" in sg_conf_name and (ssl_enabled or mode.lower() == "di"):
+        pytest.skip('ssl enabled so cannot run with couchbase protocol')
+
+    cluster = Cluster(config=cluster_config)
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
 
     cluster_helper = ClusterKeywords(cluster_config)
@@ -789,8 +984,15 @@ def test_setting_expiry_in_bulk_docs(params_from_base_test_setup, sg_conf_name):
     bucket_name = "data-bucket"
     cbs_ip = host_for_url(cbs_url)
 
-    sdk_client = Bucket('couchbase://{}/{}'.format(cbs_ip, bucket_name), password='password')
-
+    if ssl_enabled and cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify&ipv6=allow".format(cbs_ip, bucket_name)
+    elif ssl_enabled and not cluster.ipv6:
+        connection_url = "couchbases://{}/{}?ssl=no_verify".format(cbs_ip, bucket_name)
+    elif not ssl_enabled and cluster.ipv6:
+        connection_url = "couchbase://{}/{}?ipv6=allow".format(cbs_ip, bucket_name)
+    else:
+        connection_url = 'couchbase://{}/{}'.format(cbs_ip, bucket_name)
+    sdk_client = Bucket(connection_url, password='password')
     client = MobileRestClient()
 
     client.create_user(url=sg_url_admin, db=sg_db, name=sg_user_name, password=sg_user_password, channels=sg_user_channels)

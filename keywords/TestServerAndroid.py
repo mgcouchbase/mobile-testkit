@@ -4,7 +4,7 @@ import subprocess
 import requests
 
 from keywords.TestServerBase import TestServerBase
-from keywords.constants import LATEST_BUILDS
+from keywords.constants import LATEST_BUILDS, RELEASED_BUILDS
 from keywords.constants import BINARY_DIR
 from keywords.exceptions import LiteServError
 from keywords.utils import version_and_build
@@ -36,7 +36,7 @@ class TestServerAndroid(TestServerBase):
             # Xamarin-android
             self.package_name = self.apk_name = "TestServer.Android.apk"
             self.installed_package_name = "TestServer.Android"
-            self.activity_name = self.installed_package_name + "/md57aea67c4d08319974f101b0b09ff509e.MainActivity"
+            self.activity_name = self.installed_package_name + "/md53466f247b9f9d18ced632d20bd2e0d5c.MainActivity"
 
         self.device_option = "-e"
 
@@ -49,6 +49,8 @@ class TestServerAndroid(TestServerBase):
             self.version_build = version_build
         version, build = version_and_build(self.version_build)
 
+        if version < "2.1.2":
+            raise Exception("No Android app available to download for version below 2.1.2 at latestbuild. Use maven to create app.")
         expected_binary_path = "{}/{}".format(BINARY_DIR, self.package_name)
         if os.path.isfile(expected_binary_path):
             log_info("Package is already downloaded. Skipping.")
@@ -56,12 +58,15 @@ class TestServerAndroid(TestServerBase):
 
         # Package not downloaded, proceed to download from latest builds
         if self.platform == "android":
-            url = "{}/{}/{}/{}/{}".format(LATEST_BUILDS, self.download_source, version, build, self.package_name)
+            if build is None:
+                url = "{}/{}/{}/{}".format(RELEASED_BUILDS, self.download_source, version, self.package_name)
+            else:
+                url = "{}/{}/{}/{}/{}".format(LATEST_BUILDS, self.download_source, version, build, self.package_name)
         else:
             url = "{}/couchbase-lite-net/{}/{}/{}".format(LATEST_BUILDS, version, build, self.package_name)
 
         log_info("Downloading {} -> {}/{}".format(url, BINARY_DIR, self.package_name))
-        resp = requests.get(url)
+        resp = requests.get(url, verify=False)
         resp.raise_for_status()
         with open("{}/{}".format(BINARY_DIR, self.package_name), "wb") as f:
             f.write(resp.content)
@@ -197,7 +202,7 @@ class TestServerAndroid(TestServerBase):
 
         # Start redirecting adb output to the logfile
         self.logfile = open(logfile_name, "w+")
-        self.process = subprocess.Popen(args=["adb", "logcat"], stdout=self.logfile)
+        self.process = subprocess.Popen(args=["adb", "-d", "logcat"], stdout=self.logfile)
 
         output = subprocess.check_output([
             "adb", "-d", "shell", "am", "start", "-n", self.activity_name,
@@ -243,15 +248,28 @@ class TestServerAndroid(TestServerBase):
         self.process.wait()
 
     def close_app(self):
-        output = subprocess.check_output(["adb", "shell", "input", "keyevent ", "3"])
+        if self.device_enabled:
+            output = subprocess.check_output(["adb", "-d", "shell", "input", "keyevent ", "3"])
+        else:
+            output = subprocess.check_output(["adb", "-e", "shell", "input", "keyevent ", "3"])
         log_info(output)
 
     def open_app(self):
-            package_name = "com.couchbase.TestServerApp"
-            if self.device_enabled:
-                output = subprocess.check_output(["adb", "-d", "shell", "monkey", "-p", package_name, "1"])
-            else:
-                output = subprocess.check_output(["adb", "-e", "shell", "monkey", "-p", package_name, "1"])
-            log_info(output)
-            self._wait_until_reachable(port=self.port)
-            self._verify_launched()
+        if self.device_enabled:
+            output = subprocess.check_output([
+                "adb", "-d", "shell", "am", "start", "-n", self.activity_name,
+                "--es", "username", "none", "--es", "password", "none", "--ei",
+                "listen_port",
+                str(self.port)
+            ])
+        else:
+            output = subprocess.check_output([
+                "adb", "-e", "shell", "am", "start", "-n", self.activity_name,
+                "--es", "username", "none", "--es", "password", "none", "--ei",
+                "listen_port",
+                str(self.port)
+            ])
+        log_info(output)
+        log_info(output)
+        self._wait_until_reachable(port=self.port)
+        self._verify_launched()

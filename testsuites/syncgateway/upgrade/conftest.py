@@ -150,6 +150,10 @@ def pytest_addoption(parser):
                      help="Only upgrade the SG cluster, do not upgrade CBS cluster",
                      default=False)
 
+    parser.addoption("--delta-sync",
+                     action="store_true",
+                     help="delta-sync: Enable delta-sync for sync gateway")
+
 
 # This will be called once for the at the beggining of the execution in the 'tests/' directory
 # and will be torn down, (code after the yeild) when all the test session has completed.
@@ -187,6 +191,7 @@ def params_from_base_suite_setup(request):
     server_upgrade_only = request.config.getoption("--server-upgrade-only")
     sg_upgrade_only = request.config.getoption("--sg-upgrade-only")
     disable_doc_updates = request.config.getoption("--disable-doc-updates")
+    delta_sync_enabled = request.config.getoption("--delta-sync")
 
     if xattrs_post_upgrade and version_is_binary(sync_gateway_version):
         check_xattr_support(server_upgraded_version, sync_gateway_upgraded_version)
@@ -214,6 +219,7 @@ def params_from_base_suite_setup(request):
     log_info("server_upgrade_only: {}".format(server_upgrade_only))
     log_info("sg_upgrade_only: {}".format(sg_upgrade_only))
     log_info("disable_doc_updates: {}".format(disable_doc_updates))
+    log_info("delta_sync_enabled: {}".format(delta_sync_enabled))
 
     # Make sure mode for sync_gateway is supported ('cc' or 'di')
     validate_sync_gateway_mode(mode)
@@ -284,6 +290,13 @@ def params_from_base_suite_setup(request):
         log_info("Running tests with cbs <-> sg ssl disabled")
         # Disable ssl in cluster configs
         persist_cluster_config_environment_prop(cluster_config, 'cbs_ssl_enabled', False)
+
+    if delta_sync_enabled:
+        log_info("Running with delta sync")
+        persist_cluster_config_environment_prop(cluster_config, 'delta_sync_enabled', True)
+    else:
+        log_info("Running without delta sync")
+        persist_cluster_config_environment_prop(cluster_config, 'delta_sync_enabled', False)
 
     sg_config = sync_gateway_config_path_for_mode("sync_gateway_default_functional_tests", mode)
 

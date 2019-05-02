@@ -8,6 +8,7 @@ import requests
 
 from keywords.TestServerBase import TestServerBase
 from keywords.constants import BINARY_DIR
+from keywords.constants import RELEASED_BUILDS
 from keywords.constants import LATEST_BUILDS
 from keywords.exceptions import LiteServError
 from keywords.utils import version_and_build
@@ -29,7 +30,15 @@ class TestServeriOS(TestServerBase):
         self.app_name = ""
         self.platform = platform
         self.bundle_id = ""
+        self.released_version = {
+            "2.0.0": 806,
+            "2.1.0": 263,
+            "2.1.1": 10,
+            "2.1.2": 11,
+        }
 
+        if self.version_build == "2.1.0":
+            raise Exception("No iOS app available to download for 2.1.0 at latestbuild. Use xcode to create app.")
         if debug_mode:
             self.debug_mode = True
 
@@ -39,8 +48,12 @@ class TestServeriOS(TestServerBase):
                 self.package_name = "CBLTestServer-iOS-community-{}.zip".format(version_build)
                 self.app = "CBLTestServer-iOS"
             else:
-                self.app_dir = "CBLTestServer-iOS-enterprise-{}".format(version_build)
-                self.package_name = "CBLTestServer-iOS-enterprise-{}.zip".format(version_build)
+                if version_build == "2.1.1":
+                    self.package_name = "CBLTestServer-iOS-enterprise-{}-{}.zip".format(version_build, self.released_version[version_build])
+                    self.app_dir = "CBLTestServer-iOS-enterprise-{}-{}".format(version_build, self.released_version[version_build])
+                else:
+                    self.package_name = "CBLTestServer-iOS-enterprise-{}.zip".format(version_build)
+                    self.app_dir = "CBLTestServer-iOS-enterprise-{}".format(version_build)
                 self.app = "CBLTestServer-iOS-EE"
 
             self.bundle_id = "com.couchbase.CBLTestServer-iOS"
@@ -49,7 +62,7 @@ class TestServeriOS(TestServerBase):
             self.app_dir = "TestServer.iOS"
             self.package_name = "TestServer.iOS.zip"
             self.app = "TestServer.iOS"
-            self.bundle_id = "com.couchbase.TestServer-iOS"
+            self.bundle_id = "com.couchbase.TestServer.iOS"
 
     def download(self, version_build=None):
         """
@@ -59,9 +72,14 @@ class TestServeriOS(TestServerBase):
         """
         if version_build is not None:
             self.version_build = version_build
-        version, build = version_and_build(self.version_build)
+        self.version, self.build = version_and_build(self.version_build)
         if self.platform == "ios":
-            app_name = "{}-{}.app".format(self.app, version_build)
+            if self.build is None:
+                app_name = "{}-{}-{}.app".format(self.app, self.version,
+                                                 self.released_version[self.version])
+                self.version_build = self.released_version[self.version]
+            else:
+                app_name = "{}-{}.app".format(self.app, self.version_build)
         else:
             app_name = self.app
 
@@ -73,16 +91,21 @@ class TestServeriOS(TestServerBase):
         # Package not downloaded, proceed to download from latest builds
         downloaded_package_zip_name = "{}/{}".format(BINARY_DIR, self.package_name)
         if self.platform == "ios":
-            url = "{}/couchbase-lite-ios/{}/{}/{}".format(LATEST_BUILDS, version, build, self.package_name)
+            if self.build is None:
+                if self.version < "2.0.2":
+                    url = "{}/couchbase-lite/ios/{}/{}".format(RELEASED_BUILDS, self.version, self.package_name)
+                else:
+                    url = "{}/couchbase-lite-ios/{}/{}".format(RELEASED_BUILDS, self.version, self.package_name)
+            else:
+                url = "{}/couchbase-lite-ios/{}/{}/{}".format(LATEST_BUILDS, self.version, self.build, self.package_name)
         else:
-            url = "{}/couchbase-lite-net/{}/{}/{}".format(LATEST_BUILDS, version, build, self.package_name)
+            url = "{}/couchbase-lite-net/{}/{}/{}".format(LATEST_BUILDS, self.version, self.build, self.package_name)
 
         log_info("Downloading {} -> {}/{}".format(url, BINARY_DIR, self.package_name))
-        resp = requests.get(url)
+        resp = requests.get(url, verify=False)
         resp.raise_for_status()
         with open("{}/{}".format(BINARY_DIR, self.package_name), "wb") as f:
             f.write(resp.content)
-
         extracted_directory_name = downloaded_package_zip_name.replace(".zip", "")
         with ZipFile("{}".format(downloaded_package_zip_name)) as zip_f:
             zip_f.extractall("{}".format(extracted_directory_name))
@@ -94,10 +117,13 @@ class TestServeriOS(TestServerBase):
         """Installs / launches CBLTestServer on iOS device
         Warning: Only works with a single device at the moment
         """
-        if self.debug_mode:
-            self.app_name = "{}-{}-Device-debug.app".format(self.app, self.version_build)
+        if self.platform == "ios":
+            if self.debug_mode:
+                self.app_name = "{}-{}-Device-debug.app".format(self.app, self.version_build)
+            else:
+                self.app_name = "{}-{}-Device.app".format(self.app, self.version_build)
         else:
-            self.app_name = "{}-{}-Device.app".format(self.app, self.version_build)
+            self.app_name = "{}-Device.app".format(self.app)
 
         self.app_path = "{}/{}/{}".format(BINARY_DIR, self.app_dir, self.app_name)
         log_info("Installing: {}".format(self.app_path))
@@ -121,9 +147,21 @@ class TestServeriOS(TestServerBase):
         """
         if self.platform == "ios":
             if self.debug_mode:
-                self.app_name = "{}-{}-debug.app".format(self.app, self.version_build)
+                if self.build is None:
+                    self.app_name = "{}-{}-{}-debug.app".format(self.app,
+                                                                self.version,
+                                                                self.version_build)
+                else:
+                    self.app_name = "{}-{}-debug.app".format(self.app,
+                                                             self.version_build)
             else:
-                self.app_name = "{}-{}.app".format(self.app, self.version_build)
+                if self.build is None:
+                    self.app_name = "{}-{}-{}.app".format(self.app,
+                                                          self.version,
+                                                          self.version_build)
+                else:
+                    self.app_name = "{}-{}.app".format(self.app,
+                                                       self.version_build)
         else:
             self.app_name = "{}.app".format(self.app)
 
@@ -169,11 +207,10 @@ class TestServeriOS(TestServerBase):
         # Get the device ID
         list_output = subprocess.Popen(["xcrun", "simctl", "list"], stdout=subprocess.PIPE)
         output = subprocess.check_output(('grep', 'Booted'), stdin=list_output.stdout)
-
         for line in output.splitlines():
             if "Phone" in line:
                 self.device_id = re.sub(' +', ' ', line).strip()
-                self.device_id = self.device_id.split(" ")[4]
+                self.device_id = self.device_id.split(" ")[3]
                 self.device_id = self.device_id.strip('(')
                 self.device_id = self.device_id.strip(')')
 
