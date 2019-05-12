@@ -266,7 +266,7 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     repl2_error = replicator.getError(repl2)
     assert "POSIXErrorDomain" in repl2_error
     # 6. Verify one CBL DB should be successful as other CBL DB should fail as associated Sg is down
-    cblDB1_doc_ids = db.getDocIds(cbl_db1)
+    cblDB1_doc_ids = db.getDocIds(cbl_db1, limit=2000)
     for doc in cbl_doc_ids1:
         assert doc in cblDB1_doc_ids, "cbl_db1 doc does not exist in combined replication cbl_db1"
     for doc in cbl_doc_ids2:
