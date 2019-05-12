@@ -36,10 +36,12 @@ def test_multiple_sgs_with_differrent_revs_limit(params_from_base_test_setup, se
     """
     sg_db1 = "sg_db1"
     sg_db2 = "sg_db2"
+    protocol = "ws"
     sg_mode = params_from_base_test_setup["mode"]
     cluster_config = params_from_base_test_setup["cluster_config"]
     base_url = params_from_base_test_setup["base_url"]
     sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+    sg_ssl = params_from_base_test_setup["sg_ssl"]
     db = Database(base_url)
 
     channels1 = ["Replication1"]
@@ -80,8 +82,10 @@ def test_multiple_sgs_with_differrent_revs_limit(params_from_base_test_setup, se
     sg1_admin_url = sg1.admin.admin_url
     sg2_url = sg2.url
     sg2_admin_url = sg2.admin.admin_url
-    sg1_blip_url = "ws://{}:4984/{}".format(sg1_ip, sg_db1)
-    sg2_blip_url = "ws://{}:4984/{}".format(sg2_ip, sg_db2)
+    if sg_ssl:
+        protocol = "wss"
+    sg1_blip_url = "{}://{}:4984/{}".format(protocol, sg1_ip, sg_db1)
+    sg2_blip_url = "{}://{}:4984/{}".format(protocol, sg2_ip, sg_db2)
 
     sg_client.create_user(sg1_admin_url, sg_db1, name1, password="password", channels=channels1)
     sg_client.create_user(sg2_admin_url, sg_db2, name2, password="password", channels=channels2)
@@ -173,10 +177,12 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     """
     sg_db1 = "sg_db1"
     sg_db2 = "sg_db2"
+    protocol = "ws"
     sg_mode = params_from_base_test_setup["mode"]
     cluster_config = params_from_base_test_setup["cluster_config"]
     base_url = params_from_base_test_setup["base_url"]
     sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+    sg_ssl = params_from_base_test_setup["sg_ssl"]
 
     channels1 = ["Replication1"]
     channels2 = ["Replication2"]
@@ -206,8 +212,10 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     sg2_ip = sg2.ip
     sg1_admin_url = sg1.admin.admin_url
     sg2_admin_url = sg2.admin.admin_url
-    sg1_blip_url = "ws://{}:4984/{}".format(sg1_ip, sg_db1)
-    sg2_blip_url = "ws://{}:4984/{}".format(sg2_ip, sg_db2)
+    if sg_ssl:
+        protocol = "wss"
+    sg1_blip_url = "{}://{}:4984/{}".format(protocol, sg1_ip, sg_db1)
+    sg2_blip_url = "{}://{}:4984/{}".format(protocol, sg2_ip, sg_db2)
 
     sg_client.create_user(sg1_admin_url, sg_db1, "autotest1", password="password", channels=channels1)
     sg_client.create_user(sg2_admin_url, sg_db2, "autotest2", password="password", channels=channels2)
