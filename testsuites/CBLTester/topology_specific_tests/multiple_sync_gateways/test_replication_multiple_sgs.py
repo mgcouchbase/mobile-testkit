@@ -182,6 +182,7 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     cluster_config = params_from_base_test_setup["cluster_config"]
     base_url = params_from_base_test_setup["base_url"]
     sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
+    liteserv_platform = params_from_base_test_setup["liteserv_platform"]
     sg_ssl = params_from_base_test_setup["sg_ssl"]
 
     channels1 = ["Replication1"]
@@ -255,7 +256,7 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     # 4. stop one of the sg.
     sg1.stop()
     # Add docs on cbl_db2
-    db.create_bulk_docs(1, "Replication2", db=cbl_db2, channels=channels2)
+    db.create_bulk_docs(1, "Replication2-2", db=cbl_db2, channels=channels2)
     # 5. Pull again
     repl1 = replicator.configure_and_replicate(
         source_db=cbl_db1, replicator_authenticator=replicator_authenticator2, target_url=sg2_blip_url, replication_type="pull")
@@ -264,7 +265,10 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
 
     replicator.stop(repl1)
     repl2_error = replicator.getError(repl2)
-    assert "POSIXErrorDomain" in repl2_error
+    if liteserv_platform == "xamarin-ios" or liteserv_platform == "xamarin-android" or liteserv_platform == "net-msft" or liteserv_platform == "net-uwp":
+        assert "POSIXDomain" in repl2_error
+    else:
+        assert "POSIXErrorDomain" in repl2_error
     # 6. Verify one CBL DB should be successful as other CBL DB should fail as associated Sg is down
     cblDB1_doc_ids = db.getDocIds(cbl_db1, limit=2000)
     for doc in cbl_doc_ids1:
