@@ -49,7 +49,7 @@ class TestServeriOS(TestServerBase):
             self.app_dir = "TestServer.iOS"
             self.package_name = "TestServer.iOS.zip"
             self.app = "TestServer.iOS"
-            self.bundle_id = "com.couchbase.TestServer-iOS"
+            self.bundle_id = "com.couchbase.TestServer.iOS"
 
     def download(self, version_build=None):
         """
@@ -173,7 +173,7 @@ class TestServeriOS(TestServerBase):
         for line in output.splitlines():
             if "Phone" in line:
                 self.device_id = re.sub(' +', ' ', line).strip()
-                self.device_id = self.device_id.split(" ")[4]
+                self.device_id = self.device_id.split(" ")[3]
                 self.device_id = self.device_id.strip('(')
                 self.device_id = self.device_id.strip(')')
 
