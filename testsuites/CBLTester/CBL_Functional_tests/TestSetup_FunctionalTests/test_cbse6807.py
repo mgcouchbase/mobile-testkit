@@ -41,7 +41,9 @@ def setup_teardown_test(params_from_base_test_setup):
 @pytest.mark.listener
 @pytest.mark.replication
 @pytest.mark.parametrize("num_of_docs, number_of_updates, continuous", [
-    (1, 1000, True)
+    (1, 1000, True),
+    (1, 2000, True),
+    (1, 5000, True)
 ])
 def test_frequent_replication(params_from_base_test_setup, num_of_docs, number_of_updates, continuous):
     """
@@ -97,25 +99,35 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, number_o
     cbl_doc_ids = db.getDocIds(cbl_db)
     cbl_db_docs = db.getDocuments(cbl_db, cbl_doc_ids)
     update_count = 0
-    while update_count < number_of_updates:
-        db.update_all_docs_individually(database=cbl_db, number_of_updates=1)
+    # update local document
+    while update_count <= number_of_updates:
+        db.update_bulk_docs(database=cbl_db, number_of_updates=1)
         update_count += 1
 
     count = 0
     for doc in cbl_doc_ids:
         if continuous:
-            while count < 500:
+            print "cbl_db_doc update {}".format(cbl_db_docs[doc]["updates"])
+            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
+            
+            while count < 30:
                 time.sleep(0.5)
-                log_info("Checking {} for updates".format(doc))
-                if cbl_db_docs[doc]["updates"] == number_of_updates:
+                log_info("Checking {} for updates".format(sg_doc))
+                if sg_doc["updates-cbl"] == number_of_updates:
                     break
                 else:
                     log_info("{} is missing updates, Retrying...".format(doc))
                     count += 1
-                    cbl_db_docs = db.getDocuments(cbl_db, cbl_doc_ids)
-            assert cbl_db_docs[doc]["updates"] == number_of_updates, "updates did not get updated"
+                    sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
         else:
-            assert cbl_db_docs[doc]["updates"] == 0, "sync-gateway updates got pushed to CBL for one shot replication"
+            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
+            assert sg_doc["updates-cbl"] == number_of_updates, "cbl updates not got pushed to sync-gateway due to one shot replication"
+    
+    # update sg document
+    sg_docs = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=session)
+    sg_client.update_docs(url=sg_url, db=sg_db, docs=sg_docs["rows"], number_updates=number_of_updates, auth=session)
+    
+    time.sleep(2)
     replicator.stop(repl)
 
     total = replicator.getTotal(repl)
