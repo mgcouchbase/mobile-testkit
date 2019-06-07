@@ -40,11 +40,10 @@ def setup_teardown_test(params_from_base_test_setup):
 @pytest.mark.sanity
 @pytest.mark.listener
 @pytest.mark.replication
-@pytest.mark.parametrize("num_of_docs, continuous", [
-    (10, True),
-    (10, False)
+@pytest.mark.parametrize("num_of_docs, number_of_updates, continuous", [
+    (1, 1000, True)
 ])
-def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuous):
+def test_frequent_replication(params_from_base_test_setup, num_of_docs, number_of_updates, continuous):
     """
         @summary:
         1. Create CBL DB and create bulk doc in CBL
@@ -66,7 +65,6 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuo
     channels_sg = ["ABC"]
     username = "autotest"
     password = "password"
-    number_of_updates = 1000
 
     # Create CBL database
     sg_client = MobileRestClient()
@@ -100,8 +98,8 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuo
     cbl_db_docs = db.getDocuments(cbl_db, cbl_doc_ids)
     update_count = 0
     while update_count < number_of_updates:
-        db.update_bulk_docs(database=cbl_db, number_of_updates=10)
-        update_count += 10
+        db.update_all_docs_individually(database=cbl_db, number_of_updates=1)
+        update_count += 1
 
     count = 0
     for doc in cbl_doc_ids:
