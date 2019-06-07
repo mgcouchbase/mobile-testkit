@@ -41,8 +41,8 @@ def setup_teardown_test(params_from_base_test_setup):
 @pytest.mark.listener
 @pytest.mark.replication
 @pytest.mark.parametrize("num_of_docs, continuous", [
-    (3000, True),
-    (3000, False)
+    (10, True),
+    (10, False)
 ])
 def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuous):
     """
@@ -66,7 +66,7 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuo
     channels_sg = ["ABC"]
     username = "autotest"
     password = "password"
-    number_of_updates = 3000
+    number_of_updates = 1000
 
     # Create CBL database
     sg_client = MobileRestClient()
@@ -83,8 +83,6 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuo
     session, replicator_authenticator, repl = replicator.create_session_configure_replicate(
         base_url, sg_admin_url, sg_db, username, password, channels_sg, sg_client, cbl_db, sg_blip_url, continuous=continuous, replication_type="push_pull")
 
-    sg_docs = sg_client.get_all_docs(url=sg_url, db=sg_db, auth=session)
-    # sg_client.update_docs(url=sg_url, db=sg_db, docs=sg_docs["rows"], number_updates=number_of_updates, auth=session)
     replicator.wait_until_replicator_idle(repl)
     total = replicator.getTotal(repl)
     completed = replicator.getCompleted(repl)
@@ -100,10 +98,15 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, continuo
     time.sleep(2)
     cbl_doc_ids = db.getDocIds(cbl_db)
     cbl_db_docs = db.getDocuments(cbl_db, cbl_doc_ids)
+    update_count = 0
+    while update_count < number_of_updates:
+        db.update_bulk_docs(database=cbl_db, number_of_updates=10)
+        update_count += 10
+
     count = 0
     for doc in cbl_doc_ids:
         if continuous:
-            while count < 30:
+            while count < 500:
                 time.sleep(0.5)
                 log_info("Checking {} for updates".format(doc))
                 if cbl_db_docs[doc]["updates"] == number_of_updates:
