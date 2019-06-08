@@ -108,7 +108,7 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, number_o
     for doc in cbl_doc_ids:
         if continuous:
             print "cbl_db_doc update {}".format(cbl_db_docs[doc]["updates"])
-            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
+            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0", auth=session)
             
             while count < 30:
                 time.sleep(0.5)
@@ -118,9 +118,9 @@ def test_frequent_replication(params_from_base_test_setup, num_of_docs, number_o
                 else:
                     log_info("{} is missing updates, Retrying...".format(doc))
                     count += 1
-                    sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
+                    sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0", auth=session)
         else:
-            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0")
+            sg_doc = sg_client.get_doc(sg_url, sg_db, "cbl_0", auth=session)
             assert sg_doc["updates-cbl"] == number_of_updates, "cbl updates not got pushed to sync-gateway due to one shot replication"
     
     # update sg document
