@@ -1113,7 +1113,7 @@ def CBL_offline_test(params_from_base_test_setup, sg_conf_name, num_of_docs):
     # (10000, False, True), # TODO : Not yet supported by Test server app
     # (1000, True, True) # TODO: Not yet supported by Test server app
 ])
-def test_initial_pull_replication_background_apprun(params_from_base_test_setup, num_docs, need_attachments,
+def te1st_initial_pull_replication_background_apprun(params_from_base_test_setup, num_docs, need_attachments,
                                                     replication_after_backgroundApp):
     """
     @summary
@@ -1204,7 +1204,7 @@ def test_initial_pull_replication_background_apprun(params_from_base_test_setup,
     (10000, False, False),
     # (1000000, False, False)  you can run this locally if needed, jenkins cannot run more than 15 mins
 ])
-def test_push_replication_with_backgroundApp(params_from_base_test_setup, num_docs, need_attachments,
+def te1st_push_replication_with_backgroundApp(params_from_base_test_setup, num_docs, need_attachments,
                                              replication_after_backgroundApp):
     """
     @summary
