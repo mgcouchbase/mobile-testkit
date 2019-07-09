@@ -127,8 +127,8 @@ def verify_sync_gateway_version(host, expected_sync_gateway_version):
             raise ProvisioningError("Unexpected sync_gateway vendor version!! Expected: {} Actual: {}".format(expected_sync_gateway_version, running_sg_vendor_version))
     else:
         # Since sync_gateway does not return the full commit, verify the prefix
-        if running_sg_version != expected_sync_gateway_version[:7]:
-            raise ProvisioningError("Unexpected sync_gateway version!! Expected: {} Actual: {}".format(expected_sync_gateway_version, running_sg_version))
+        if running_sg_version[:7] != expected_sync_gateway_version[:7]:
+            raise ProvisioningError("Unexpected sync_gateway version!! Expected: {} Actual: {}".format(expected_sync_gateway_version[:7], running_sg_version[:7]))
 
 
 def get_sg_accel_version(host):

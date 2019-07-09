@@ -169,6 +169,13 @@ def compare_versions(version_one, version_two):
     version_one = version_one.split('-')[0]
     version_two = version_two.split('-')[0]
 
+    if version_one == "master":
+        if version_two == "master":
+            return 0
+        return -1
+    elif version_two == "master":
+        return 1
+
     # Strip '.' and convert to integers
     version_one_number_string = version_one.replace('.', '')
     version_two_number_string = version_two.replace('.', '')
