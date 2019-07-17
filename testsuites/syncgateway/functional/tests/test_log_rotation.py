@@ -173,7 +173,7 @@ def test_log_logKeys_string(params_from_base_test_setup, sg_conf_name):
     data = load_sync_gateway_config(sg_conf, mode, cluster_hosts["couchbase_servers"][0], xattrs_enabled, cluster_conf)
 
     # set logKeys as string in config file
-    data['logging']["default"]["logKeys"] = "http"
+    data['logging']["default"]["log_keys"] = "http"
     # create temp config file in the same folder as sg_conf
     temp_conf = "/".join(sg_conf.split('/')[:-2]) + '/temp_conf.json'
 
@@ -230,7 +230,7 @@ def test_log_nondefault_logKeys_set(params_from_base_test_setup, sg_conf_name):
     data = load_sync_gateway_config(sg_conf, mode, cluster_hosts["couchbase_servers"][0], xattrs_enabled, cluster_conf)
 
     # "FAKE" not valid area in logging
-    data['logging']["default"]["logKeys"] = ["HTTP", "FAKE"]
+    data['logging']["default"]["log_keys"] = ["HTTP", "FAKE"]
     # create temp config file in the same folder as sg_conf
     temp_conf = "/".join(sg_conf.split('/')[:-2]) + '/temp_conf.json'
 
