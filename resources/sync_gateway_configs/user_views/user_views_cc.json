@@ -21,6 +21,7 @@
       {{ certpath }}
       {{ keypath }}
       {{ delta_sync }}
+      "rev_cache_size": 0,
       "unsupported": {
         "user_views": {
           "enabled":true

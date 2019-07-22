@@ -25,6 +25,7 @@
                 "enabled": true,
                 "rev_max_age_seconds": 150
             },
+            "rev_cache_size": 0,
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"travel-sample"
         }
