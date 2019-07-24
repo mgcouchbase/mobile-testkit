@@ -13,7 +13,11 @@
             {{ sg_use_views }}
             {{ num_index_replicas }}
             {{ delta_sync }}
-            "cache.rev_cache.size": 0,
+            "cache": {
+                "rev_cache": {
+                  "size": 0
+                }
+            },
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket-1",
             "username":"data-bucket-1",
@@ -27,7 +31,11 @@
             {{ sg_use_views }}
             {{ num_index_replicas }}
             {{ delta_sync }}
-            "cache.rev_cache.size": 0,
+            "cache": {
+                "rev_cache": {
+                  "size": 0
+                }
+            },
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket-2",
             "username":"data-bucket-2",
@@ -41,7 +49,11 @@
             {{ sg_use_views }}
             {{ num_index_replicas }}
             {{ delta_sync }}
-            "cache.rev_cache.size": 0,
+            "cache": {
+                "rev_cache": {
+                  "size": 0
+                }
+            },
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket-3",
             "username":"data-bucket-3",

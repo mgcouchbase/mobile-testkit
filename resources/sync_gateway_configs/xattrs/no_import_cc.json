@@ -19,7 +19,11 @@
             {{ certpath }}
             {{ keypath }}
             {{ delta_sync }}
-            "cache.rev_cache.size": 0,
+            "cache": {
+                "rev_cache": {
+                  "size": 0
+                }
+            },
             "enable_shared_bucket_access": true,
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket"
