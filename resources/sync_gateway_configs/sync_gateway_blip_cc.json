@@ -18,7 +18,7 @@
             {{ certpath }}
             {{ keypath }}
             {{ delta_sync }}
-            "rev_cache_size": 0,
+            "cache.rev_cache.size": 0,
             "unsupported": {
                 "replicator_2": true
             },

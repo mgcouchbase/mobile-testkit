@@ -20,7 +20,7 @@
             {{ certpath }}
             {{ keypath }}
             {{ delta_sync }}
-            "rev_cache_size": 0,
+            "cache.rev_cache.size": 0,
             "allow_conflicts": true,
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"data-bucket"

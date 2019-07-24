@@ -21,7 +21,7 @@
             {{ certpath }}
             {{ keypath }}
             {{ delta_sync }}
-            "rev_cache_size": 0,
+            "cache.rev_cache.size": 0,
             "server":"{{ server_scheme }}://{{ couchbase_server_primary_node }}:{{ server_port }}",
             "bucket":"non-existent-bucket",
             "sync": `function(doc,oldDoc){
