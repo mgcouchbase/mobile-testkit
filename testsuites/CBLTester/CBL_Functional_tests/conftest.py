@@ -485,7 +485,8 @@ def params_from_base_suite_setup(request):
         "cbl_log_decoder_build": cbl_log_decoder_build,
         "suite_db_log_files": suite_db_log_files,
         "enable_encryption": enable_encryption,
-        "encryption_password": encryption_password
+        "encryption_password": encryption_password,
+        "use_local_testserver": use_local_testserver
     }
 
     if create_db_per_suite:
@@ -538,7 +539,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     cbl_log_decoder_build = params_from_base_suite_setup["cbl_log_decoder_build"]
     encryption_password = params_from_base_suite_setup["encryption_password"]
     enable_encryption = params_from_base_suite_setup["enable_encryption"]
-    use_local_testserver = request.config.getoption("--use-local-testserver")
+    use_local_testserver = params_from_base_suite_setup["use_local_testserver"]
 
     source_db = None
     test_name_cp = test_name.replace("/", "-")
@@ -630,7 +631,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "cbl_log_decoder_platform": cbl_log_decoder_platform,
         "cbl_log_decoder_build": cbl_log_decoder_build,
         "enable_encryption": enable_encryption,
-        "encryption_password": encryption_password
+        "encryption_password": encryption_password,
+        "use_local_testserver": use_local_testserver
     }
 
     log_info("Tearing down test")
@@ -658,6 +660,7 @@ def class_init(request, params_from_base_suite_setup):
     liteserv_version = params_from_base_suite_setup["liteserv_version"]
     enable_encryption = params_from_base_suite_setup["enable_encryption"]
     encryption_password = params_from_base_suite_setup["encryption_password"]
+    use_local_testserver = params_from_base_suite_setup["use_local_testserver"]
 
     db_obj = Database(base_url)
     doc_obj = Document(base_url)
@@ -694,6 +697,7 @@ def class_init(request, params_from_base_suite_setup):
     request.cls.db = db
     request.cls.liteserv_platform = liteserv_platform
     request.cls.liteserv_version = liteserv_version
+    request.cls.use_local_testserver = use_local_testserver
 
     yield
     db_obj.deleteDB(db)
