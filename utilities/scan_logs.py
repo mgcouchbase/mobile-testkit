@@ -59,7 +59,7 @@ def scan_for_errors(log_file_path, error_strings):
     'error_strings' should be a list. Example ['panic', 'error', 'data race']
     """
 
-    if type(error_strings) != list:
+    if not isinstance(error_strings, list):
         raise ValueError('error_strings must be a list')
 
     # Scan each line in the log file for the words to search for
@@ -78,7 +78,7 @@ def scan_for_pattern(logfile_path, pattern_list):
 
     'pattern_list' should be a list. Example ['panic', 'error', 'data race']
     """
-    if type(pattern_list) != list:
+    if not isinstance(pattern_list, list):
         raise ValueError('error_strings must be a list')
 
     # Scan each line in the log file for the words to search for

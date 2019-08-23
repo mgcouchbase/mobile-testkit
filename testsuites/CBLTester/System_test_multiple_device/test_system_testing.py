@@ -1,7 +1,7 @@
 import pytest
 import time
 import random
-from sys import maxint
+from sys import maxsize
 from threading import Thread
 
 from keywords.MobileRestClient import MobileRestClient
@@ -318,7 +318,7 @@ def _replicaton_status_check(repl_obj, replicator, repl_status_check_sleep_time=
 
 
 def _check_doc_count(db_obj_list, cbl_db_list):
-    new_docs_count = set([db_obj.getCount(cbl_db) for db_obj, cbl_db in zip(db_obj_list, cbl_db_list)])
+    new_docs_count = {db_obj.getCount(cbl_db) for db_obj, cbl_db in zip(db_obj_list, cbl_db_list)}
     log_info("Doc count is - {}".format(new_docs_count))
     if len(new_docs_count) != 1:
         assert 0, "Doc count in all DBs are not equal"

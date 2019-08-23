@@ -86,7 +86,7 @@ def test_log_rotation_default_values(params_from_base_test_setup, sg_conf_name):
     # iterate 5 times to verify that every time we get new backup file with ~100MB
     sg_helper.start_sync_gateways(cluster_config=cluster_conf, url=sg_one_url, config=temp_conf)
 
-    for i in xrange(8):
+    for i in range(8):
         log_info("Start sending bunch of requests to syncgatway to have more logs")
         send_request_to_sgw(sg_one_url, sg_admin_url, remote_executor, sg_platform)
 

@@ -1,5 +1,5 @@
 def verify_is_list(obj):
-    if type(obj) != list:
+    if not isinstance(obj, list):
         raise TypeError("{} must be a 'list'".format(obj))
 
 

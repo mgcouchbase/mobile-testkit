@@ -2,13 +2,13 @@ import os
 import sys
 from optparse import OptionParser
 
-import install_sync_gateway
-import install_couchbase_server
+from . import install_sync_gateway
+from . import install_couchbase_server
 
-from clean_cluster import clean_cluster
-from install_couchbase_server import CouchbaseServerConfig
-from install_sync_gateway import SyncGatewayConfig
-from install_nginx import install_nginx
+from .clean_cluster import clean_cluster
+from .install_couchbase_server import CouchbaseServerConfig
+from .install_sync_gateway import SyncGatewayConfig
+from .install_nginx import install_nginx
 
 from libraries.provision.install_deps import install_deps
 from libraries.testkit.config import Config

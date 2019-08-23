@@ -88,7 +88,7 @@ class Admin:
 
     def register_bulk_users(self, target, db, name_prefix, number, password, channels=list(), roles=list()):
 
-        if type(channels) is not list:
+        if not isinstance(channels, list):
             raise ValueError("Channels needs to be a list")
 
         users = []
