@@ -34,6 +34,11 @@ def pytest_addoption(parser):
                      help="Skip cluster provisioning at setup",
                      default=False)
 
+    parser.addoption("--use-local-testserver",
+                     action="store_true",
+                     help="Skip download and launch TestServer, use local debug build",
+                     default=False)
+
     parser.addoption("--server-version",
                      action="store",
                      help="server-version: Couchbase Server version to install (ex. 4.5.0 or 4.5.0-2601)")
@@ -135,6 +140,7 @@ def params_from_base_suite_setup(request):
     liteserv_port = request.config.getoption("--liteserv-port")
 
     skip_provisioning = request.config.getoption("--skip-provisioning")
+    use_local_testserver = request.config.getoption("--use-local-testserver")
     sync_gateway_version = request.config.getoption("--sync-gateway-version")
     mode = request.config.getoption("--mode")
 
@@ -164,14 +170,15 @@ def params_from_base_suite_setup(request):
                                           debug_mode=debug_mode)
 
     log_info("Downloading TestServer ...")
-    # Download TestServer app
-    testserver.download()
+    if not use_local_testserver:
+        # Download TestServer app
+        testserver.download()
 
-    # Install TestServer app
-    if device_enabled:
-        testserver.install_device()
-    else:
-        testserver.install()
+        # Install TestServer app
+        if device_enabled:
+            testserver.install_device()
+        else:
+            testserver.install()
 
     base_url = "http://{}:{}".format(liteserv_host, liteserv_port)
     cluster_config = "{}/multiple_sync_gateways_{}".format(CLUSTER_CONFIGS_DIR, mode)
@@ -371,7 +378,8 @@ def params_from_base_suite_setup(request):
         "delta_sync_enabled": delta_sync_enabled,
         "enable_file_logging": enable_file_logging,
         "enable_encryption": enable_encryption,
-        "encryption_password": encryption_password
+        "encryption_password": encryption_password,
+        "use_local_testserver": use_local_testserver
     }
     if create_db_per_suite:
         # Delete CBL database
@@ -385,7 +393,8 @@ def params_from_base_suite_setup(request):
     utils_obj = Utils(base_url)
     utils_obj.flushMemory()
     log_info("Stopping the test server")
-    testserver.stop()
+    if not use_local_testserver:
+        testserver.stop()
 
     # Delete png files under resources/data
     clear_resources_pngs()
@@ -421,20 +430,22 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     delta_sync_enabled = params_from_base_suite_setup["delta_sync_enabled"]
     encryption_password = params_from_base_suite_setup["encryption_password"]
     enable_encryption = params_from_base_suite_setup["enable_encryption"]
+    use_local_testserver = params_from_base_suite_setup["use_local_testserver"]
     source_db = None
     cbl_db = None
     db_config = None
     db = None
 
-    # Start LiteServ and delete any databases
-    log_info("Starting TestServer...")
-    test_name_cp = test_name.replace("/", "-")
-    if device_enabled:
-        testserver.start_device("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(testserver).__name__, test_name_cp, datetime.datetime.now()))
-    else:
-        testserver.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(testserver).__name__, test_name_cp, datetime.datetime.now()))
-    # sleep for some time to reach cbl
-    time.sleep(5)
+    if not use_local_testserver:
+        # Start LiteServ and delete any databases
+        log_info("Starting TestServer...")
+        test_name_cp = test_name.replace("/", "-")
+        if device_enabled:
+            testserver.start_device("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(testserver).__name__, test_name_cp, datetime.datetime.now()))
+        else:
+            testserver.start("{}/logs/{}-{}-{}.txt".format(RESULTS_DIR, type(testserver).__name__, test_name_cp, datetime.datetime.now()))
+        # sleep for some time to reach cbl
+        time.sleep(5)
 
     cluster_helper = ClusterKeywords(cluster_config)
     cluster_hosts = cluster_helper.get_cluster_topology(cluster_config=cluster_config)
