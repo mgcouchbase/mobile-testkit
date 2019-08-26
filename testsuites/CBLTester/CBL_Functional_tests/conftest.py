@@ -30,9 +30,6 @@ from CBLClient.Utils import Utils
 
 from utilities.cluster_config_utils import get_load_balancer_ip
 from CBLClient.ReplicatorConfiguration import ReplicatorConfiguration
-# from libraries.testkit import cluster
-
-# from libraries.testkit.cluster import Cluster
 from couchbase.bucket import Bucket
 from couchbase.n1ql import N1QLQuery
 
@@ -278,10 +275,12 @@ def params_from_base_suite_setup(request):
         cbl_log_decoder_platform
     except NameError:
         log_info("cbl_log_decoder_platform is not provided")
-        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', "macos", property_name_check=False)
+        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', "macos",
+                                                property_name_check=False)
     else:
         log_info("Running test with cbl_log_decoder_platform {}".format(cbl_log_decoder_platform))
-        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', cbl_log_decoder_platform, property_name_check=False)
+        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', cbl_log_decoder_platform,
+                                                property_name_check=False)
 
     try:
         cbl_log_decoder_build
@@ -290,7 +289,8 @@ def params_from_base_suite_setup(request):
         persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_build', "", property_name_check=False)
     else:
         log_info("Running test with cbl_log_decoder_platform {}".format(cbl_log_decoder_platform))
-        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', cbl_log_decoder_platform, property_name_check=False)
+        persist_cluster_config_environment_prop(cluster_config, 'cbl_log_decoder_platform', cbl_log_decoder_platform,
+                                                property_name_check=False)
 
     if xattrs_enabled:
         log_info("Running test with xattrs for sync meta storage")

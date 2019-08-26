@@ -28,13 +28,14 @@ class Replication(object):
                   replication_type="push_pull", continuous=False,
                   push_filter=False, pull_filter=False, channels=None,
                   documentIDs=None, replicator_authenticator=None,
-                  headers=None, filter_callback_func=''):
+                  headers=None, filter_callback_func='', conflict_resolver=""):
         args = Args()
         args.setMemoryPointer("source_db", source_db)
         args.setBoolean("continuous", continuous)
         args.setBoolean("push_filter", push_filter)
         args.setBoolean("pull_filter", pull_filter)
         args.setString("filter_callback_func", filter_callback_func)
+        args.setString("conflict_resolver", conflict_resolver)
         if channels is not None:
             args.setArray("channels", channels)
 
@@ -228,12 +229,11 @@ class Replication(object):
         args.setMemoryPointer("replicator", replicator)
         return self._client.invokeMethod("replicator_start", args)
 
-    def stop(self, replicator):
+    def stop(self, replicator, max_times=15):
         args = Args()
         args.setMemoryPointer("replicator", replicator)
         # return self._client.invokeMethod("replicator_stop", args)
         self._client.invokeMethod("replicator_stop", args)
-        max_times = 15
         count = 0
         while self.getActivitylevel(replicator) != "stopped" and count < max_times:
             time.sleep(2)
