@@ -487,7 +487,8 @@ def params_from_base_suite_setup(request):
         "cbl_log_decoder_build": cbl_log_decoder_build,
         "suite_db_log_files": suite_db_log_files,
         "enable_encryption": enable_encryption,
-        "encryption_password": encryption_password
+        "encryption_password": encryption_password,
+        "cbs_url": cbs_url
     }
 
     if create_db_per_suite:
@@ -541,6 +542,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     encryption_password = params_from_base_suite_setup["encryption_password"]
     enable_encryption = params_from_base_suite_setup["enable_encryption"]
     use_local_testserver = request.config.getoption("--use-local-testserver")
+    cbs_url = params_from_base_suite_setup["cbs_url"]
 
     source_db = None
     test_name_cp = test_name.replace("/", "-")
@@ -633,7 +635,8 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "cbl_log_decoder_build": cbl_log_decoder_build,
         "enable_encryption": enable_encryption,
         "encryption_password": encryption_password,
-        "enable_file_logging": enable_file_logging
+        "enable_file_logging": enable_file_logging,
+        "cbs_url": cbs_url
     }
 
     log_info("Tearing down test")
