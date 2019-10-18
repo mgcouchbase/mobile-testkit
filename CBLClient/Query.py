@@ -435,3 +435,9 @@ class Query(object):
         args.setMemoryPointer("database", database)
 
         return self._client.invokeMethod("query_arthimetic", args)
+
+    def query_get_live_query_delay_time(self, database):
+        args = Args()
+        args.setMemoryPointer("database", database)
+
+        return self._client.invokeMethod("query_getLiveQueryResponseTime", args)

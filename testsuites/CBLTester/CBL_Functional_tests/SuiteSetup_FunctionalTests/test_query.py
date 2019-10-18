@@ -7,6 +7,9 @@ from keywords.utils import host_for_url
 from couchbase.bucket import Bucket
 from couchbase.n1ql import N1QLQuery
 import numpy as np
+import datetime
+import random
+from CBLClient.Document import Document
 
 
 def test_get_doc_ids(params_from_base_suite_setup):
@@ -1586,6 +1589,35 @@ def test_getDoc_withNoData(params_from_base_suite_setup, doc_id_prefix):
     for docs in result_set:
         docs_from_cbl.append(docs)
     assert len(docs_from_cbl) == 1, "Results for doc with empty data - did not return the record"
+
+
+def test_live_query_response_delay_time(params_from_base_suite_setup):
+    """
+    1. call /query_getLiveQueryResponseTime to get delay timer
+    2. validate delay timer is less than 200 millisecond
+    """
+    base_url = params_from_base_suite_setup["base_url"]
+    db = params_from_base_suite_setup["suite_db"]
+    cbl_db = params_from_base_suite_setup["suite_source_db"]
+
+    channels = ["live-query"]
+    # doc_id = "live-query-doc_0"
+    num_of_docs = 100
+    db.create_bulk_docs(num_of_docs, "live-query-doc", db=cbl_db, channels=channels)
+
+    doc_ids = db.getDocIds(cbl_db)
+    docs = db.getDocuments(cbl_db, doc_ids)
+    seq_num = 1
+    # updates_in_doc = {}
+    for doc_id, doc_body in docs.items():
+        if "live-query-doc" in doc_id:
+            doc_body["sequence_number"] = seq_num
+            db.updateDocument(database=cbl_db, data=doc_body, doc_id=doc_id)
+            seq_num += 1
+
+    qy = Query(base_url)
+    delay_timer = qy.query_get_live_query_delay_time(cbl_db)
+    assert delay_timer < 200, "delay timer cannot be longer than 200 millionsec"
 
 
 def test_query_arthimetic(params_from_base_suite_setup):

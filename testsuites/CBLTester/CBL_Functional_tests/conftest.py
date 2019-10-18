@@ -477,6 +477,7 @@ def params_from_base_suite_setup(request):
         "create_db_per_test": create_db_per_test,
         "suite_source_db": suite_source_db,
         "suite_cbl_db": suite_cbl_db,
+        "suite_db": suite_db,
         "sg_config": sg_config,
         "testserver": testserver,
         "device_enabled": device_enabled,
@@ -521,6 +522,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
     target_admin_url = params_from_base_suite_setup["target_admin_url"]
     suite_source_db = params_from_base_suite_setup["suite_source_db"]
     suite_cbl_db = params_from_base_suite_setup["suite_cbl_db"]
+    suite_db = params_from_base_suite_setup["suite_db"]
     test_name = request.node.name
     cluster_topology = params_from_base_suite_setup["cluster_topology"]
     mode = params_from_base_suite_setup["mode"]
@@ -620,6 +622,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         "cbl_db": cbl_db,
         "suite_source_db": suite_source_db,
         "suite_cbl_db": suite_cbl_db,
+        "suite_db": suite_db,
         "base_url": base_url,
         "sg_config": sg_config,
         "db": db,

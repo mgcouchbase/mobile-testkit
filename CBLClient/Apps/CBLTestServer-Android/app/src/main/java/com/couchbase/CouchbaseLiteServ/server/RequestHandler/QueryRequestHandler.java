@@ -1,8 +1,18 @@
 package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 
+import android.util.Log;
+
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.ArrayExpression;
@@ -18,7 +28,9 @@ import com.couchbase.lite.FullTextIndexItem;
 import com.couchbase.lite.Function;
 import com.couchbase.lite.IndexBuilder;
 import com.couchbase.lite.Join;
+import com.couchbase.lite.ListenerToken;
 import com.couchbase.lite.Meta;
+import com.couchbase.lite.MutableDocument;
 import com.couchbase.lite.Ordering;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryBuilder;
@@ -26,6 +38,7 @@ import com.couchbase.lite.Result;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.VariableExpression;
+import com.couchbase.lite.Parameters;
 
 
 public class QueryRequestHandler {
@@ -837,5 +850,66 @@ public class QueryRequestHandler {
             resultArray.add(row.toMap());
         }
         return resultArray;
+    }
+
+    public long getLiveQueryResponseTime(Args args) throws CouchbaseLiteException, InterruptedException {
+        /**
+         * This function contains logic to pull live query response time on query changes
+         * validating CBL-172 which reported there are 200 millionseconds delay
+         */
+
+        long returnValue = 0;
+        String TAG = "LIVEQUERY";
+        final String KEY = "sequence_number";
+        Database db = args.get("database");
+        final List<Long> liveQueryActivities = new ArrayList<Long>();
+
+        // define a query with Parameters object
+        Query query = QueryBuilder
+                .select(SelectResult.all())
+                .from(DataSource.database(db))
+                .where(Expression.property(KEY).lessThanOrEqualTo(Expression.parameter("VALUE")));
+
+        Parameters params = new Parameters();
+        params.setInt("VALUE", 50);
+        query.setParameters(params);
+
+        // register a query change listener to capture live resultset changes
+        ListenerToken token = query.addChangeListener(change -> {
+            final long curMillis = new Long(System.currentTimeMillis());
+            liveQueryActivities.add(curMillis);
+
+            int count = 0;
+            for (Result result : change.getResults()) {
+                Log.d(TAG, "results: " + result.getKeys());
+                count++;
+            }
+            Log.d(TAG, "results count: " + String.valueOf(count));
+            Log.d(TAG, "live query captured timestamp in milliseconds: " + String.valueOf(curMillis));
+        });
+
+        // record timestamp before submitting the change
+        long queryChangeTimestamp = System.currentTimeMillis();
+
+        // make the query change,
+        // the listener should be able to capture the changes,
+        // record timestamp of the change event
+        params = new Parameters();
+        params.setInt("VALUE", 75);
+        query.setParameters(params);
+
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        query.removeChangeListener(token);
+
+        if(!liveQueryActivities.isEmpty()){
+            long liveQueryCapturedTimestamp = liveQueryActivities.get(0).longValue();
+            returnValue = liveQueryCapturedTimestamp - queryChangeTimestamp;
+
+            Log.d(TAG, "query change timestamp: {}" + String.valueOf(queryChangeTimestamp));
+            Log.d(TAG, "live query captured timestamp: {}" + String.valueOf(liveQueryCapturedTimestamp));
+        }
+
+        return returnValue;
     }
 }
