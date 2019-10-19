@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -875,7 +877,8 @@ public class QueryRequestHandler {
         query.setParameters(params);
 
         // register a query change listener to capture live resultset changes
-        ListenerToken token = query.addChangeListener(change -> {
+        final Executor exec = Executors.newSingleThreadExecutor();
+        ListenerToken token = query.addChangeListener(exec, change -> {
             final long curMillis = new Long(System.currentTimeMillis());
             liveQueryActivities.add(curMillis);
 

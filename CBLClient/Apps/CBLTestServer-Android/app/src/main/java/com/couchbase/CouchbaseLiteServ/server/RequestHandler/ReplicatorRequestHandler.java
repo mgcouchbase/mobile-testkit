@@ -2,6 +2,8 @@ package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.CouchbaseLiteException;
@@ -43,20 +45,24 @@ public class ReplicatorRequestHandler {
     public ReplicatorChangeListener addChangeListener(Args args) {
         Replicator replicator = args.get("replicator");
         MyReplicatorListener changeListener = new MyReplicatorListener();
-        replicator.addChangeListener(changeListener);
+        final Executor exec = Executors.newSingleThreadExecutor();
+        ListenerToken token = replicator.addChangeListener(exec, changeListener);
+        changeListener.setToken(token);
+
         return changeListener;
     }
 
     public void removeChangeListener(Args args) {
         Replicator replicator = args.get("replicator");
         MyReplicatorListener changeListener = args.get("changeListener");
-        replicator.addChangeListener(changeListener);
+        replicator.removeChangeListener(changeListener.getToken());
     }
 
     public MyDocumentReplicatorListener addReplicatorEventChangeListener(Args args) {
         Replicator replicator = args.get("replicator");
+        final Executor exec = Executors.newSingleThreadExecutor();
         MyDocumentReplicatorListener changeListener = new MyDocumentReplicatorListener();
-        ListenerToken token = replicator.addDocumentReplicationListener(changeListener);
+        ListenerToken token = replicator.addDocumentReplicationListener(exec, changeListener);
         changeListener.setToken(token);
         return changeListener;
     }
@@ -176,9 +182,18 @@ public class ReplicatorRequestHandler {
 
 class MyReplicatorListener implements ReplicatorChangeListener {
     private final List<ReplicatorChange> changes = new ArrayList<>();
+    private ListenerToken token;
 
     public List<ReplicatorChange> getChanges() {
         return changes;
+    }
+
+    public void setToken(ListenerToken token) {
+        this.token = token;
+    }
+
+    public ListenerToken getToken() {
+        return token;
     }
 
     @Override
