@@ -18,10 +18,15 @@ package com.couchbase.CouchbaseLiteServ;
 import android.app.Application;
 import android.content.Context;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 import com.couchbase.lite.CouchbaseLite;
 
 
 public class CouchbaseLiteServ extends Application {
+    public static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
+
     private static Context appContext;
 
     public static Context getAppContext() { return appContext; }

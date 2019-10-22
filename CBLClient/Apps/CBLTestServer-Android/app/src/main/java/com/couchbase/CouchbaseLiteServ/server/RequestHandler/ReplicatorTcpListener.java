@@ -39,7 +39,7 @@ public final class ReplicatorTcpListener {
     private static final String TAG = "TCPLISTENER";
 
     private final int port;
-    private ServerSocket server;
+    private volatile ServerSocket server;
     private final MessageEndpointListener endpointListener;
     private Thread loopThread;
     private final Database database;

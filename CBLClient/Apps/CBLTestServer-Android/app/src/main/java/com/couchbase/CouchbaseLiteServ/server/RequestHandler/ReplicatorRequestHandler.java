@@ -2,9 +2,8 @@ package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
+import com.couchbase.CouchbaseLiteServ.CouchbaseLiteServ;
 import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DocumentReplication;
@@ -45,8 +44,7 @@ public class ReplicatorRequestHandler {
     public ReplicatorChangeListener addChangeListener(Args args) {
         Replicator replicator = args.get("replicator");
         MyReplicatorListener changeListener = new MyReplicatorListener();
-        final Executor exec = Executors.newSingleThreadExecutor();
-        ListenerToken token = replicator.addChangeListener(exec, changeListener);
+        ListenerToken token = replicator.addChangeListener(CouchbaseLiteServ.EXECUTOR, changeListener);
         changeListener.setToken(token);
 
         return changeListener;
@@ -60,9 +58,8 @@ public class ReplicatorRequestHandler {
 
     public MyDocumentReplicatorListener addReplicatorEventChangeListener(Args args) {
         Replicator replicator = args.get("replicator");
-        final Executor exec = Executors.newSingleThreadExecutor();
         MyDocumentReplicatorListener changeListener = new MyDocumentReplicatorListener();
-        ListenerToken token = replicator.addDocumentReplicationListener(exec, changeListener);
+        ListenerToken token = replicator.addDocumentReplicationListener(CouchbaseLiteServ.EXECUTOR, changeListener);
         changeListener.setToken(token);
         return changeListener;
     }

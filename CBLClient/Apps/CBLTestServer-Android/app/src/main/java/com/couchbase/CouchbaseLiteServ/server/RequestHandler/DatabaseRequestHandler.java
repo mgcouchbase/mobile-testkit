@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import com.couchbase.CouchbaseLiteServ.CouchbaseLiteServ;
 import com.couchbase.CouchbaseLiteServ.server.Args;
@@ -291,16 +289,15 @@ public class DatabaseRequestHandler {
 
     public ListenerToken addChangeListener(Args args) {
         Database database = args.get("database");
-        final Executor exec = Executors.newSingleThreadExecutor();
         ListenerToken token;
         if (args.contain("docId")) {
             String docId = args.get("docId");
             MyDocumentChangeListener changeListener = new MyDocumentChangeListener();
-            token = database.addDocumentChangeListener(docId, exec, changeListener);
+            token = database.addDocumentChangeListener(docId, CouchbaseLiteServ.EXECUTOR, changeListener);
         }
         else {
             MyDatabaseChangeListener changeListener = new MyDatabaseChangeListener();
-            token = database.addChangeListener(exec, changeListener);
+            token = database.addChangeListener(CouchbaseLiteServ.EXECUTOR, changeListener);
         }
         return token;
     }

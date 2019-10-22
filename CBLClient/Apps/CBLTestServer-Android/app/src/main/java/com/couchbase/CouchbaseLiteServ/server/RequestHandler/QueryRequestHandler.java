@@ -3,19 +3,11 @@ package com.couchbase.CouchbaseLiteServ.server.RequestHandler;
 
 import android.util.Log;
 
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
+import com.couchbase.CouchbaseLiteServ.CouchbaseLiteServ;
 import com.couchbase.CouchbaseLiteServ.server.Args;
 import com.couchbase.lite.ArrayExpression;
 import com.couchbase.lite.Collation;
@@ -32,15 +24,14 @@ import com.couchbase.lite.IndexBuilder;
 import com.couchbase.lite.Join;
 import com.couchbase.lite.ListenerToken;
 import com.couchbase.lite.Meta;
-import com.couchbase.lite.MutableDocument;
 import com.couchbase.lite.Ordering;
+import com.couchbase.lite.Parameters;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Result;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
 import com.couchbase.lite.VariableExpression;
-import com.couchbase.lite.Parameters;
 
 
 public class QueryRequestHandler {
@@ -877,8 +868,7 @@ public class QueryRequestHandler {
         query.setParameters(params);
 
         // register a query change listener to capture live resultset changes
-        final Executor exec = Executors.newSingleThreadExecutor();
-        ListenerToken token = query.addChangeListener(exec, change -> {
+        ListenerToken token = query.addChangeListener(CouchbaseLiteServ.EXECUTOR, change -> {
             final long curMillis = new Long(System.currentTimeMillis());
             liveQueryActivities.add(curMillis);
 
