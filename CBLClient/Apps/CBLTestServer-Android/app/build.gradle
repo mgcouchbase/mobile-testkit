@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 ext {
-    DEF_VERSION = "2.6.2-3"
+    DEF_VERSION = "2.6.2-4"
     COUCHBASE_LITE_VERSION = System.getProperty('version', DEF_VERSION)
 }
 
@@ -45,7 +45,7 @@ android {
 repositories {
     mavenLocal()
     maven { url "http://172.23.121.218/maven2/internalmaven/" }
-    //maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     google()
     jcenter()
 }
