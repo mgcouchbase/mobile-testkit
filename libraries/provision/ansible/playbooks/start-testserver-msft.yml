@@ -9,6 +9,16 @@
        path: C:\Users\{{ ansible_user }}\Desktop\TestServer\{{ binary_path }}
       register: st
 
+    - debug: msg="Installing the Testserver "
+    - name: Start TestServer
+      win_nssm:
+        name: TestServer
+        application:  C:\PROGRA~1\dotnet\dotnet.exe
+        app_parameters:
+          _: C:\Users\{{ ansible_user }}\Desktop\TestServer\{{ binary_path }}
+        stdout_file: C:\Users\{{ ansible_user }}\Desktop\TestServer\TestServer-Net-{{ version_build }}\TestServer.log
+        stderr_file: C:\Users\{{ ansible_user }}\Desktop\TestServer\TestServer-Net-{{ version_build }}\TestServer.log
+
     - debug: msg="Starting the Testserver "
     - name: Start TestServer
       win_service:
