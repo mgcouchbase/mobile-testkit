@@ -509,11 +509,9 @@ def params_from_base_suite_setup(request):
         log_info("Deleting the database {} at the suite teardown".format(create_db_per_suite))
         time.sleep(2)
         suite_db.deleteDB(suite_source_db)
-        time.sleep(1)
-
-    if create_db_per_suite:
+        time.sleep(2)
         # Flush all the memory contents on the server app
-        log_info("Flushing server memory")
+        log_info("Flushing server memory Suite level")
         utils_obj = Utils(base_url)
         utils_obj.flushMemory()
         if not use_local_testserver:
@@ -664,7 +662,7 @@ def params_from_base_test_setup(request, params_from_base_suite_setup):
         try:
             if db.exists(cbl_db, path):
                 db.deleteDB(source_db)
-            log_info("Flushing server memory")
+            log_info("Flushing server memory Functional level")
             utils_obj = Utils(base_url)
             utils_obj.flushMemory()
             if not use_local_testserver:

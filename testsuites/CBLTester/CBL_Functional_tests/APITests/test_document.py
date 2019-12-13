@@ -300,6 +300,7 @@ class TestDocument(object):
 
         assert sorted(expected_dict) == sorted(doc1b_todict), "Dictionary content is not matching with the expected content."
 
+
     def test_set_immutable_array_to_doc(self):
         '''
         @summary: https://github.com/couchbase/couchbase-lite-ios/issues/2104

@@ -41,9 +41,9 @@ class Client(object):
                 return ValueSerializer.deserialize(result)
         except Exception as err:
             if resp.content:
-                raise Exception(str(err) + resp.content)
+                raise Exception(str(err) + resp.content + str(url))
             else:
-                raise Exception(str(err))
+                raise Exception(str(err) + str(url))
 
     def release(self, obj):
         args = Args()
