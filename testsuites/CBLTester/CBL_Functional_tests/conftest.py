@@ -1,6 +1,7 @@
 import time
 import pytest
 import datetime
+import pyping
 
 from utilities.cluster_config_utils import persist_cluster_config_environment_prop
 from keywords.constants import SDK_TIMEOUT
@@ -513,7 +514,9 @@ def params_from_base_suite_setup(request):
         # Flush all the memory contents on the server app
         log_info("Flushing server memory Suite level")
         utils_obj = Utils(base_url)
-        utils_obj.flushMemory()
+        ping_response = pyping.ping(liteserv_host)
+        if ping_response.ret_code == 0:
+            utils_obj.flushMemory()
         if not use_local_testserver:
             log_info("Stopping the test server per suite")
             testserver.stop()
