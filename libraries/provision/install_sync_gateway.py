@@ -47,17 +47,17 @@ class SyncGatewayConfig:
         if self._build_number:
             base_url = "http://latestbuilds.service.couchbase.com/builds/latestbuilds/sync_gateway/{}/{}".format(self._version_number,
                                                                                                                  self._build_number)
-            package_name = "couchbase-{}-{}_{}-{}_x86_64.{}".format(installer,
-                                                                    sg_type,
-                                                                    self._version_number,
-                                                                    self._build_number,
-                                                                    platform_extension)
+            package_name = "couchbase-{}-{}_{}-{}-centos6_x86_64.{}".format(installer,
+                                                                            sg_type,
+                                                                            self._version_number,
+                                                                            self._build_number,
+                                                                            platform_extension)
         else:
             base_url = "https://latestbuilds.service.couchbase.com/builds/releases/mobile/couchbase-sync-gateway/{}".format(self._version_number)
-            package_name = "couchbase-{}-{}_{}_x86_64.{}".format(installer,
-                                                                 sg_type,
-                                                                 self._version_number,
-                                                                 platform_extension)
+            package_name = "couchbase-{}-{}_{}-centos6_x86_64.{}".format(installer,
+                                                                         sg_type,
+                                                                         self._version_number,
+                                                                         platform_extension)
         return base_url, package_name
 
     def sync_gateway_base_url_and_package(self, sg_ce=False,
