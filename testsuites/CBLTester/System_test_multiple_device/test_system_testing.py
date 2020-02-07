@@ -11,6 +11,7 @@ from keywords.utils import log_info
 from libraries.testkit.cluster import Cluster
 from libraries.data.doc_generators import simple, four_k, simple_user, complex_doc
 from datetime import datetime, timedelta
+from CBLClient.Utils import Utils
 
 
 @pytest.mark.sanity
@@ -162,10 +163,11 @@ def test_system(params_from_base_suite_setup):
                               number_updates=num_of_doc_updates, auth=session, channels=channels_sg)
 
         # Waiting until replicator finishes on all dbs
-        for repl_obj, repl, cbl_db, query in zip(replicator_obj_list,
-                                                 replicator_list,
-                                                 cbl_db_list,
-                                                 query_obj_list):
+        for base_url, repl_obj, repl, cbl_db, query in zip(base_url_list,
+                                                           replicator_obj_list,
+                                                           replicator_list,
+                                                           cbl_db_list,
+                                                           query_obj_list):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
@@ -177,11 +179,12 @@ def test_system(params_from_base_suite_setup):
         #######################################
         docs_to_update = random.sample(doc_ids, num_of_docs_to_update)
         i = 0
-        for db_obj, cbl_db, repl_obj, repl, query in zip(db_obj_list,
-                                                         cbl_db_list,
-                                                         replicator_obj_list,
-                                                         replicator_list,
-                                                         query_obj_list):
+        for base_url, db_obj, cbl_db, repl_obj, repl, query in zip(base_url_list,
+                                                                   db_obj_list,
+                                                                   cbl_db_list,
+                                                                   replicator_obj_list,
+                                                                   replicator_list,
+                                                                   query_obj_list):
             updates_per_db = len(docs_to_update) / len(db_obj_list)
             log_info("Updating {} docs on {} db - {}".format(updates_per_db,
                                                              db_obj.getName(cbl_db),
@@ -204,10 +207,11 @@ def test_system(params_from_base_suite_setup):
                                                       docs_to_delete))
         sg_client.delete_bulk_docs(url=sg_url, db=sg_db,
                                    docs=sg_docs, auth=session)
-        for repl_obj, repl, cbl_db, query in zip(replicator_obj_list,
-                                                 replicator_list,
-                                                 cbl_db_list,
-                                                 query_obj_list):
+        for base_url, repl_obj, repl, cbl_db, query in zip(base_url_list,
+                                                           replicator_obj_list,
+                                                           replicator_list,
+                                                           cbl_db_list,
+                                                           query_obj_list):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
@@ -227,11 +231,12 @@ def test_system(params_from_base_suite_setup):
         docs_to_delete = set(random.sample(doc_ids, num_of_docs_to_delete))
         docs_to_delete_per_db = len(docs_to_delete) / len(db_obj_list)
         i = 0
-        for db_obj, cbl_db, repl_obj, repl, query in zip(db_obj_list,
-                                                         cbl_db_list,
-                                                         replicator_obj_list,
-                                                         replicator_list,
-                                                         query_obj_list):
+        for base_url, db_obj, cbl_db, repl_obj, repl, query in zip(base_url_list,
+                                                                   db_obj_list,
+                                                                   cbl_db_list,
+                                                                   replicator_obj_list,
+                                                                   replicator_list,
+                                                                   query_obj_list):
             log_info("deleting {} docs from {} db - {}".format(docs_to_delete_per_db,
                                                                db_obj.getName(cbl_db),
                                                                list(docs_to_delete)[i: i + docs_to_delete_per_db]))
@@ -258,11 +263,12 @@ def test_system(params_from_base_suite_setup):
         #############################
         # Creating docs on CBL side #
         #############################
-        for db_obj, cbl_db, repl_obj, repl, query in zip(db_obj_list,
-                                                         cbl_db_list,
-                                                         replicator_obj_list,
-                                                         replicator_list,
-                                                         query_obj_list):
+        for base_url, db_obj, cbl_db, repl_obj, repl, query in zip(base_url_list,
+                                                                   db_obj_list,
+                                                                   cbl_db_list,
+                                                                   replicator_obj_list,
+                                                                   replicator_list,
+                                                                   query_obj_list):
             name = db_obj.getName(cbl_db)
             docs_to_create = ["cbl_{}_{}".format(name, doc_id) for doc_id in range(doc_id_for_new_docs,
                                                                                    doc_id_for_new_docs +
@@ -326,12 +332,13 @@ def _check_doc_count(db_obj_list, cbl_db_list):
         assert 0, "Doc count in all DBs are not equal"
 
 
-def _check_parallel_replication_changes(replicator_obj_list, replicator_list, cbl_db_list, query_obj_list,
+def _check_parallel_replication_changes(base_url_list, replicator_obj_list, replicator_list, cbl_db_list, query_obj_list,
                                         repl_status_check_sleep_time, query_limit, query_offset):
-    for repl_obj, repl, cbl_db, query in zip(replicator_obj_list,
-                                             replicator_list,
-                                             cbl_db_list,
-                                             query_obj_list):
+    for base_url, repl_obj, repl, cbl_db, query in zip(base_url_list,
+                                                       replicator_obj_list,
+                                                       replicator_list,
+                                                       cbl_db_list,
+                                                       query_obj_list):
         t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
         t.start()
         t.join()
