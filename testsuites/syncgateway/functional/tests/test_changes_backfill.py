@@ -6,13 +6,13 @@ from keywords.utils import log_info
 from libraries.testkit.cluster import Cluster
 from keywords.MobileRestClient import MobileRestClient
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
+from utilities.cluster_config_utils import persist_cluster_config_environment_prop, copy_to_temp_conf
 
 from keywords import userinfo
 from keywords import document
 from keywords import exceptions
 
 
-@pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.changes
 @pytest.mark.session
@@ -20,15 +20,15 @@ from keywords import exceptions
 @pytest.mark.role
 @pytest.mark.channel
 @pytest.mark.backfill
-@pytest.mark.parametrize("sg_conf_name, grant_type", [
-    ("custom_sync/access", "CHANNEL-REST"),
-    ("custom_sync/access", "CHANNEL-SYNC"),
-    ("custom_sync/access", "ROLE-REST"),
-    ("custom_sync/access", "ROLE-SYNC"),
-    ("custom_sync/access", "CHANNEL-TO-ROLE-REST"),
-    ("custom_sync/access", "CHANNEL-TO-ROLE-SYNC")
+@pytest.mark.parametrize("sg_conf_name, grant_type, x509_cert_auth", [
+    ("custom_sync/access", "CHANNEL-REST", True),
+    pytest.param("custom_sync/access", "CHANNEL-SYNC", False, marks=pytest.mark.sanity),
+    ("custom_sync/access", "ROLE-REST", False),
+    ("custom_sync/access", "ROLE-SYNC", True),
+    ("custom_sync/access", "CHANNEL-TO-ROLE-REST", True),
+    ("custom_sync/access", "CHANNEL-TO-ROLE-SYNC", False)
 ])
-def test_backfill_channels_oneshot_changes(params_from_base_test_setup, sg_conf_name, grant_type):
+def test_backfill_channels_oneshot_changes(params_from_base_test_setup, sg_conf_name, grant_type, x509_cert_auth):
     """
     Test that checks that docs are backfilled for one shot changes for a access grant (via REST or SYNC)
 
@@ -51,6 +51,11 @@ def test_backfill_channels_oneshot_changes(params_from_base_test_setup, sg_conf_
     log_info("grant_type: {}".format(grant_type))
 
     sg_conf = sync_gateway_config_path_for_mode(sg_conf_name, mode)
+
+    if x509_cert_auth:
+        temp_cluster_config = copy_to_temp_conf(cluster_config, mode)
+        persist_cluster_config_environment_prop(temp_cluster_config, 'x509_certs', True)
+        cluster_config = temp_cluster_config
 
     cluster = Cluster(cluster_config)
     cluster.reset(sg_conf)

@@ -32,6 +32,7 @@ def params_from_base_suite_setup(request):
     xattrs_enabled = request.config.getoption("--xattrs")
     sg_lb = request.config.getoption("--sg-lb")
     sg_ce = request.config.getoption("--sg-ce")
+    cbs_ce = request.config.getoption("--cbs-ce")
     use_sequoia = request.config.getoption("--sequoia")
     no_conflicts_enabled = request.config.getoption("--no-conflicts")
     use_views = request.config.getoption("--use-views")
@@ -41,9 +42,13 @@ def params_from_base_suite_setup(request):
     sa_installer_type = request.config.getoption("--sa-installer-type")
     delta_sync_enabled = request.config.getoption("--delta-sync")
     sg_platform = request.config.getoption("--sg-platform")
+    delta_sync_enabled = request.config.getoption("--delta-sync")
 
     if xattrs_enabled and version_is_binary(sync_gateway_version):
         check_xattr_support(server_version, sync_gateway_version)
+
+    if delta_sync_enabled and sync_gateway_version < "2.5":
+        raise FeatureSupportedError('Delta sync feature not available for sync-gateway version below 2.5, so skipping the test')
 
     log_info("server_version: {}".format(server_version))
     log_info("sync_gateway_version: {}".format(sync_gateway_version))
@@ -62,6 +67,7 @@ def params_from_base_suite_setup(request):
     log_info("sa_installer_type: {}".format(sa_installer_type))
     log_info("delta_sync_enabled: {}".format(delta_sync_enabled))
     log_info("sg_platform: {}".format(sg_platform))
+    log_info("Delta_sync: {}".format(delta_sync_enabled))
 
     # sg-ce is invalid for di mode
     if mode == "di" and sg_ce:
@@ -76,7 +82,6 @@ def params_from_base_suite_setup(request):
     # use base_cc cluster config if mode is "cc" or base_di cluster config if more is "di"
     cluster_config = "{}/multiple_servers_{}".format(CLUSTER_CONFIGS_DIR, mode)
     sg_config = sync_gateway_config_path_for_mode("sync_gateway_default_functional_tests", mode)
-    cluster_utils = ClusterKeywords(cluster_config)
 
     if use_views:
         log_info("Running SG tests using views")
@@ -180,7 +185,8 @@ def params_from_base_suite_setup(request):
                 race_enabled=race_enabled,
                 sg_installer_type=sg_installer_type,
                 sa_installer_type=sa_installer_type,
-                sg_ce=sg_ce
+                sg_ce=sg_ce,
+                cbs_ce=cbs_ce
             )
         except ProvisioningError:
             logging_helper = Logging()

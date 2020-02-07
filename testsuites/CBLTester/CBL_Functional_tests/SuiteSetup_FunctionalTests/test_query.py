@@ -7,9 +7,6 @@ from keywords.utils import host_for_url
 from couchbase.bucket import Bucket
 from couchbase.n1ql import N1QLQuery
 import numpy as np
-import datetime
-import random
-from CBLClient.Document import Document
 
 
 def test_get_doc_ids(params_from_base_suite_setup):
@@ -1578,7 +1575,7 @@ def test_getDoc_withNoData(params_from_base_suite_setup, doc_id_prefix):
     # Create docs with empty data
     db = database.create("db_name")
     documents = dict()
-        
+
     data = {}
     doc_id = "{}_{}".format(doc_id_prefix, 0)
     documents[doc_id] = data

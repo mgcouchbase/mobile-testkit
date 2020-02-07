@@ -12,11 +12,10 @@ from keywords.constants import CLUSTER_CONFIGS_DIR
 from utilities.cluster_config_utils import persist_cluster_config_environment_prop, copy_to_temp_conf
 
 
-@pytest.mark.sanity
 @pytest.mark.listener
 @pytest.mark.replication
 @pytest.mark.parametrize("sg_conf_name, num_of_docs", [
-    ('listener_tests/multiple_sync_gateways', 10),
+    pytest.param('listener_tests/multiple_sync_gateways', 10, marks=pytest.mark.sanity),
     ('listener_tests/multiple_sync_gateways', 100),
     ('listener_tests/multiple_sync_gateways', 1000)
 ])
@@ -60,14 +59,14 @@ def test_multiple_sgs_with_differrent_revs_limit(params_from_base_test_setup, se
     sg2 = c.sync_gateways[1]
 
     # Setting revs_limit to sg1
-    revs_limit1 = 30
+    revs_limit1 = 20
     temp_cluster_config = copy_to_temp_conf(cluster_config, sg_mode)
     persist_cluster_config_environment_prop(temp_cluster_config, 'revs_limit', revs_limit1, property_name_check=False)
     status = sg1.restart(config=sg_config, cluster_config=temp_cluster_config)
     assert status == 0, "Syncgateway did not start after changing the revs_limit on sg1"
 
     # Setting revs_limit to sg2
-    revs_limit2 = 25
+    revs_limit2 = 15
     temp_cluster_config = copy_to_temp_conf(cluster_config, sg_mode)
     persist_cluster_config_environment_prop(temp_cluster_config, 'revs_limit', revs_limit2, property_name_check=False)
     status = sg2.restart(config=sg_config, cluster_config=temp_cluster_config)
@@ -154,11 +153,10 @@ def test_multiple_sgs_with_differrent_revs_limit(params_from_base_test_setup, se
         assert len(revs) == revs_limit2
 
 
-@pytest.mark.sanity
 @pytest.mark.listener
 @pytest.mark.replication
 @pytest.mark.parametrize("sg_conf_name, num_of_docs", [
-    ('listener_tests/multiple_sync_gateways', 10),
+    pytest.param('listener_tests/multiple_sync_gateways', 10, marks=pytest.mark.sanity),
     ('listener_tests/multiple_sync_gateways', 100),
     ('listener_tests/multiple_sync_gateways', 1000)
 ])
@@ -266,6 +264,8 @@ def test_multiple_sgs_with_CBLs(params_from_base_test_setup, setup_customized_te
     repl2_error = replicator.getError(repl2)
     if liteserv_platform == "xamarin-ios" or liteserv_platform == "xamarin-android" or liteserv_platform == "net-msft" or liteserv_platform == "net-uwp":
         assert "POSIXDomain" in repl2_error
+    elif liteserv_platform in ["java-macosx", "java-msft", "java-ubuntu", "java-centos", "javaws-macosx", "javaws-msft", "javaws-ubuntu", "javaws-centos"]:
+        assert "WebSocket connection closed by peer" in repl2_error
     else:
         assert "POSIXErrorDomain" in repl2_error
     # 6. Verify one CBL DB should be successful as other CBL DB should fail as associated Sg is down

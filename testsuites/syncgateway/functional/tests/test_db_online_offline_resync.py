@@ -13,18 +13,20 @@ from libraries.testkit.parallelize import in_parallel
 from keywords.utils import log_info
 from keywords.utils import log_error
 from keywords.SyncGateway import sync_gateway_config_path_for_mode
+from utilities.cluster_config_utils import persist_cluster_config_environment_prop, copy_to_temp_conf
 
 
-@pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.onlineoffline
 @pytest.mark.basicauth
 @pytest.mark.channel
 @pytest.mark.changes
-@pytest.mark.parametrize("sg_conf_name, num_users, num_docs, num_revisions", [
-    ("bucket_online_offline/db_online_offline_access_all", 5, 100, 10),
+@pytest.mark.parametrize("sg_conf_name, num_users, num_docs, num_revisions, x509_cert_auth", [
+    pytest.param("bucket_online_offline/db_online_offline_access_all", 5, 100, 10, True, marks=pytest.mark.sanity),
+    ("bucket_online_offline/db_online_offline_access_all", 5, 100, 10, False)
 ])
-def test_bucket_online_offline_resync_sanity(params_from_base_test_setup, sg_conf_name, num_users, num_docs, num_revisions):
+def test_bucket_online_offline_resync_sanity(params_from_base_test_setup, sg_conf_name, num_users, num_docs,
+                                             num_revisions, x509_cert_auth):
 
     cluster_conf = params_from_base_test_setup["cluster_config"]
     test_mode = params_from_base_test_setup["mode"]
@@ -41,6 +43,11 @@ def test_bucket_online_offline_resync_sanity(params_from_base_test_setup, sg_con
     log_info("Using num_revisions: {}".format(num_revisions))
 
     start = time.time()
+
+    if x509_cert_auth:
+        temp_cluster_config = copy_to_temp_conf(cluster_conf, test_mode)
+        persist_cluster_config_environment_prop(temp_cluster_config, 'x509_certs', True)
+        cluster_conf = temp_cluster_config
 
     cluster = Cluster(config=cluster_conf)
     cluster.reset(sg_conf)
@@ -64,7 +71,8 @@ def test_bucket_online_offline_resync_sanity(params_from_base_test_setup, sg_con
 
     # Add User
     log_info("Add docs")
-    in_parallel(user_objects, 'add_docs', num_docs)
+    bulk = True
+    in_parallel(user_objects, 'add_docs', num_docs, bulk)
 
     # Update docs
     log_info("Update docs")
@@ -196,7 +204,8 @@ def test_bucket_online_offline_resync_with_online(params_from_base_test_setup, s
 
     # Add User
     log_info("Add docs")
-    in_parallel(user_objects, 'add_docs', num_docs)
+    bulk = True
+    in_parallel(user_objects, 'add_docs', num_docs, bulk)
 
     # Update docs
     log_info("Update docs")
@@ -380,7 +389,8 @@ def test_bucket_online_offline_resync_with_offline(params_from_base_test_setup, 
 
     # Add User
     log_info("Add docs")
-    in_parallel(user_objects, 'add_docs', num_docs)
+    bulk = True
+    in_parallel(user_objects, 'add_docs', num_docs, bulk)
 
     # Update docs
     log_info("Update docs")

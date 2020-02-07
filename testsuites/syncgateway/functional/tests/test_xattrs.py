@@ -23,7 +23,7 @@ from keywords.userinfo import UserInfo
 from keywords.utils import host_for_url, log_info
 from libraries.testkit.cluster import Cluster
 from keywords.ChangesTracker import ChangesTracker
-from utilities.cluster_config_utils import get_sg_use_views, get_sg_version
+from utilities.cluster_config_utils import get_sg_use_views, get_sg_version, persist_cluster_config_environment_prop, copy_to_temp_conf
 from keywords.constants import SDK_TIMEOUT
 
 # Since sdk is quicker to update docs we need to have it sleep longer
@@ -71,6 +71,7 @@ def test_olddoc_nil(params_from_base_test_setup, sg_conf_name):
     mode = params_from_base_test_setup['mode']
     xattrs_enabled = params_from_base_test_setup['xattrs_enabled']
     delta_sync_enabled = params_from_base_test_setup['delta_sync_enabled']
+    sync_gateway_version = params_from_base_test_setup["sync_gateway_version"]
 
     # This test should only run when using xattr meta storage
     if not xattrs_enabled or delta_sync_enabled:
@@ -89,6 +90,11 @@ def test_olddoc_nil(params_from_base_test_setup, sg_conf_name):
 
     cluster = Cluster(config=cluster_conf)
     cluster.reset(sg_config_path=sg_conf)
+
+    if sync_gateway_version >= "2.5.0":
+        sg_client = MobileRestClient()
+        expvars = sg_client.get_expvars(sg_admin_url)
+        error_count = expvars["syncgateway"]["global"]["resource_utilization"]["error_count"]
 
     # Create clients
     sg_client = MobileRestClient()
@@ -161,6 +167,11 @@ def test_olddoc_nil(params_from_base_test_setup, sg_conf_name):
     user_two_bulk_get_docs, errors = sg_client.get_bulk_docs(url=sg_url, db=sg_db, doc_ids=abc_doc_ids, auth=user_two_auth)
     assert len(user_two_bulk_get_docs) == num_docs
     assert len(errors) == 0
+
+    if sync_gateway_version >= "2.5.0":
+        sg_client = MobileRestClient()
+        expvars = sg_client.get_expvars(sg_admin_url)
+        assert error_count < expvars["syncgateway"]["global"]["resource_utilization"]["error_count"], "error_count did not increment"
 
 
 @pytest.mark.syncgateway
@@ -305,10 +316,10 @@ def test_on_demand_doc_processing(params_from_base_test_setup, sg_conf_name, num
 @pytest.mark.syncgateway
 @pytest.mark.xattrs
 @pytest.mark.session
-@pytest.mark.parametrize('sg_conf_name', [
-    'xattrs/no_import'
+@pytest.mark.parametrize('sg_conf_name, x509_cert_auth', [
+    ('xattrs/no_import', False)
 ])
-def test_on_demand_import_of_external_updates(params_from_base_test_setup, sg_conf_name):
+def test_on_demand_import_of_external_updates(params_from_base_test_setup, sg_conf_name, x509_cert_auth):
     """
     Scenario: On demand processing of external updates
 
@@ -343,7 +354,10 @@ def test_on_demand_import_of_external_updates(params_from_base_test_setup, sg_co
     log_info('sg_admin_url: {}'.format(sg_admin_url))
     log_info('sg_url: {}'.format(sg_url))
     log_info('cbs_url: {}'.format(cbs_url))
-
+    if x509_cert_auth:
+        temp_cluster_config = copy_to_temp_conf(cluster_conf, mode)
+        persist_cluster_config_environment_prop(temp_cluster_config, 'x509_certs', True)
+        cluster_conf = temp_cluster_config
     cluster = Cluster(config=cluster_conf)
     cluster.reset(sg_config_path=sg_conf)
 
@@ -398,7 +412,7 @@ def test_on_demand_import_of_external_updates(params_from_base_test_setup, sg_co
     with pytest.raises(HTTPError) as he:
         sg_client.put_doc(url=sg_url, db=sg_db, doc_id=doc_id, rev=doc_rev_one, doc_body=doc_body, auth=seth_auth)
     log_info(he.value)
-    assert he.value.message.startswith('409')
+    assert str(he.value).startswith('409')
 
     # Following update_doc method will get the doc with on demand processing and update the doc based on rev got from get doc
     sg_updated_doc = sg_client.update_doc(url=sg_url, db=sg_db, doc_id=doc_id, auth=seth_auth)
@@ -406,16 +420,15 @@ def test_on_demand_import_of_external_updates(params_from_base_test_setup, sg_co
     assert sg_updated_rev.startswith("3-")
 
 
-@pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.xattrs
 @pytest.mark.session
-@pytest.mark.parametrize('sg_conf_name', [
-    'sync_gateway_default_functional_tests',
-    'sync_gateway_default_functional_tests_no_port',
-    "sync_gateway_default_functional_tests_couchbase_protocol_withport_11210"
+@pytest.mark.parametrize('sg_conf_name, x509_cert_auth', [
+    pytest.param('sync_gateway_default_functional_tests', True, marks=pytest.mark.sanity),
+    ('sync_gateway_default_functional_tests_no_port', False),
+    ("sync_gateway_default_functional_tests_couchbase_protocol_withport_11210", False)
 ])
-def test_offline_processing_of_external_updates(params_from_base_test_setup, sg_conf_name):
+def test_offline_processing_of_external_updates(params_from_base_test_setup, sg_conf_name, x509_cert_auth):
     """
     Scenario:
     1. Start SG, write some docs
@@ -461,7 +474,10 @@ def test_offline_processing_of_external_updates(params_from_base_test_setup, sg_
     log_info('sg_admin_url: {}'.format(sg_admin_url))
     log_info('sg_url: {}'.format(sg_url))
     log_info('cbs_url: {}'.format(cbs_url))
-
+    if x509_cert_auth:
+        temp_cluster_config = copy_to_temp_conf(cluster_conf, mode)
+        persist_cluster_config_environment_prop(temp_cluster_config, 'x509_certs', True)
+        cluster_conf = temp_cluster_config
     cluster = Cluster(config=cluster_conf)
     cluster.reset(sg_config_path=sg_conf)
 
@@ -673,18 +689,17 @@ def test_large_initial_import(params_from_base_test_setup, sg_conf_name):
     sg_client.verify_docs_in_changes(url=sg_url, db=sg_db, expected_docs=docs_to_verify_in_changes, auth=seth_auth)
 
 
-@pytest.mark.sanity
 @pytest.mark.syncgateway
 @pytest.mark.xattrs
 @pytest.mark.changes
 @pytest.mark.session
-@pytest.mark.parametrize('sg_conf_name, use_multiple_channels', [
-    ('sync_gateway_default_functional_tests', False),
-    ('sync_gateway_default_functional_tests', True),
-    ('sync_gateway_default_functional_tests_no_port', False),
-    ('sync_gateway_default_functional_tests_no_port', True)
+@pytest.mark.parametrize('sg_conf_name, use_multiple_channels, x509_cert_auth', [
+    ('sync_gateway_default_functional_tests', False, True),
+    ('sync_gateway_default_functional_tests', True, False),
+    ('sync_gateway_default_functional_tests_no_port', False, True),
+    ('sync_gateway_default_functional_tests_no_port', True, False)
 ])
-def test_purge(params_from_base_test_setup, sg_conf_name, use_multiple_channels):
+def test_purge(params_from_base_test_setup, sg_conf_name, use_multiple_channels, x509_cert_auth):
     """
     Scenario:
     - Bulk create 1000 docs via Sync Gateway
@@ -733,7 +748,10 @@ def test_purge(params_from_base_test_setup, sg_conf_name, use_multiple_channels)
     log_info('sg_conf: {}'.format(sg_conf))
     log_info('sg_admin_url: {}'.format(sg_admin_url))
     log_info('sg_url: {}'.format(sg_url))
-
+    if x509_cert_auth:
+        temp_cluster_config = copy_to_temp_conf(cluster_conf, mode)
+        persist_cluster_config_environment_prop(temp_cluster_config, 'x509_certs', True)
+        cluster_conf = temp_cluster_config
     cluster = Cluster(config=cluster_conf)
     cluster.reset(sg_config_path=sg_conf)
 
@@ -1644,7 +1662,6 @@ def test_sg_feed_changed_with_xattrs_importEnabled(params_from_base_test_setup,
             {"id": doc, "rev": "1-"} for doc in doc_set_ids1]
 
         ct_task = crsdk_tpe.submit(changestrack.start())
-
         log_info("ct_task value {}".format(ct_task))
 
         wait_for_changes = crsdk_tpe.submit(
@@ -1874,7 +1891,7 @@ def update_sg_docs(client, url, db, docs_to_update, prop_to_update, number_updat
 
 def is_conflict(httperror):
     if httperror.response.status_code == 409 \
-            and httperror.message.startswith('409 Client Error: Conflict for url:'):
+            and str(httperror).startswith('409 Client Error: Conflict for url:'):
         return True
     else:
         return False
@@ -2014,14 +2031,14 @@ def verify_sg_deletes(client, url, db, docs_to_verify_deleted, auth):
             client.get_doc(url=url, db=db, doc_id=doc_id, auth=auth)
 
         assert he is not None
-        log_info(he.value.message)
+        log_info(str(he.value))
 
-        assert he.value.message.startswith('404 Client Error: Not Found for url:') or \
-            he.value.message.startswith('403 Client Error: Forbidden for url:')
+        assert str(he.value).startswith('404 Client Error: Not Found for url:') or \
+            str(he.value).startswith('403 Client Error: Forbidden for url:')
 
         # Parse out the doc id
         # sg_0?conflicts=true&revs=true
-        parts = he.value.message.split('/')[-1]
+        parts = str(he.value).split('/')[-1]
         doc_id_from_parts = parts.split('?')[0]
 
         # Remove the doc id from the list
