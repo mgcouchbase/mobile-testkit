@@ -133,7 +133,8 @@ def test_system(params_from_base_suite_setup):
         repl_obj.start(repl)
         repl_obj.wait_until_replicator_idle(repl, max_times=maxint, sleep_time=repl_status_check_sleep_time)
         replicator_list.append(repl)
-        query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+        results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+        _releaseQueryResults(base_url, results)
 
     current_time = datetime.now()
     running_time = current_time + timedelta(minutes=up_time)
@@ -168,7 +169,8 @@ def test_system(params_from_base_suite_setup):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
-            query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            _releaseQueryResults(base_url, results)
 
         #######################################
         # Checking for doc update on CBL side #
@@ -190,7 +192,8 @@ def test_system(params_from_base_suite_setup):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
-            query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            _releaseQueryResults(base_url, results)
 
         ###########################
         # Deleting docs on SG side #
@@ -208,7 +211,8 @@ def test_system(params_from_base_suite_setup):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
-            query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit, offset=query_offset)
+            _releaseQueryResults(base_url, results)
             time.sleep(5)
         # _check_doc_count(db_obj_list, cbl_db_list)
         # removing ids of deleted doc from the list
@@ -234,8 +238,9 @@ def test_system(params_from_base_suite_setup):
             db_obj.delete_bulk_docs(cbl_db, list(docs_to_delete)[i: i + docs_to_delete_per_db])
             i += docs_to_delete_per_db
             time.sleep(5)
-            query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
-                                              offset=query_offset)
+            results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
+                                                        offset=query_offset)
+            _releaseQueryResults(base_url, results)
 
             # Deleting docs will affect all dbs as they are synced with SG.
             _check_parallel_replication_changes(replicator_obj_list, replicator_list, cbl_db_list, query_obj_list,
@@ -288,8 +293,9 @@ def test_system(params_from_base_suite_setup):
             t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
             t.start()
             t.join()
-            query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
-                                              offset=query_offset)
+            results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
+                                                        offset=query_offset)
+            _releaseQueryResults(base_url, results)
             time.sleep(5)
         doc_id_for_new_docs += num_of_docs_to_add
         # _check_doc_count(db_obj_list, cbl_db_list)
@@ -329,5 +335,11 @@ def _check_parallel_replication_changes(replicator_obj_list, replicator_list, cb
         t = Thread(target=_replicaton_status_check, args=(repl_obj, repl, repl_status_check_sleep_time))
         t.start()
         t.join()
-        query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
-                                          offset=query_offset)
+        results = query.query_get_docs_limit_offset(cbl_db, limit=query_limit,
+                                                    offset=query_offset)
+        _releaseQueryResults(base_url, results)
+
+
+def _releaseQueryResults(base_url, results):
+    utils = Utils(base_url)
+    utils.release(results)
