@@ -248,7 +248,7 @@ def test_system(params_from_base_suite_setup):
             _releaseQueryResults(base_url, results)
 
             # Deleting docs will affect all dbs as they are synced with SG.
-            _check_parallel_replication_changes(replicator_obj_list, replicator_list, cbl_db_list, query_obj_list,
+            _check_parallel_replication_changes(base_url_list, replicator_obj_list, replicator_list, cbl_db_list, query_obj_list,
                                                 repl_status_check_sleep_time, query_limit, query_offset)
         # _check_doc_count(db_obj_list, cbl_db_list)
         # removing ids of deleted doc from the list
