@@ -303,34 +303,37 @@ namespace Couchbase.Lite.Testing
 
             Dictionary<string, string> jsonObj;
             Dictionary<string, object> bodyObj;
-            try
+            if (!RouteMap.ContainsKey("release"))
             {
-                var serializer = JsonSerializer.CreateDefault();
-                using (var reader = new JsonTextReader(new StreamReader(body, Encoding.UTF8, false, 8192, false)))
+                try
                 {
-                    reader.CloseInput = true;
-                    jsonObj = serializer?.Deserialize<Dictionary<string, string>>(reader) ?? new Dictionary<string, string>();
-                    bodyObj = ValueSerializer.Deserialize(jsonObj);
+                    var serializer = JsonSerializer.CreateDefault();
+                    using (var reader = new JsonTextReader(new StreamReader(body, Encoding.UTF8, false, 8192, false)))
+                    {
+                        reader.CloseInput = true;
+                        jsonObj = serializer?.Deserialize<Dictionary<string, string>>(reader) ?? new Dictionary<string, string>();
+                        bodyObj = ValueSerializer.Deserialize(jsonObj);
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine($"Error deserializing POST body for {endpoint}: {e}");
-                Console.WriteLine($"Error deserializing POST body for {endpoint}: {e.Message}");
-                response.WriteBody("Invalid JSON body received");
-                return;
-            }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"Error deserializing POST body for {endpoint}: {e}");
+                    Console.WriteLine($"Error deserializing POST body for {endpoint}: {e.Message}");
+                    response.WriteBody("Invalid JSON body received");
+                    return;
+                }
 
-            var args = endpoint.ParseQueryString();
-            try
-            {
-                action(args, bodyObj, response);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine($"Error in handler for {endpoint}: {e}");
-                Console.WriteLine($"Error in handler for {endpoint}: {e.Message}");
-                response.WriteBody(e.Message?.Replace("\r", "")?.Replace('\n', ' ') ?? String.Empty, false);
+                var args = endpoint.ParseQueryString();
+                try
+                {
+                    action(args, bodyObj, response);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"Error in handler for {endpoint}: {e}");
+                    Console.WriteLine($"Error in handler for {endpoint}: {e.Message}");
+                    response.WriteBody(e.Message?.Replace("\r", "")?.Replace('\n', ' ') ?? String.Empty, false);
+                }
             }
         }
 
