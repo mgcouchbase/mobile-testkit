@@ -16,6 +16,8 @@ class Utils:
 
     def release(self, obj):
         # Release memory on the server
+        print("obj is by sri.... ", obj)
+        print("obj type is ....", type(obj))
         if isinstance(obj, list):
             for i in obj:
                 self._client.release(i)
