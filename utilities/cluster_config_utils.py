@@ -188,6 +188,24 @@ def is_ipv6(cluster_config):
     return cluster["environment"]["ipv6_enabled"]
 
 
+def get_cbs_primary_nodes_str(cluster_config, cbs_nodes):
+    """Parse the cluster node string and reformat it according to IP config of nodes
+    for IPv4 - 10.0.0.1,10.0.0.2 --> 10.0.0.1,10.0.0.1
+    for IPv6 - fc00::11,fc00::12 --> [fc00::11],[fc00::12]
+    """
+    if is_ipv6(cluster_config):
+        if ',' in cbs_nodes:
+            node_str = ""
+            for node in cbs_nodes.split(','):
+                node_str = node_str + "[{}],".format(node)
+            cbs_nodes = node_str.rstrip(",")
+            return cbs_nodes
+        else:
+            return "[{}]".format(cbs_nodes)
+    else:
+        return cbs_nodes
+
+
 def get_sg_version(cluster_config):
     """ Loads cluster config to get sync gateway version"""
     cluster = load_cluster_config_json(cluster_config)
