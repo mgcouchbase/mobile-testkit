@@ -8,7 +8,7 @@ JSVC_LOCATION=$5
 
 
 # Setup variables
-EXEC={$JSVC_LOCATION}
+EXEC=${JSVC_LOCATION}
 JAVA_HOME=${JAVA_HOME_LOCATION}
 CLASS_PATH=${BINARY_LOCATION}
 CLASS=com.couchbase.mobiletestkit.javatestserver.TestServerMain
@@ -19,7 +19,7 @@ LOG_ERR=${OUTPUT_LOCATION}/testserver-java.err
 
 do_exec()
 {
-    $EXEC -home "$JAVA_HOME" -cp $CLASS_PATH -user $USER -outfile $LOG_OUT -errfile $LOG_ERR -pidfile $PID ${SERVICE_STATUS} $CLASS
+    $EXEC -home "$JAVA_HOME" -cp $CLASS_PATH -user $USER -outfile $LOG_OUT -errfile $LOG_ERR -pidfile $PID $1 $CLASS
 }
 
 case "${SERVICE_STATUS}" in
